@@ -1,0 +1,9 @@
+<launch>
+	<include file ="$(find suturo_julius)/launch/speech_recognition_grammar.launch"/>
+
+	<group ns="/suturo_speech_recognition">
+		<node pkg="suturo_textparser" name="textparser" type="textparser.py" respawn="true">
+			<remap from="input" to="voice/text"/>
+		</node>
+	</group>
+</launch>

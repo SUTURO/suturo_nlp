@@ -1,0 +1,3 @@
+hsr start
+robot start
+toya start

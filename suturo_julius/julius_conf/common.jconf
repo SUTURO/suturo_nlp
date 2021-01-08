@@ -1,0 +1,26 @@
+-forcedict		# skip error word entries (no stop on error)
+
+-iwcd1 max		# Inter-word triphone approximation method
+
+-gprune safe		# safe pruning
+-b 2000			# beam width (# of nodes)
+
+-b2 240			# envelope beam width of 2nd pass (#word)
+-s 3000			# hypotheses stack size on 2nd pass (#hypo)
+
+-m 4000			# hypotheses overflow threshold
+
+-n 5			# num of sentences to find
+
+-output 5		# num of sentences to output as result
+
+-spmodel "sp"		# name of a short-pause silence model
+
+-iwsp			# append a skippable sp at all word ends
+-iwsppenalty -70.0	# pause insertion penalty for "-iwsp"
+
+-nostrip		# do not strip zero samples
+
+-rejectshort 200	# reject shorter input (msec)
+-pausesegment
+

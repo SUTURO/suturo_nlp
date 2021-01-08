@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>suturo_speechparser</name>
+  <version>0.0.0</version>
+  <description>The suturo_speechparser package</description>
+
+
+  <maintainer email="paul@todo.todo">paul</maintainer>
+
+
+  <license>TODO</license>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+
+  </export>
+</package>

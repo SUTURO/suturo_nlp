@@ -1,0 +1,11 @@
+<launch>
+	<include file ="$(find suturo_julius)/launch/speech_recognition_hard_commands.launch"/>
+
+	<group ns="/suturo_speech_recognition">
+		<node pkg="suturo_textparser" name="textparser" type="textparser.py" respawn="true" output="screen">
+	        <remap from="input" to="voice/text"/>
+    	    <remap from="hard_commands" to="hard_commands"/>
+	        <remap from="to_slingparser" to="to_slingparser"/>			
+        </node>	
+	</group>
+</launch>

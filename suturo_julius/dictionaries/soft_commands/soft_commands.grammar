@@ -1,0 +1,88 @@
+#####################
+#Other Task Commands#
+#####################
+
+#FETCH & CARRY
+S : NS_B COMMANDS NS_E
+COMMANDS : COMMAND
+COMMANDS : COMMAND and COMMAND
+COMMANDS : COMMAND COMMAND and COMMAND
+#Task
+COMMAND : COMMAND_WORD the ITEM from the AREA.
+#Command_Word
+COMMAND_WORD : Fetch
+COMMAND_WORD : Bring
+COMMAND_WORD : Pick up
+# Items 
+ITEM : Orange 
+ITEM : Deodorant
+ITEM : Cup
+ITEM : Water Bottle
+ITEM : Pringles Can
+#Area
+AREA : Table
+AREA : Counter
+AREA : Shelf
+
+
+# WHO IS WHO
+#Task
+COMMAND : Who is NAME
+# Name
+NAME : Anna
+NAME : John
+NAME : Ellen
+NAME : Thomas
+NAME : Caleb
+
+
+#SUPERMARKET (LOST & FOUND RELOADED)
+#Task
+COMMAND : COMMAND_WORD QITEM.
+COMMAND : Find me QITEM
+COMMAND : COMMAND_WORD QITEM for BENEFICIARY
+#Qitem (Item with optional determiner)
+QITEM : ITEMSV #singular Vowel
+QITEM : ITEMP #plural
+QITEM : ITEMSC #singular consonant
+QITEM : an ITEMSV 
+QITEM : some ITEMP
+QITEM : a ITEMSC
+#Command_Word
+COMMAND_WORD : Find
+COMMAND_WORD : Locate
+COMMAND_WORD : Look for
+COMMAND_WORD : Search for
+#Items 
+ITEMSV : apple
+ITEMP : Sprite
+ITEMSC : banana
+ITEMP : gummybears
+ITEMP : chocolate
+#Beneficiary
+BENEFICIARY : me
+BENEFICIARY : Emma
+BENEFICIARY : Lauren
+BENEFICIARY : her
+BENEFICIARY : them
+
+
+#IN THE BAR (DEMO CHALLENGE)
+#Task
+COMMAND : COMMAND_WORD BENEFICIARY a DRINK.
+#Command_Word
+COMMAND_WORD : Fetch
+COMMAND_WORD : Bring
+COMMAND_WORD : Get
+#Beneficiary
+BENEFICIARY : me
+BENEFICIARY : Emma
+BENEFICIARY : Lauren
+BENEFICIARY : her
+BENEFICIARY : them
+# Drink
+DRINK : Water
+DRINK : Tonic Water
+DRINK : Lemonade
+DRINK : Beer
+DRINK : Coke

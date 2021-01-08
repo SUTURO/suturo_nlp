@@ -1,0 +1,20 @@
+<package format="2">
+  <name>suturo_nlg</name>
+  <version>0.0.1</version>
+  <description>
+    This package provides nlg messages.
+  </description>
+  <maintainer email="bommariusm@gmail.com">Merete Bommarius</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/suturo_nlg</url>
+  <author>Merete Bommarius</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>std_msgs</depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <doc_depend>doxygen</doc_depend>
+
+</package>

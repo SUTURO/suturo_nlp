@@ -1,0 +1,28 @@
+<launch>
+  <arg name="grammar"
+       default="$(find suturo_julius)/dictionaries/dic_list_qa.txt" />
+
+
+  <group ns="/suturo_speech_recognition">
+    <param name="voice_ns_prefix" value="voice" />
+    <param name="voice/julius_config_file" value="$(find suturo_julius)/julius_conf/common.jconf"/>
+    <param name="voice/lm_grammar_mode" value="true" />
+    <param name="voice/lm_locale" value="en" />
+    <param name="voice/acoustic_model_en" value="-h /usr/share/julius-voxforge/acoustic/hmmdefs -hlist /usr/share/julius-voxforge/acoustic/tiedlist" />
+    <param name="voice/dic_list" value="" />
+    <param name="voice/dic_list_en_grammar" value="$(arg grammar)" />
+    <param name="voice/other_options_en" value="-wsil sil sil NULL -sb 200.0" />
+    <param name="voice/run_julius_cmd" value="rosrun tmc_julius julius" />
+    <param name="voice/moduleport" value="10500" />
+    <param name="voice/auto_start" value="true" />
+    <param name="voice/timeout" value="10" />
+    <param name="voice/yomi2voca_cmd" value="$(find tmc_julius)/yomi2voca.pl" />
+
+    <param name="voice/input_on_change" value="terminate" />
+
+    <node pkg="tmc_rosjulius" name="run_julius" type="run_julius" respawn="true" />
+    <node pkg="tmc_rosjulius" name="tmc_rosjulius" type="rosjulius" output="screen" respawn="true" />
+  </group>
+
+</launch>
+
