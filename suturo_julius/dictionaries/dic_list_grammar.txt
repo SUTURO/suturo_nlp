@@ -1,2 +1,0 @@
-hard_commands/hard_commands
-other_tasks/ohter_tasks
