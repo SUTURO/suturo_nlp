@@ -1,19 +1,6 @@
 # SUTURO NLP
 This repository contains the natural language generation and processing components used by the SUTURO bachelor and master projects.
 
-## Installation
-
-Installation of the HSR included Julius components:
-```
-sudo apt-get update
-sudo apt-get install ros-kinetic-tmc-desktop-full
-```
-Installation of Python modules
-```
-sudo -H pip install tinyrpc==0.9.4 zmq
-sudo -H pip3 install simplenlg sling tinyrpc==0.9.4 zmq
-```
-
 ## Provided Packages
 
 ### suturo_julius
