@@ -5,20 +5,6 @@ project(suturo_nlg)
 find_package(catkin REQUIRED COMPONENTS message_generation)
 
 
-
-add_message_files(
-
-  DIRECTORY msg
-
-  FILES  
-
-  KeyValuePair.msg
-  MeaningRepresentation.msg
-
-)
-
-
-
 generate_messages(
     DEPENDENCIES
 )

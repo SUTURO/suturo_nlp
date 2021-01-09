@@ -4,17 +4,16 @@
   <description>
     This package provides nlg messages.
   </description>
-  <maintainer email="bommariusm@gmail.com">Merete Bommarius</maintainer>
+  <maintainer email="schnippa@uni-bremen.de">Paul Schnipper</maintainer>
   <license>BSD</license>
 
-  <url>http://ros.org/wiki/suturo_nlg</url>
-  <author>Merete Bommarius</author>
+  <author>Paul Schnipper</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>std_msgs</depend>
+  <depend>nlg_msgs</depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
-  <doc_depend>doxygen</doc_depend>
 
 </package>
