@@ -5,19 +5,31 @@
 #FETCH & CARRY
 S : NS_B COMMAND NS_E
 #Task
-COMMAND : COMMAND_WORD the ITEM from the AREA.
+COMMAND : COMMAND_WORD the ITEM from the AREA
 #Command_Word
-COMMAND_WORD : Fetch
-COMMAND_WORD : Bring
-COMMAND_WORD : Pick up
+COMMAND_WORD : fetch
+COMMAND_WORD : bring
+COMMAND_WORD : pick up
 # Items 
-ITEM : Orange 
-ITEM : Deodorant
-ITEM : Cup
-ITEM : Water Bottle
-ITEM : Pringles Can
+ITEM : orange 
+ITEM : deodorant
+ITEM : cup
+ITEM : water bottle
+ITEM : red pringles can
+ITEM : blue pringles can
+ITEM : apple
+ITEM : banana
+ITEM : beer
+ITEM : chocolate
+ITEM : instant coffee powder
+ITEM : coke
+ITEM : gummybears
+ITEM : sprite
+ITEM : tonic
+ITEM : leomonade
+
 #Area
-AREA : Table
-AREA : Counter
-AREA : Shelf
+AREA : table
+AREA : counter
+AREA : shelf
 

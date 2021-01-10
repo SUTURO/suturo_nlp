@@ -1,65 +1,80 @@
-A           ah
-AN          ah n
-ANNA        ae n ah
-APPLE	    ae p ah l
+% NS_B
+<s>                        sil
+% NS_E
+</s>                       sil
 
-BANANA      b ah n ae n ah
-BEER        b ih r
-BLUE        b l uw
-BOTTLE      b aa t ah l
-BRING       b r ih ng
+%apple
+apple	    ae p ah l
+%banana
+banana      b ah n ae n ah
+%beer
+beer        b ih r
+%blue
+blue        b l uw
+%bottle
+bottle      b aa t ah l
+%bring
+bring       b r ih ng
 
-CAN         k ae n
-CHOCOLATE   ch ao k l ah t
-COFFEE      k aa f iy
-COKE        k ow k
-COUNTER     k aw n t er
-CUP         k ah p
+%can
+can         k ae n
+%chocolate
+chocolate   ch ao k l ah t
+%coffee
+coffee      k aa f iy
+%coke
+coke        k ow k
+%counter
+counter     k aw n t er
+%cup
+cup         k ah p
 
-DEODORANT   d iy ow d er ah n t
+%deodorant
+deodorant   d iy ow d er ah n t
 
-FETCH       f eh ch                    
-FIND        f ay n d
-FOR         f ao r
-FROM        f r ah m
+%fetch
+fetch       f eh ch                    
+%from
+from        f r ah m 
+%gummybears
+gummybears  g ah m iy b eh r z
 
-GET         g eh t
-GUMMYBEARS  g ah m iy b eh r z
+%instant
+instant     ih n s t ah n t
 
+%leomonade
+lemonade    l eh m ah n ey d
 
-INSTANT     ih n s t ah n t
-IS          ih z
+%orange
+orange      ao r ah n jh
 
+%pick
+pick        p ih k
+%powder
+powder      p aw d er
+%pringles
+pringles    p r ih ng g ah l s
 
-LEMONADE    l eh m ah n ey d
-LOCATE      l ow k ey t
-LOOK        l uh k
- 
-ME          m iy
+%red
+red         r eh d
 
-OF          ah v
-ONE         w ah n
-ORANGE      ao r ah n jh
+%shelf
+shelf       sh eh l f
+%sprite
+sprite      s p r ay t
 
-PICK        p ih k
-POWDER      p aw d er
-PRINGLES    p r ih ng g ah l s
+%table
+table       t ey b ah l
 
-RED         r eh d
+%the
+the         dh ah
+the         dh iy
 
-SEARCH      s er ch
-SHELF       sh eh l f
-SOME        s ah m
-SPRITE      s p r ay t
+%tonic
+tonic       t aa n ih k
 
-TABLE       t ey b ah l
-THE         dh ah
-THE         dh iy
-THEM        dh eh m
-TONIC       t aa n ih k
-TWO         t uw
-
-UP          ah p
-
-WATER       w ao t er
+%up
+up          ah p
+%water
+water       w ao t er
 
