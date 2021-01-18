@@ -29,7 +29,9 @@ def callback(data):
 
     value_from_s_nlg = gen_server.generate_text(list_send)
     if value_from_s_nlg.startswith("!ERROR!~"):
-        pub_sentence = "An error accured in the natural language generation pipeline. The error given was: " + value_from_s_nlg.split("~")[1]
+        error_msg = value_from_s_nlg.split("~")[1]
+        rospy.logerror(error_msg)
+        pub_sentence = "An error accured in the natural language generation pipeline. The error given was: " + error_msg
     else:
         pub_sentence = value_from_s_nlg
 
