@@ -15,9 +15,7 @@ catkin_package(
   CATKIN_DEPENDS message_runtime)
 
 
-
-install(DIRECTORY include/suturo_nlg/
-
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-
-  PATTERN "*.h")
+include_directories(
+# include
+# ${catkin_INCLUDE_DIRS}
+)

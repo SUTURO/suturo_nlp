@@ -1,0 +1,7 @@
+<launch>
+  <node name="nlg_ros" pkg="suturo_nlg" type="nlg_ros.py" cwd="node" output="screen"/>
+
+  <node pkg="aliencontrol" type="aliencontrol" name="aliencontrol_nlg_py3">
+    <param name="cmd" value="python3 $(find suturo_nlg)/scripts/nlg.py3"/>
+  </node>
+</launch>

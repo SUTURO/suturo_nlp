@@ -2,7 +2,7 @@
   <name>suturo_nlg</name>
   <version>0.0.1</version>
   <description>
-    This package provides nlg messages.
+    This package provides nlg functionality.
   </description>
   <maintainer email="schnippa@uni-bremen.de">Paul Schnipper</maintainer>
   <license>BSD</license>
@@ -15,5 +15,6 @@
   <depend>nlg_msgs</depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
+  <exec_depend>aliencontrol</exec_depend>
 
 </package>
