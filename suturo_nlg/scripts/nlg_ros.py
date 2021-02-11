@@ -35,12 +35,14 @@ def callback(data):
     else:
         pub_sentence = value_from_s_nlg
 
-    talk_request_pub.publish(Voice(sentence=pub_sentence, language=tmc_msgs.msg.Voice.kEnglish))
+        textrenderer_pub.publish(pub_sentence)
+        talk_request_pub.publish(Voice(sentence=pub_sentence, language=tmc_msgs.msg.Voice.kEnglish))
     # taken from /hsrb_battery_notifier/battery_notifier.py I don't know what the k stands for either
 
 
 if __name__ == '__main__':
     talk_request_pub = rospy.Publisher('/talk_request', Voice, queue_size=1)
+    textrenderer_pub = rospy.Publisher('/textrenderer', String, queue_size=1) # for gazebo
     rospy.Subscriber("nlg_requests", MeaningRepresentation, callback)
     rospy.init_node('natural_language_generator', anonymous=True)
     rospy.loginfo("NLG_ROS: Connecting to nlg.py3")

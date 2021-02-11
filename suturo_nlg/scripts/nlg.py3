@@ -83,7 +83,7 @@ def starting_sentence(dictionary):
     elif dictionary["starting"] == "safety test":
         phrase_spec.setVerb("start the safty test procedure")
     else:
-        return "STARTING but didn't specify what procedure, please whatch me"
+        return "STARTING but didn't specify what procedure, please watch me!"
 
     phrase_spec.setComplement(", please whatch me")
     return realiser.realise(phrase_spec)
@@ -119,9 +119,9 @@ def place_sentence(kvp_dict):
     if "goal_surface_id" in kvp_dict:
         prepositon = nlgFactory.createPrepositionPhrase()
         prepositon.setPreposition("on")
-        prepositon.setObject("the small shelf")
+        prepositon.setObject(kvp_dict["goal_surface_id"])
         if "goal_room_id" in kvp_dict:
-            prepositon.addComplement("in the " + kvp_dict["goal_room_id"])
+            prepositon.addComplement("in " + kvp_dict["goal_room_id"])
         parent_clause.addComplement(prepositon)
     if "reason" in kvp_dict:
         reason = nlgFactory.createClause()
@@ -130,7 +130,7 @@ def place_sentence(kvp_dict):
         if kvp_dict["reason"] == "similar color" or kvp_dict["reason"] == "similar size":
             reason.setVerb("be of " + kvp_dict["reason"] + " to")
         elif kvp_dict["reason"] == "similar type":
-            reason.setVerb("be of the same to")
+            reason.setVerb("be similar to")
         reason.setObject(kvp_dict["object_id_2"])
         parent_clause.addComplement(reason)
 
@@ -165,7 +165,27 @@ def move_sentence(kvp_dict):
     parent_clause.setVerb("move")
     if "object_id" in kvp_dict:
         parent_clause.setObject(kvp_dict["object_id"])
-    kvp_dict.addComplement("to")
+
+    if "start_room_id" in kvp_dict and "start_surface_id" in kvp_dict:
+        frompp = nlgFactory.createPrepositionPhrase()
+        frompp.setPreposition("from")
+        frompp.setObject(kvp_dict["start_surface_id"])
+        frompp2 = nlgFactory.createPrepositionPhrase()
+        frompp2.setPreposition("in")
+        frompp2.setObject(kvp_dict["start_room_id"])
+        parent_clause.addComplement(frompp)
+        parent_clause.addComplement(frompp2)
+    elif "start_room_id" in kvp_dict:
+        frompp = nlgFactory.createPrepositionPhrase()
+        frompp.setPreposition("from")
+        frompp.setObject(kvp_dict["start_room_id"])
+        parent_clause.addComplement(frompp)
+    elif "start_surface_id" in kvp_dict:
+        frompp = nlgFactory.createPrepositionPhrase()
+        frompp.setPreposition("from")
+        frompp.setObject(kvp_dict["start_surface_id"])
+        parent_clause.addComplenent(frompp)
+    parent_clause.addComplement("to")
     object_surface_room_order(kvp_dict, parent_clause)
     return realiser.realise(parent_clause)
 
@@ -206,10 +226,10 @@ def object_surface_room_order(kvp_dict, phrase_spec):
         phrase_spec.addComplement("on " + kvp_dict["goal_surface_id"])
     elif "goal_surface_id" in kvp_dict and "goal_room_id" in kvp_dict:
         phrase_spec.addComplement(kvp_dict["goal_surface_id"])
-        phrase_spec.addComplement("on " + kvp_dict["goal_room_id"])
+        phrase_spec.addComplement("in " + kvp_dict["goal_room_id"])
     elif "object_id_2" in kvp_dict and "goal_room_id" in kvp_dict:
         phrase_spec.addComplement(kvp_dict["object_id_2"])
-        phrase_spec.addComplement("on " + kvp_dict["goal_room_id"])
+        phrase_spec.addComplement("in " + kvp_dict["goal_room_id"])
     elif "goal_surface_id" in kvp_dict:
         phrase_spec.addComplement(kvp_dict["goal_surface_id"])
     elif "object_id_2" in kvp_dict:
