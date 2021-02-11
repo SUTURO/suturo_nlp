@@ -35,8 +35,8 @@ def callback(data):
     else:
         pub_sentence = value_from_s_nlg
 
-        textrenderer_pub.publish(pub_sentence)
-        talk_request_pub.publish(Voice(sentence=pub_sentence, language=tmc_msgs.msg.Voice.kEnglish))
+    textrenderer_pub.publish(pub_sentence)
+    talk_request_pub.publish(Voice(sentence=pub_sentence, language=tmc_msgs.msg.Voice.kEnglish))
     # taken from /hsrb_battery_notifier/battery_notifier.py I don't know what the k stands for either
 
 
