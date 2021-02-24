@@ -12,6 +12,7 @@ import zmq
 from tinyrpc import RPCClient, RPCProxy
 from tinyrpc.protocols.jsonrpc import JSONRPCProtocol
 from tinyrpc.transports.zmq import ZmqClientTransport
+from std_msgs.msg import String
 
 # Start an RPC Client
 rpc_client = RPCClient(
@@ -20,6 +21,7 @@ rpc_client = RPCClient(
 )
 gen_server = None
 
+prolog = rosprolog_client.Prolog()
 
 class NlgAction:
     # create messages that are used to publish feedback/result
@@ -42,18 +44,22 @@ class NlgAction:
         if value_from_s_nlg.startswith("!ERROR!~"):
             error_msg = value_from_s_nlg.split("~")[1]
             rospy.logerror(error_msg)
-            self._feedback.generated_sentence = "An error accured in the natural language generation pipeline. The error given was: " + error_msg
+            sentence = "An error accured in the natural language generation pipeline. The error given was: " + error_msg
 
         else:
-            self._feedback.generated_sentence = value_from_s_nlg
-
+            sentence = value_from_s_nlg.encode('ascii', 'ignore')
+	
+	rosstring = String()
+	rosstring.data = sentence
+	self._feedback.generated_sentence = rosstring
         self._as.publish_feedback(self._feedback)
-        self._result.error_code = 1
+        self._result.generated_sentence = rosstring
         self._as.set_succeeded(self._result)
 
 
-@staticmethod
+#  @staticmethod
 def knowledge_translate(id_type, thing_id):
+    prolog_query = ""
     if id_type == "object_id" or id_type == "object_id_2":
         prolog_query = "object_tts('http://www.semanticweb.org/suturo/ontologies/2020/3/objects#" + thing_id + "', Name)"    
     elif id_type == "start_surface_id" or id_type == "goal_surface_id":
@@ -62,8 +68,10 @@ def knowledge_translate(id_type, thing_id):
     elif id_type == "start_room_id" or id_type == "goal_room_id":
         #  TODO this has to be checked once knowledge is done
         prolog_query = "room_tts(" + thing_id + "', Name)"
-    solutions = prolog.all_solutions(prolog_query)
-    return solutions[0]['Name']
+    if not prolog_query == "":
+        solutions = prolog.all_solutions(prolog_query)
+	return solutions[0]['Name']
+    return thing_id
 
 
 if __name__ == '__main__':
