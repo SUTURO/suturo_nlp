@@ -44,14 +44,14 @@ class NlgAction:
         if value_from_s_nlg.startswith("!ERROR!~"):
             error_msg = value_from_s_nlg.split("~")[1]
             rospy.logerror(error_msg)
-            sentence = "An error accured in the natural language generation pipeline. The error given was: " + error_msg
+            sentence = "An error occurred in the natural language generation pipeline. The error given was: " + error_msg
 
         else:
             sentence = value_from_s_nlg.encode('ascii', 'ignore')
-	
-	rosstring = String()
-	rosstring.data = sentence
-	self._feedback.generated_sentence = rosstring
+
+        rosstring = String()
+        rosstring.data = sentence
+        self._feedback.feedback = rosstring
         self._as.publish_feedback(self._feedback)
         self._result.generated_sentence = rosstring
         self._as.set_succeeded(self._result)
