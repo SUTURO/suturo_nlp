@@ -23,6 +23,7 @@ gen_server = None
 
 prolog = rosprolog_client.Prolog()
 
+
 class NlgAction:
     # create messages that are used to publish feedback/result
     _feedback = nlg_msgs.msg.LanguageGenerationFeedback()
@@ -70,7 +71,7 @@ def knowledge_translate(id_type, thing_id):
         prolog_query = "room_tts(" + thing_id + "', Name)"
     if not prolog_query == "":
         solutions = prolog.all_solutions(prolog_query)
-	return solutions[0]['Name']
+        return solutions[0]['Name']
     return thing_id
 
 
