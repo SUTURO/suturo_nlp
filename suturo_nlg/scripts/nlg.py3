@@ -85,7 +85,7 @@ def starting_sentence(dictionary):
     else:
         return "STARTING but didn't specify what procedure, please watch me!"
 
-    phrase_spec.setComplement(", please whatch me")
+    phrase_spec.setComplement(", please watch me")
     return realiser.realise(phrase_spec)
 
 
