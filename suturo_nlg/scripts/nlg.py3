@@ -184,7 +184,7 @@ def move_sentence(kvp_dict):
         frompp = nlgFactory.createPrepositionPhrase()
         frompp.setPreposition("from")
         frompp.setObject(kvp_dict["start_surface_id"])
-        parent_clause.addComplenent(frompp)
+        parent_clause.addComplement(frompp)
     parent_clause.addComplement("to")
     object_surface_room_order(kvp_dict, parent_clause)
     return realiser.realise(parent_clause)
