@@ -44,7 +44,7 @@ class NlgAction:
         value_from_s_nlg = gen_server.generate_text(list_send)
         if value_from_s_nlg.startswith("!ERROR!~"):
             error_msg = value_from_s_nlg.split("~")[1]
-            rospy.logerror(error_msg)
+            rospy.logerr(error_msg)
             sentence = "An error occurred in the natural language generation pipeline. The error given was: " + error_msg
 
         else:

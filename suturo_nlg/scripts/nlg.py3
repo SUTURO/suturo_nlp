@@ -101,7 +101,7 @@ def action_sentence(kvp_dict):
     # "place", "pickup", "move", "percieve"
     if kvp_dict["action"] == "place":
         return place_sentence(kvp_dict)
-    elif kvp_dict["action"] == "pick up":
+    elif kvp_dict["action"] == "grasp":
         return pickup_sentence(kvp_dict)
     elif kvp_dict["action"] == "percieve":
         return percieve_sentence(kvp_dict)
