@@ -98,13 +98,13 @@ def stopping_sentence(kvp_dict):
 # when the sentence is an action
 #
 def action_sentence(kvp_dict):
-    # "place", "pickup", "move", "percieve"
+    # "place", "pickup", "move", "perceive"
     if kvp_dict["action"] == "place":
         return place_sentence(kvp_dict)
     elif kvp_dict["action"] == "grasp":
         return pickup_sentence(kvp_dict)
-    elif kvp_dict["action"] == "percieve":
-        return percieve_sentence(kvp_dict)
+    elif kvp_dict["action"] == "perceive":
+        return perceive_sentence(kvp_dict)
     elif kvp_dict["action"] == "move":
         return move_sentence(kvp_dict)
     return error_msgs("The Action " + kvp_dict["action"] + "is not known")
@@ -150,7 +150,7 @@ def pickup_sentence(kvp_dict):
     return realiser.realise(parent_clause)
 
 
-def percieve_sentence(kvp_dict):
+def perceive_sentence(kvp_dict):
     parent_clause = nlgFactory.createClause()
     parent_clause.setSubject("I")
     parent_clause.setTense(Tense.FUTURE)
