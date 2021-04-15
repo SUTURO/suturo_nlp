@@ -56,7 +56,7 @@ def generate_text(list_of_tuples):
         ret = cantmove_sentence(kvp_dict)
     elif "starting" in kvp_dict:
         ret = starting_sentence(kvp_dict)
-    elif "stopping" in kvp_dict:
+    elif "ending" in kvp_dict:
         ret = stopping_sentence(kvp_dict)
     else:
         ret = error_msgs("no main key was given.")
@@ -92,7 +92,7 @@ def starting_sentence(dictionary):
 # stopping sentence
 #
 def stopping_sentence(kvp_dict):
-    return error_msgs("Stopping Sentences are not supported yet.")
+    return kvp_dict.get("ending")
 
 
 # when the sentence is an action
@@ -110,10 +110,22 @@ def action_sentence(kvp_dict):
     return error_msgs("The Action " + kvp_dict["action"] + "is not known")
 
 
+def action_set_time(kvp_dict, parent_clause):
+    if kvp_dict.get(time) == "FUTURE":
+        parent_clause.setTense(Tense.FUTURE)
+    elif kvp_dict.get(time) == "PRESENT":
+        parent_clause.setTense(Tense.PRESENT)
+    elif kvp_dict.get(time) == "PAST":
+        parent_clause.setTense(Tense.PAST)
+    elif kvp_dict.get(time) == "FAILED":
+        parent_clause.setTense(Tense.PAST)
+        parent_clause.setNegated(True)
+
+
 def place_sentence(kvp_dict):
     parent_clause = nlgFactory.createClause()
     parent_clause.setSubject("I")
-    parent_clause.setTense(Tense.FUTURE)
+    action_set_time(kvp_dict, parent_clause)
     parent_clause.setVerb("place")
     parent_clause.setObject(kvp_dict["object_id"])
     if "goal_surface_id" in kvp_dict:
@@ -140,7 +152,7 @@ def place_sentence(kvp_dict):
 def pickup_sentence(kvp_dict):
     parent_clause = nlgFactory.createClause()
     parent_clause.setSubject("I")
-    parent_clause.setTense(Tense.FUTURE)
+    action_set_time(kvp_dict, parent_clause)
     parent_clause.setVerb("pick up")
     parent_clause.setObject(kvp_dict["object_id"])
     if "goal_surface_id" in kvp_dict:
@@ -150,18 +162,30 @@ def pickup_sentence(kvp_dict):
     return realiser.realise(parent_clause)
 
 
+
 def perceive_sentence(kvp_dict):
-    parent_clause = nlgFactory.createClause()
-    parent_clause.setSubject("I")
-    parent_clause.setTense(Tense.FUTURE)
-    parent_clause.setVerb("look at")
-    object_surface_room_order(kvp_dict, parent_clause)
-    return realiser.realise(parent_clause)
+    if kvp_dict.get("time") == "PAST":
+        parent_clause = nlgFactory.createClause()
+        parent_clause.setSubject("I")
+        parent_clause.setTense(Tense.PAST)
+        parent_clause.setVerb("perceive")
+        if kvp_dict.get("num_of_objs") == 1:
+            parent_clause.setObject("one object")
+        else:
+            parent_clause.setObject(kvp_dict.get("num_of_objs") + " objects")
+    else:
+        parent_clause = nlgFactory.createClause()
+        parent_clause.setSubject("I")
+        action_set_time(kvp_dict, parent_clause)
+        parent_clause.setVerb("look at")
+        object_surface_room_order(kvp_dict, parent_clause)
+        return realiser.realise(parent_clause)
+
 
 def move_sentence(kvp_dict):
     parent_clause = nlgFactory.createClause()
     parent_clause.setSubject("I")
-    parent_clause.setTense(Tense.FUTURE)
+    action_set_time(kvp_dict, parent_clause)
     parent_clause.setVerb("move")
     if "object_id" in kvp_dict:
         parent_clause.setObject(kvp_dict["object_id"])
