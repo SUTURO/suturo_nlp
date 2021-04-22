@@ -111,16 +111,17 @@ def action_sentence(kvp_dict):
 
 
 def action_set_time(kvp_dict, parent_clause):
-    if kvp_dict.get(time) == "FUTURE":
+    if kvp_dict.get("time") == "FUTURE":
         parent_clause.setTense(Tense.FUTURE)
-    elif kvp_dict.get(time) == "PRESENT":
+    elif kvp_dict.get("time") == "PRESENT":
         parent_clause.setTense(Tense.PRESENT)
-    elif kvp_dict.get(time) == "PAST":
+    elif kvp_dict.get("time") == "PAST":
         parent_clause.setTense(Tense.PAST)
-    elif kvp_dict.get(time) == "FAILED":
+    elif kvp_dict.get("time") == "FAILED":
         parent_clause.setTense(Tense.PAST)
         parent_clause.setNegated(True)
-
+    else:
+        parent_clause.setTense(Tense.FUTURE)
 
 def place_sentence(kvp_dict):
     parent_clause = nlgFactory.createClause()
