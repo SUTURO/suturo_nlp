@@ -1,3 +1,0 @@
-hsr stop
-robot stop
-toya stop

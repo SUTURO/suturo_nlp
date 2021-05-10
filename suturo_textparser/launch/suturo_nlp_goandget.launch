@@ -1,0 +1,3 @@
+<launch>
+  <node name="nlg_gogetit" pkg="suturo_textparser" type="gogetit.py" cwd="node" output="screen"/>
+</launch>

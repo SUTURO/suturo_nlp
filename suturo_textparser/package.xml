@@ -2,20 +2,20 @@
 <package format="2">
   <name>suturo_textparser</name>
   <version>0.0.0</version>
-  <description>Uses sling to parses text.</description>
+  <description>Parse text for the SUTURO project.</description>
   <license>unpublished</license>
   <maintainer email="schnippa@uni-bremen.de">Paul Schnipper</maintainer>
  
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>tmc_rosjulius_msgs</build_depend>
+  <build_depend>nlp_msgs</build_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>tmc_rosjulius_msgs</build_export_depend>
+  <build_export_depend>nlp_msgs</build_export_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-  <exec_depend>tmc_rosjulius_msgs</exec_depend>
+  <exec_depend>nlp_msgs</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
