@@ -1,3 +1,5 @@
 <launch>
-  <node name="nlg_gogetit" pkg="suturo_textparser" type="gogetit.py" cwd="node" output="screen"/>
+    <node name="gogetit" pkg="suturo_textparser" type="gogetit.py" cwd="node" output="screen">
+        <remap from="sp_output" to="fetch_request"/>
+    </node>
 </launch>
