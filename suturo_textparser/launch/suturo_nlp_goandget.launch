@@ -1,5 +1,6 @@
 <launch>
     <node name="gogetit" pkg="suturo_textparser" type="gogetit.py" cwd="node" output="screen">
+        <remap from="sp_input" to="message"/>
         <remap from="sp_output" to="fetch_request"/>
     </node>
 </launch>
