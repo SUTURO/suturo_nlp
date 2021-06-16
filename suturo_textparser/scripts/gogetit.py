@@ -31,7 +31,7 @@ class TransportGrammar(Grammar):
     itemCol = Optional(color) + item
     itemArt = Optional(article) + itemCol #  | it
     destination = to + beneficiary
-    command = itemArt + Optional(destination)
+    command = Optional(itemArt) + Optional(destination)
     GOAL = OneOrMore(command)
 
 
@@ -62,19 +62,21 @@ def recursive_search_object(node):
 def callback(data):
     parser = RobustParser(TransportGrammar())
     tree, result = parser.parse(data.data)
-    msg = GoAndGetIt()
+    msg_object = GoAndGetIt()
+    msg_deliver = GoAndGetIt()
     if tree:
         benificiary = search_benificiary(tree)
         if benificiary == "left":
-            msg.person_left = True
+            msg_deliver.person_left = True
         elif benificiary == "right":
-            msg.person_right = True
+            msg_deliver.person_right = True
         else:
-            msg.person_left = True
-            msg.person_right = True
-        msg.perceived_object_name = recursive_search_object(tree)
-    
-    pub.publish(msg)
+            msg_deliver.person_left = True
+            msg_deliver.person_right = True
+        pub_deliver.publish(msg_deliver)
+        msg_object.perceived_object_name = recursive_search_object(tree)
+        if msg_object.perceived_object_name != "":
+            pub.publish(msg_object)
 
 
 if __name__ == '__main__':
@@ -82,6 +84,7 @@ if __name__ == '__main__':
         # Start the publisher node
         # rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
         pub = rospy.Publisher('sp_output', GoAndGetIt, queue_size=10)
+        pub_deliver = rospy.Publisher('deliver_request', GoAndGetIt, queue_size=10)
         # Start the subscriber node
         rospy.Subscriber('sp_input', String, callback)
         rospy.spin()
