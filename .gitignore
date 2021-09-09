@@ -314,3 +314,7 @@ build/
 *.dfa
 *.dict
 *.term
+
+
+cmake-build-*/
+cmake*/
