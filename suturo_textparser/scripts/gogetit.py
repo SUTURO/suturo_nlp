@@ -10,8 +10,7 @@ import rosprolog_client
 
 prolog = rosprolog_client.Prolog()
 
-def get_items():
-    rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
+def get_items():    
     query = "all_obj_names(N)."
     solutions = prolog.all_solutions(query)
     names = []
@@ -82,7 +81,7 @@ def callback(data):
 if __name__ == '__main__':
     try:
         # Start the publisher node
-        # rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
+        rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
         pub = rospy.Publisher('sp_output', GoAndGetIt, queue_size=10)
         pub_deliver = rospy.Publisher('deliver_request', GoAndGetIt, queue_size=10)
         # Start the subscriber node
