@@ -62,13 +62,13 @@ class NlgAction:
 def knowledge_translate(id_type, thing_id):
     prolog_query = ""
     if id_type == "object_id" or id_type == "object_id_2":
-        prolog_query = "object_tts('http://www.semanticweb.org/suturo/ontologies/2020/3/objects#" + thing_id + "', Name)"    
+        prolog_query = "objectid_to_text('http://www.semanticweb.org/suturo/ontologies/2020/3/objects#" + thing_id + "', Name)"    
     elif id_type == "start_surface_id" or id_type == "goal_surface_id":
         #  TODO this has to be checked once knowledge is done
-        prolog_query = "surface_tts('" + thing_id + "', Name)" 
+        prolog_query = "surfaceid_to_text('" + thing_id + "', Name)" 
     elif id_type == "start_room_id" or id_type == "goal_room_id":
         #  TODO this has to be checked once knowledge is done
-        prolog_query = "room_tts(" + thing_id + "', Name)"
+        prolog_query = "roomid_to_text(" + thing_id + "', Name)"
     if not prolog_query == "":
         solutions = prolog.all_solutions(prolog_query)
         return solutions[0]['Name']
