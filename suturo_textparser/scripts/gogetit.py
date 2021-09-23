@@ -7,7 +7,7 @@ from nlp_msgs.msg import GoAndGetIt
 from std_msgs.msg import String
 import rosprolog_client
 
-
+rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
 prolog = rosprolog_client.Prolog()
 
 def get_items():    
@@ -81,7 +81,6 @@ def callback(data):
 if __name__ == '__main__':
     try:
         # Start the publisher node
-        rospy.init_node('suturo_GoAndGetIt_Parser', anonymous=True)
         pub = rospy.Publisher('sp_output', GoAndGetIt, queue_size=10)
         pub_deliver = rospy.Publisher('deliver_request', GoAndGetIt, queue_size=10)
         # Start the subscriber node
