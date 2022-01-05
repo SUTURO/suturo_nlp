@@ -48,7 +48,8 @@ class NlgAction:
             sentence = "An error occurred in the natural language generation pipeline. The error given was: " + error_msg
 
         else:
-            sentence = value_from_s_nlg.encode('ascii', 'ignore')
+            # the publish method does the encoding
+            sentence = value_from_s_nlg
 
         rosstring = String()
         rosstring.data = sentence
