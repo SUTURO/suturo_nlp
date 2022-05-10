@@ -17,5 +17,6 @@
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>aliencontrol</exec_depend>
+  <exec_depend>python3-zmq</exec_depend>
 
 </package>
