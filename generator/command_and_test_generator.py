@@ -7,13 +7,48 @@ import os
 import sys
 import copy
 import nltk
+import importlib
 
-nltk.download('punkt')
+from pathlib import Path
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+    importlib.reload(nltk)
+   
 
 # We may want to run this script from an arbitrary location, let's not depend on the current working directory to locate our resources.
 ownDir = os.path.dirname(os.path.abspath(__file__))
 
 # TODO: get rid of these placeholder intents from our rules and stories
+domainPreamble = '''
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+  utter_did_that_help:
+  - text: "Did that help you?"
+  utter_happy:
+  - text: "Great, carry on!"
+  utter_goodbye:
+  - text: "Bye"
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - ParkArms
+
+'''
 preamble = '''
 - intent: ParkingArms
   examples: |
@@ -188,37 +223,52 @@ for t in templatesRaw:
     intent = t[:idx].strip()
     sentence = t[idx+1:].strip()
     if intent not in templates:
-        templates[intent] = []
-    templates[intent].append(sentence)
+        templates[intent] = set()
+    templates[intent].add(sentence)
 
+templates = {k:list(v) for k,v in templates.items()}
 punctuation = set([',', ':', '.', ';', '"', '\'', '?', '!'])
 
 # We actually may want to generate MANY sentences at once for both training and testing purposes. One by one is silly.
-def generateN(N, Ntrials, templates, ontology):
+def generateN(examplesPerTemplate, N, Ntrials, templates, ontology):
+    def _generate(template):
+        tokens = nltk.word_tokenize(template)
+        spec = []
+        for token in tokens:
+            value = str(token)
+            annotation = None
+            if '|' in token:
+                annspec = token.split('|')
+                annotation = {"entity": annspec[0], "role": annspec[1]}
+                if 2 < len(annspec):
+                    annotation["group"] = annspec[2]
+                if annspec[0] in ontology:
+                    value = random.choice(ontology[annspec[0]]['entities'])
+                else:
+                    value = annspec[0] # TODO: this imposes a limit: an out-of-onto token must be a single "word" according to nltk.word_tokenize.
+                    # This means: OK: "yourself", "me". Not ok: "cup of coffee".
+            spec.append([value, annotation])
+        return spec
     creations = {}
-    for intent in sorted(list(templates.keys())): # TODO: may want to force generation of O(N) examples per template
+    for intent in sorted(list(templates.keys())):
         intentTemplates = templates[intent]
         creations[intent] = {}
+        k = 0
+        NtrialsLocal = len(intentTemplates)*examplesPerTemplate*10
+        for e in intentTemplates:
+            for j in range(examplesPerTemplate):
+                while k < NtrialsLocal:
+                    k += 1
+                    spec = _generate(e)
+                    specId = specToText(spec)
+                    if specId not in creations[intent]:
+                        creations[intent][specId] = spec
+                        break
         k = 0
         while (N > len(creations[intent])) and (k < Ntrials):
             k += 1
             template = random.choice(intentTemplates)
-            tokens = nltk.word_tokenize(template)
-            spec = []
-            for token in tokens:
-                value = str(token)
-                annotation = None
-                if '|' in token:
-                    annspec = token.split('|')
-                    annotation = {"entity": annspec[0], "role": annspec[1]}
-                    if 2 < len(annspec):
-                        annotation["group"] = annspec[2]
-                    if annspec[0] in ontology:
-                        value = random.choice(ontology[annspec[0]]['entities'])
-                    else:
-                        value = annspec[0] # TODO: this imposes a limit: an out-of-onto token must be a single "word" according to nltk.word_tokenize.
-                        # This means: OK: "yourself", "me". Not ok: "cup of coffee".
-                spec.append([value, annotation])
+            spec = _generate(template)
             creations[intent][specToText(spec)] = spec
     return {intent: [(k, creations[intent][k]) for k in sorted(list(creations[intent].keys()))] for intent in sorted(list(creations.keys()))}
 
@@ -262,7 +312,10 @@ def writeNL(creations, outfileName):
             for text, _ in specs:
                 _ = outfile.write("%s\n" % text)
 
-def writeRasaNLU(creations, outfileNLUName, outfileDomainName, ontology):
+def writeRasaNLU(creations, path, outfileNLUName, outfileDomainName, ontology):
+    dataPath = os.path.join(path,"data")
+    Path(dataPath).mkdir(parents=True, exist_ok=True)
+    outfileNLUName = os.path.join(dataPath, outfileNLUName)
     with open(outfileNLUName, 'w') as outfile:
         _ = outfile.write('version: "3.1"\n\nnlu:\n')
         _ = outfile.write("%s\n" % preamble)
@@ -277,8 +330,10 @@ def writeRasaNLU(creations, outfileNLUName, outfileDomainName, ontology):
             for x in sorted(list(set(ontology[e]['entities']))):
                 _ = outfile.write('    - %s\n' % x)
             _ = outfile.write('\n')
+    outfileDomainName = os.path.join(path, outfileDomainName)
     with open(outfileDomainName, 'w') as outfile:
-        _ = outfile.write('version: "3.1"\n\nintents:\n')
+        #_ = outfile.write('version: "3.1"\n\nintents:\n')
+        _ = outfile.write('version: "3.1"\n\n%s' % domainPreamble)
         for intent in sorted(list(creations.keys())):
             _ = outfile.write('  - %s\n' % intent)
         _ = outfile.write('\n\nentities:\n')
@@ -299,28 +354,37 @@ def writeRasaTesting(creations, outfileName):
         _ = outfile.write('[\n%s\n]\n' % ',\n'.join(tests))
 
 def main():
-    # TODO: provide an arbitrary path for output files.
     parser = argparse.ArgumentParser(prog='command_and_test_generator', description='Generate commands, training, and testing files for NLU commands', epilog='Text at the bottom of help')
-    parser.add_argument('-Ntrain', '--numberTrainingExamples', default="20", help='Number of training examples to generate per intent. Will be forced to 20 if lower.')
-    parser.add_argument('-Ntest', '--numberTestingExamples', default="20", help='Number of training examples to generate per intent. Will be forced to 20 if lower.')
-    parser.add_argument('-Ntries', '--numberTrials', default="400", help='Number of trials for random generation per intent. Forced to 10*(Ntrain+Ntest) if lower.')
+    parser.add_argument('-k', '--examplesPerTemplate', default="1", help="Number of examples to generate per template. Must be an integer at least equal to 1.")
+    parser.add_argument('-Ntrain', '--numberTrainingExamples', default="100", help='Number of training examples to generate per intent. Will be forced to 20 if lower.')
+    parser.add_argument('-Ntest', '--numberTestingExamples', default="100", help='Number of training examples to generate per intent. Will be forced to 20 if lower.')
+    parser.add_argument('-Ntries', '--numberTrials', default="2000", help='Number of trials for random generation per intent. Forced to 10*(Ntrain+Ntest) if lower.')
+    parser.add_argument('-p', '--path', default="./", help="Path to place generated files for rasa at. Assumes the path for nlu.yml is at <path>/data/")
     # Forget about generating according to their category files. Internally, our team is splitting sentences so we need to generate train/test data for intents.
     #parser.add_argument('-c', '--category', default="2", help='Category of templates to generate for. May be 1 or 2 (will be forced to 2 otherwise). TODO: add support for cat 3.')
     arguments = parser.parse_args()
+    try:
+        examplesPerTemplate = int(arguments.examplesPerTemplate)
+    except:
+        examplesPerTemplate = 1
+    path = arguments.path
     Ntrain = int(arguments.numberTrainingExamples)
-    if 20 > Ntrain:
-        Ntrain = 20
+    #templateCount = sum(len(x) for x in templates.values())
+    #minCount = max(20, templateCount*examplesPerTemplate)
+    minCount = 20
+    if minCount > Ntrain:
+        Ntrain = minCount
     Ntest = int(arguments.numberTrainingExamples)
-    if 20 > Ntest:
-        Ntest = 20
+    if minCount > Ntest:
+        Ntest = minCount
     Ntrials = int(arguments.numberTrials)
     if 10*(Ntrain + Ntest) > Ntrials:
         Ntrials = 10*(Ntrain + Ntest)
-    trainSpecs = generateN(Ntest, Ntrials, templates, ontology)
-    testSpecs = generateN(Ntest, Ntrials, templates, ontology)
+    trainSpecs = generateN(examplesPerTemplate, Ntest, Ntrials, templates, ontology)
+    testSpecs = generateN(examplesPerTemplate, Ntest, Ntrials, templates, ontology)
     writeNL(trainSpecs, 'generated_training.txt')
     writeNL(testSpecs, 'generated_testing.txt')
-    writeRasaNLU(trainSpecs, 'nlu.yml', 'domain.yml', ontology)
+    writeRasaNLU(trainSpecs, path, 'nlu.yml', 'domain.yml', ontology)
     writeRasaTesting(testSpecs, 'tests.json')
 
 if "__main__" == __name__:
