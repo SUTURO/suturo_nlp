@@ -1,0 +1,7 @@
+# list of food persons
+me
+her
+him
+them
+Alice
+Bob

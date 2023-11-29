@@ -1,0 +1,35 @@
+# list of food items
+sandwich
+soup
+bowl of soup
+piece of toast
+vegetables
+meat
+steak
+sugar
+cereal box
+box of cereal
+jar of pickles
+cracker box
+mustard bottle
+jello chocolate pudding box
+orange
+pringles chips can
+strawberry
+jello box
+sugar box
+kiwi
+oregano shaker
+apple
+tomato soup can
+tuna fish can
+pancake mix bottle
+jello strawberry box
+pastry box
+pear
+lemon
+banana
+potted meat can
+peach
+plum
+cereal box robo cup

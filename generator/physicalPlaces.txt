@@ -1,0 +1,9 @@
+# list of places
+kitchen
+pantry
+living room
+dining room
+lobby
+balcony
+bedroom
+bathroom

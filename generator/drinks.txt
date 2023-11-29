@@ -1,0 +1,23 @@
+# list of food items
+coffee
+cup of coffee
+tea
+milk
+jug of milk
+glass of milk
+glass of water
+glass of mineral water
+mineral water
+bottle of wine
+coke
+orange juice box
+ice tea bottle
+tropical juice bottle
+cola can
+juice pack
+wine bottle
+cup of tea
+juicebox
+milk pack
+coffee can
+wine glass

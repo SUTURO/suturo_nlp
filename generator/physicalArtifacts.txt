@@ -1,0 +1,82 @@
+# list of items/objects
+cup
+coffee
+mug
+glass
+bottle
+spoon
+fork
+knife
+bib
+plate
+napkin
+towel
+soap
+shampoo
+bottle of shampoo
+bowl
+lid
+pot
+fridge
+cabinet
+countertop
+refrigerator
+oven
+stove
+table
+sofa
+frying pan
+cutting board
+pill box
+trash can
+box
+jug
+jar
+trash bin
+plastic knife
+designed chair
+cupboard
+foam brick
+spatula
+pitcher
+bleach cleanser bottle
+kitchen cabinet
+mini soccerball
+baseball
+table cloth
+washer
+designated handle
+pot
+napkin
+door
+serving mat
+shelf
+tray
+table
+bowl
+glass
+coffee pack
+golfball
+softball
+salt shaker
+metal plate
+glass cleaner spray bottle
+tennisball
+spoon
+bottle
+metal mug
+rope
+stacking blocks
+abrasive sponge
+racquet ball
+dishwasher tab
+plastic chain
+dice
+cup
+metal bowl
+skillet
+drawer
+bag
+toyota HSR
+tea bag box
+rubiks cube
