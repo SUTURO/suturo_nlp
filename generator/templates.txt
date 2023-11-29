@@ -134,4 +134,20 @@ Receptionist: I prefer drink|Item
 Receptionist: I like drink|Item
 Receptionist: my favorite drink is drink|Item
 Receptionist: what I like most to drink is drink|Item
-
+Receptionist: hello, i'm naturalperson|BeneficiaryRole.
+Receptionist: hi there, naturalperson|BeneficiaryRole here. my favorite drink is drink|Item.
+Receptionist: i'm naturalperson|BeneficiaryRole, and i enjoy drink|Item.
+Receptionist: hey, i'm naturalperson|BeneficiaryRole, and my preferred beverage is drink|Item.
+Receptionist: nice to see you! i'm naturalperson|BeneficiaryRole, and i like to drink drink|Item.
+Receptionist: my name is naturalperson|BeneficiaryRole, and my favorite drink is drink|Item.
+Receptionist: hello, i'm naturalperson|BeneficiaryRole, and i enjoy drinking drink|Item.
+Receptionist: hi, my favorite drink is drink|Item. i'm naturalperson|BeneficiaryRole.
+Receptionist: i'm naturalperson|BeneficiaryRole and love to drink drink|Item.
+Receptionist: good day, my name is naturalperson|BeneficiaryRole and i prefer drink|Item.
+Receptionist: hello, i'm naturalperson|BeneficiaryRole, and i like to indulge in drink|Item.
+Receptionist: hello, naturalperson|BeneficiaryRole here. my go-to drink is drink|Item.
+Receptionist: greetings! i'm naturalperson|BeneficiaryRole, and i enjoy sipping on drink|Item.
+Receptionist: pleasure to meet you! i'm naturalperson|BeneficiaryRole, and my favorite drink is drink|Item.
+Receptionist: hi, my go-to drink is drink|Item. i'm naturalperson|BeneficiaryRole.
+Receptionist: greetings, i'm naturalperson|BeneficiaryRole, and i enjoy drink|Item.
+Receptionist: hello, naturalperson|BeneficiaryRole here. my preferred beverage is drink|Item.
