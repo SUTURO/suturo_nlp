@@ -1,9 +1,14 @@
+#coding=utf-8
 import requests
 import whisper
 import speech_recognition as sr
 import json
 import rospy
 from std_msgs.msg import String
+
+from rospy_message_converter import json_message_converter
+from std_msgs.msg import String
+
 
 '''
 For the program to run, you need to have roscore and the rasa-server running.
@@ -13,7 +18,7 @@ def main():
     #Wait for message on /startListener to continue
     rospy.wait_for_message('/startListener', String, timeout=None)
     record()
-
+    
 '''
 This function records from the microphone, sends it to whisper and to the Rasa server
 '''
@@ -47,8 +52,10 @@ def record():
     response = {"text": response.get("text", ), "intent": response.get("intent", {}).get("name"), 
                 "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
     
+    response_2 = json_message_converter.convert_json_to_ros_message('std_msgs/String', ans)
+
     # publish response on nlp_out
-    pub.publish(str(response))
+    pub.publish(str(response_2))
 
 if "__main__" == __name__:
     # Initiate startListener topic. On message, call record()
