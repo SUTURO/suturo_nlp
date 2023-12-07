@@ -13,3 +13,5 @@ Also contains the knowledge_interface. This node takes does rosprolog queries to
 contains the sling parser,its ros interfacing node and a textparser thats simplyfiies and reduces the julius output.
 ### suturo_speechparser
 Just contains some launchfiles starting node from all the above packages.
+### activate_language_processing
+contains package used for Receptionist task
