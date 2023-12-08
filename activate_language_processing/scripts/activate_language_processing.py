@@ -61,10 +61,6 @@ def record():
     # change response format
     response = {"text": response.get("text", ), "intent": response.get("intent", {}).get("name"), 
                 "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
-    
-    # alternative code to publish on nlp_out
-    # publish response on nlp_out
-    # pub.publish(str(response))
 
     intent = response.get("intent")
 
@@ -72,7 +68,10 @@ def record():
     if intent == "Receptionist":
         #callService = rospy.ServiceProxy('save_server', SaveInfo)
         #callService(getName(response), getDrink(response))
+        # alternative code for testing
         print(f"Name: " + str(getName(response)) + ", Drink: " + str(getDrink(response)))
+        pub.publish(str(getName(response)))
+        pub.publish(str(getDrink(response)))
     else:
         print("Other")
 
@@ -80,9 +79,9 @@ def record():
 
 if "__main__" == __name__:
     # Alternative code to create nlp_out topic
-    # pub = rospy.Publisher("nlp_out", String, queue_size=16)
-    # rospy.init_node('nlp_out', anonymous=True)
-    # rate = rospy.Rate(1)
+    pub = rospy.Publisher("nlp_out", String, queue_size=16)
+    rospy.init_node('nlp_out', anonymous=True)
+    rate = rospy.Rate(1)
 
     # rasa Action server
     server = "http://localhost:5005/model/parse" 
