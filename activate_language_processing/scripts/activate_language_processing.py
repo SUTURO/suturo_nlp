@@ -70,8 +70,7 @@ def record():
         #callService(getName(response), getDrink(response))
         # alternative code for testing
         print(f"Name: " + str(getName(response)) + ", Drink: " + str(getDrink(response)))
-        pub.publish(str(getName(response)))
-        pub.publish(str(getDrink(response)))
+        pub.publish(str(getName(response)) + " " + str(getDrink(response)))
     else:
         print("Other")
 
