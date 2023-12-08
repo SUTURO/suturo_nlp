@@ -2,14 +2,16 @@ import requests
 import speech_recognition as sr
 import json
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_srvs.srv import SaveInfo
 
 
 def main():
     #Wait for message on /startListener to continue
-    rospy.wait_for_message('/startListener', String, timeout=None)
-    record()
+    #rospy.wait_for_message('/startListener', String, timeout=None)
+    # Execute record() function on receiving a message on /startListener
+    rospy.Subscriber('/startListener', String, record)
+    rospy.spin()
 
 '''
 This function gets the json format from rasa and outputs the drink value
@@ -36,7 +38,7 @@ def getName(data):
 '''
 This function records from the microphone, sends it to whisper and to the Rasa server
 '''
-def record():  
+def record(data):  
     # Record with speech recognizer for as long as someone is talking
     r = sr.Recognizer()
     r.pause_threshold = 1.5
@@ -70,15 +72,17 @@ def record():
         #callService(getName(response), getDrink(response))
         # alternative code for testing
         print(f"Name: " + str(getName(response)) + ", Drink: " + str(getDrink(response)))
-        pub.publish(str(getName(response)) + " " + str(getDrink(response)))
+        nlpOut.publish(str(getName(response)) + " " + str(getDrink(response)))
     else:
-        print("Other")
+        print("Did not undertand a Receptionist task.")
+        nlpFeedback.publish(False)
 
     
 
 if "__main__" == __name__:
     # Alternative code to create nlp_out topic
-    pub = rospy.Publisher("nlp_out", String, queue_size=16)
+    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
+    nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
     rospy.init_node('nlp_out', anonymous=True)
     rate = rospy.Rate(1)
 
