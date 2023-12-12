@@ -65,14 +65,19 @@ def record(data):
                 "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
 
     intent = response.get("intent")
+    name = str(getName(response))
+    drink = str(getDrink(response))
 
     # service call to knowledge
-    if intent == "Receptionist":
+    if intent == "Receptionist" and name != "None" and drink != "None":
         #callService = rospy.ServiceProxy('save_server', SaveInfo)
         #callService(getName(response), getDrink(response))
         # alternative code for testing
-        print(f"Name: " + str(getName(response)) + ", Drink: " + str(getDrink(response)))
-        nlpOut.publish(str(getName(response)) + " " + str(getDrink(response)))
+        print(f"Name: " + name + ", Drink: " + drink)
+        nlpOut.publish(name + " " + drink)
+    elif intent == "Receptionist" and (name == "None" or drink == "None"):
+        print("Either Name or Drink was not understood.")
+        nlpFeedback.publish(False)
     else:
         print("Did not undertand a Receptionist task.")
         nlpFeedback.publish(False)
