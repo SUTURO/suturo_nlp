@@ -86,9 +86,9 @@ def record(data):
 
 if "__main__" == __name__:
     # Alternative code to create nlp_out topic
+    rospy.init_node('nlp_out', anonymous=True)
     nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
     nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
-    rospy.init_node('nlp_out', anonymous=True)
     rate = rospy.Rate(1)
 
     # rasa Action server
