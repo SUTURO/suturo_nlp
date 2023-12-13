@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="activate_language_processing" pkg="suturo_nlp" type="activate_language_processing.py" output="screen" />
+
+</launch>
+
