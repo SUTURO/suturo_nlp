@@ -7,8 +7,6 @@ from std_srvs.srv import SaveInfo
 
 
 def main():
-    #Wait for message on /startListener to continue
-    #rospy.wait_for_message('/startListener', String, timeout=None)
     # Execute record() function on receiving a message on /startListener
     rospy.Subscriber('/startListener', String, record)
     rospy.spin()
@@ -18,22 +16,22 @@ This function gets the json format from rasa and outputs the drink value
 *data* The json data
 '''
 def getDrink(data):
-        entities = data.get("entities")
-        for ent, val  in entities:
-            if ent == "drink":
-                return val
-        return None
+    entities = data.get("entities")
+    for ent, val  in entities:
+        if ent == "drink":
+            return val
+    return None
 
 '''
 This function gets the json format from rasa and outputs the NaturalPerson value
 'data' The json data
 '''
 def getName(data):
-        entities = data.get("entities")
-        for ent, val in entities:
-             if ent == "NaturalPerson":
-                  return val
-        return None
+    entities = data.get("entities")
+    for ent, val in entities:
+            if ent == "NaturalPerson":
+                return val
+    return None
 
 '''
 This function records from the microphone, sends it to whisper and to the Rasa server
@@ -79,7 +77,7 @@ def record(data):
         print("Either Name or Drink was not understood.")
         nlpFeedback.publish(False)
     else:
-        print("Did not undertand a Receptionist task.")
+        print("Did not understand a Receptionist task.")
         nlpFeedback.publish(False)
 
     
