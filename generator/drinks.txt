@@ -21,3 +21,15 @@ juicebox
 milk pack
 coffee can
 wine glass
+
+# some more common drinks
+water
+cola
+lemonade
+orange juice
+apple juice
+beer
+iced tea
+sprite
+ginger ale
+iced coffee
