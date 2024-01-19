@@ -3,10 +3,12 @@ import speech_recognition as sr
 import json
 import rospy
 from std_msgs.msg import String, Bool
-from std_srvs.srv import SaveInfo
+from std_srvs.srv import SaveInfo # TODO should be changed to the actual location
 
+# unique id for every new person
+person_id = 1.0
 
-def main():
+def main():    
     # Execute record() function on receiving a message on /startListener
     rospy.Subscriber('/startListener', String, record)
     rospy.spin()
@@ -37,6 +39,10 @@ def getName(data):
 This function records from the microphone, sends it to whisper and to the Rasa server
 '''
 def record(data):  
+
+    # needs to be redefined here otherwise error occures
+    global person_id
+    
     # Record with speech recognizer for as long as someone is talking
     r = sr.Recognizer()
     r.pause_threshold = 1.5
@@ -68,11 +74,23 @@ def record(data):
 
     # service call to knowledge
     if intent == "Receptionist" and name != "None" and drink != "None":
-        #callService = rospy.ServiceProxy('save_server', SaveInfo)
-        #callService(getName(response), getDrink(response))
-        # alternative code for testing
-        print(f"Name: " + name + ", Drink: " + drink)
-        nlpOut.publish(name + " " + drink)
+        
+        # wait for the knowledge service to be up and running
+        rospy.wait_for_service('save_server') 
+        # call the knowledge service       
+        callService = rospy.ServiceProxy('save_server', SaveInfo)
+
+        try:        
+            # call knowledge service with required data
+            res = callService(f"{name}, {drink}, {str(person_id)}")
+        
+            # to give every new recognized person a unique id
+            person_id += 1
+            
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+            nlpFeedback.publish(False)
+            
     elif intent == "Receptionist" and (name == "None" or drink == "None"):
         print("Either Name or Drink was not understood.")
         nlpFeedback.publish(False)
@@ -83,9 +101,9 @@ def record(data):
     
 
 if "__main__" == __name__:
+
     # Alternative code to create nlp_out topic
     rospy.init_node('nlp_out', anonymous=True)
-    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
     nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
     rate = rospy.Rate(1)
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>suturo_nlp</name>
+  <name>activate_language_processing</name>
   <version>0.0.0</version>
   <description>The activate_language_processing package</description>
   <license>unpublished</license>
@@ -12,12 +12,14 @@
  
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>message_generation</build_depend>
   <depend>requests</depend>
   <depend>whisper</depend>
   <depend>speech_recognition</depend>
   <depend>json</depend>
   <depend>rospy</depend>
   <depend>std_msgs</depend>
+  <depend>suturo_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
