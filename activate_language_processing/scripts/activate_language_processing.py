@@ -3,7 +3,7 @@ import speech_recognition as sr
 import json
 import rospy
 from std_msgs.msg import String, Bool
-from std_srvs.srv import SaveInfo # TODO should be changed to the actual location
+from knowledge_msgs.srv import SaveInfo
 
 # unique id for every new person
 person_id = 1.0
@@ -50,10 +50,6 @@ def record(data):
         r.adjust_for_ambient_noise(source, 2)
         print("Say something!")
         audio = r.listen(source)
-
-    # Write recorder audio to file
-    with open("temp_file", "wb") as file:
-        file.write(audio.get_raw_data())
 
     # Use sr Whisper integration  
     result = r.recognize_whisper(audio, language="english")
