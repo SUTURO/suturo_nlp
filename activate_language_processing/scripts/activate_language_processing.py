@@ -79,6 +79,7 @@ def record(data):
         try:        
             # call knowledge service with required data
             res = callService(f"{name}, {drink}, {str(person_id)}")
+            nlpOut.publish(f"{name}, {drink}, {str(person_id)}")
         
             # to give every new recognized person a unique id
             person_id += 1
@@ -98,10 +99,13 @@ def record(data):
 
 if "__main__" == __name__:
 
-    # Alternative code to create nlp_out topic
+    # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
     nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
     rate = rospy.Rate(1)
+
+    # Alternative code to circumvent Knowledge Service. Don't forget to comment the rospy.wait_for_service and callService lines.
+    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
 
     # rasa Action server
     server = "http://localhost:5005/model/parse" 
