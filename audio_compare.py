@@ -81,7 +81,7 @@ def userinput(mode):
             userinput("l")
     
     elif mode == "lt":
-        print("Please input a path to .wav file.")
+        print("Please input a path to .wav file. Make sure you provided a valid target path in the librarytest() function")
         uaudio = input()
 
         try:
@@ -137,28 +137,28 @@ def library(path, plot: bool):
     plt.plot(path)
 
     plt.subplot(5, 1, 2)
-    plt.title(f"User x db1: {np.multiply(comp1.max(), np.float64(1e-11))} at {np.argmax(comp1)}")
+    plt.title(f"User x db1: {np.multiply(comp1.max(), np.float64(1e-9))} at {np.argmax(comp1)}")
     plt.plot(comp1)
 
     plt.subplot(5, 1, 3)
-    plt.title(f"User x db2: {np.multiply(comp2.max(), np.float64(1e-11))} at {np.argmax(comp2)}")
+    plt.title(f"User x db2: {np.multiply(comp2.max(), np.float64(1e-9))} at {np.argmax(comp2)}")
     plt.plot(comp2)
 
     plt.subplot(5, 1, 4)
-    plt.title(f"User x db3: {np.multiply(comp3.max(), np.float64(1e-11))} at {np.argmax(comp3)}")
+    plt.title(f"User x db3: {np.multiply(comp3.max(), np.float64(1e-9))} at {np.argmax(comp3)}")
     plt.plot(comp3)
 
     plt.subplot(5, 1, 5)
-    plt.title(f"User x db4: {np.multiply(comp4.max(), np.float64(1e-11))} at {np.argmax(comp4)}")
+    plt.title(f"User x db4: {np.multiply(comp4.max(), np.float64(1e-9))} at {np.argmax(comp4)}")
     plt.plot(comp4)
 
     if plot:
         plt.show()
     else:
-        print(f"""User x db1: {np.multiply(comp1.max(), np.float64(1e-11))} at {np.argmax(comp1)},
-                  \nUser x db2: {np.multiply(comp2.max(), np.float64(1e-11))} at {np.argmax(comp2)},
-                  \nUser x db3: {np.multiply(comp3.max(), np.float64(1e-11))} at {np.argmax(comp3)},
-                  \nUser x db4: {np.multiply(comp4.max(), np.float64(1e-11))} at {np.argmax(comp4)}""")
+        print(f"""User x db1: {np.multiply(comp1.max(), np.float64(1e-9))} at {np.argmax(comp1)},
+                  \nUser x db2: {np.multiply(comp2.max(), np.float64(1e-9))} at {np.argmax(comp2)},
+                  \nUser x db3: {np.multiply(comp3.max(), np.float64(1e-9))} at {np.argmax(comp3)},
+                  \nUser x db4: {np.multiply(comp4.max(), np.float64(1e-9))} at {np.argmax(comp4)}""")
         
         time = datetime.now().strftime('%H_%M_%S_%f')
         plt.savefig(f"/home/chris/Pictures/libtest_{time[:-3]}.png")
@@ -187,12 +187,10 @@ def addnoise(data):
 
     
 def compare(a1, a2):
-    threshold = 5
+    threshold = 50
 
     sig1 = a1.readframes(-1)
     sig1 = np.frombuffer(sig1, np.int16)
-    #pad = np.zeros((10000,),np.int16)
-    #sig1 = np.concatenate((pad,sig1))
 
     sig2 = a2.readframes(-1)
     sig2 = np.frombuffer(sig2, np.int16)
@@ -201,13 +199,6 @@ def compare(a1, a2):
     sig2 = sig2[::-1]
 
     comp = sp.signal.fftconvolve(sig1, sig2, mode="valid")
-    # comp = sp.signal.correlate(sig1, sig2)
-    # comp = sp.signal.coherence(sig1, sig2)
-    new =  []
-    sig1l = sig1.tolist()
-    sig2l = sig2.tolist()
-    #for k in range(200):
-    #    new.append(sum([x*y for x,y in zip(sig1l[k:],sig2l)]))
 
     plt.subplots(4, 1)
 
@@ -223,11 +214,7 @@ def compare(a1, a2):
     plt.title("Comparison")
     plt.plot(comp)
 
-    #plt.subplot(4, 1, 4)
-    #plt.title("Manual Calculation < 200")
-    #plt.plot(new)
-
-    calc = np.multiply(comp.max(), np.float64(1e-11))
+    calc = np.multiply(comp.max(), np.float64(1e-9))
     if calc > threshold:
         print(f"Recognized! {calc} at {np.argmax(comp)}")
     else:
