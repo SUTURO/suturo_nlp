@@ -5,14 +5,11 @@ import scipy as sp
 from datetime import datetime
 
 def main():
-    print("What mode do you want to run the program in?\nnoise, comparison or library.\ncomparison promts 2 .wav files to compare. Noise promts 1 .wav and compares it with a noisy version of itself. Library promts 1 .wav and correlates it to a library of doorbells.")
+    print("What mode do you want to run the program in?\ncomparison, library or libtest.\ncomparison promts 2 .wav files to compare. Library promts 1 .wav and convolutes it to a library of doorbells.\nlibtest promts 1 .wav file and compares it with random padding to a library of doorbells n times.")
     mode = input()
     if mode == "comparison" or mode == "c":
        print("Comparison mode selected.")
        userinput("c")
-    elif mode == "noise" or mode == "n":
-        print("Noise mode selected.") # TODO noise mode
-        userinput("n")
     elif mode == "library" or mode == "l":
         print("Library mode selected.")
         userinput("l")
@@ -50,20 +47,6 @@ def userinput(mode):
             print("Please provide a file and not a directory.")
             userinput("c")
     
-    elif mode == "n":
-        print("Please input a .wav file.")
-        audio = input()
-
-        try:
-            path = wave.open(audio, "r")
-            compare(path, addnoise(path))
-        except FileNotFoundError:
-            print("File not found. Please provide a valid path to a .wav file.")
-            userinput("n")
-        except IsADirectoryError:
-            print("Please provide a file and not a directory.")
-            userinput("n")
-
     elif mode == "l":
         print("Please input a path to .wav file.")
         uaudio = input()
@@ -180,22 +163,15 @@ def libtest(path, n: int):
 
     print("Tests done.")
 
-
-def addnoise(data):
-    np.random.normal(0, 1, 1000) + data.readframes(-1)
-
-
     
 def compare(a1, a2):
-    threshold = 50
+    threshold = 100
 
     sig1 = a1.readframes(-1)
     sig1 = np.frombuffer(sig1, np.int16)
 
     sig2 = a2.readframes(-1)
     sig2 = np.frombuffer(sig2, np.int16)
-    sig1l = sig1.tolist()
-    sig2l = sig2.tolist()
     sig2 = sig2[::-1]
 
     comp = sp.signal.fftconvolve(sig1, sig2, mode="valid")
