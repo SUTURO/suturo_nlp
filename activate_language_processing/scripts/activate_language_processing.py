@@ -3,14 +3,14 @@ import speech_recognition as sr
 import json
 import rospy
 from std_msgs.msg import String, Bool
-from knowledge_msgs.srv import SaveInfo
+#from knowledge_msgs.srv import SaveInfo
 
 # unique id for every new person
 person_id = 1.0
 
 def main():    
     # Execute record() function on receiving a message on /startListener
-    rospy.Subscriber('/startListener', String, record)
+    rospy.Subscriber('/startListener', String, record)  # TODO test what happens when 2 signals overlap
     rospy.spin()
 
 '''
@@ -36,6 +36,18 @@ def getName(data):
     return None
 
 '''
+Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
+*case* The intent parsed from the response
+*response* The formatted .json from the record function
+'''
+def switch(case, response):
+    print(case)
+    return {
+        "Receptionist": lambda: receptionist(response),
+        "ParkingArms" : lambda: dummy(response) # You can say "What's your name" to test this
+    }.get(case, lambda: nlpFeedback.publish(False))() # TODO decide if useful to print "Something went wrong" in dedicated function.
+
+'''
 This function records from the microphone, sends it to whisper and to the Rasa server
 '''
 def record(data):  
@@ -51,7 +63,7 @@ def record(data):
         print("Say something!")
         audio = r.listen(source)
 
-    # Use sr Whisper integration  
+    # Use sr Whisper integration
     result = r.recognize_whisper(audio, language="english")
 
     # send result to RASA
@@ -64,21 +76,26 @@ def record(data):
     response = {"text": response.get("text", ), "intent": response.get("intent", {}).get("name"), 
                 "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
 
-    intent = response.get("intent")
+    switch(response.get("intent"), response)
+
+'''
+Function for the receptionist task. 
+*response* Formatted .json from record function.
+'''
+def receptionist(response):
+    global person_id
+
     name = str(getName(response))
     drink = str(getDrink(response))
 
-    # service call to knowledge
-    if intent == "Receptionist" and name != "None" and drink != "None":
-        
-        # wait for the knowledge service to be up and running
-        rospy.wait_for_service('save_server') 
-        # call the knowledge service       
-        callService = rospy.ServiceProxy('save_server', SaveInfo)
-
+    # wait for the knowledge service to be up and running
+    #rospy.wait_for_service('save_server') 
+    # call the knowledge service       
+    #callService = rospy.ServiceProxy('save_server', SaveInfo)
+    if name != "None" and drink != "None":
         try:        
             # call knowledge service with required data
-            res = callService(f"{name}, {drink}, {str(person_id)}")
+            #res = callService(f"{name}, {drink}, {str(person_id)}")
             nlpOut.publish(f"{name}, {drink}, {str(person_id)}")
         
             # to give every new recognized person a unique id
@@ -87,14 +104,16 @@ def record(data):
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
             nlpFeedback.publish(False)
-            
-    elif intent == "Receptionist" and (name == "None" or drink == "None"):
+    else:
         print("Either Name or Drink was not understood.")
         nlpFeedback.publish(False)
-    else:
-        print("Did not understand a Receptionist task.")
-        nlpFeedback.publish(False)
 
+"""
+Dummy function to show how other intents might get implemented.
+*response* Formatted .json from the record function.
+"""
+def dummy(response):
+    print(f"Dummy function {response}")
     
 
 if "__main__" == __name__:
