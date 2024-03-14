@@ -100,8 +100,9 @@ def switch(case, response):
     '''
     return {
         "Receptionist": lambda: receptionist(response),
-        "ParkingArms" : lambda: dummy(response) # You can say "What's your name" to test this
-    }.get(case, lambda: nlpFeedback.publish(False))() # TODO decide if useful to print "Something went wrong" in dedicated function.
+        "affirm": lambda: confirmFeedback.publish(True),
+        "deny": lambda: confirmFeedback.publish(False)
+    }.get(case, lambda: nlpFeedback.publish(False))()
 
 def receptionist(response):
     '''
@@ -276,6 +277,7 @@ if "__main__" == __name__:
     rospy.init_node('nlp_out', anonymous=True)
     # Publisher for the feedback
     nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
+    confirmFeedback = rospy.Publisher("nlp_confirmation", Bool, queue_size=16)
     rate = rospy.Rate(1)
 
     # Alternative code to circumvent Knowledge Service. Don't forget to comment the rospy.wait_for_service and callService lines.
