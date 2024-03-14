@@ -158,16 +158,6 @@ def getName(data):
                 return val
     return None
 
-def dummy(response):
-    '''
-    Dummy function to show how other intents might get implemented.
-
-    Args:
-        response: Formatted .json from the record function.
-    '''
-    #print(f"Dummy function {response}")
-    pass
-
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
     Dirty hack to implement some nice functionality of speech_recognition on a data stream
