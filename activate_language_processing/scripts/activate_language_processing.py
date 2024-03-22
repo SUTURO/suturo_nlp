@@ -101,7 +101,8 @@ def switch(case, response):
     return {
         "Receptionist": lambda: receptionist(response),
         "affirm": lambda: confirmFeedback.publish(True),
-        "deny": lambda: confirmFeedback.publish(False)
+        "deny": lambda: confirmFeedback.publish(False),
+        "Order": lambda:  order(response)
     }.get(case, lambda: nlpFeedback.publish(False))()
 
 def receptionist(response):
@@ -111,14 +112,22 @@ def receptionist(response):
     Args:
         response: Formatted .json from record function.
     '''
+    # Setting up all the variables
     global person_id
-    name = str(getName(response)) # get the name from the response
-    drink = str(getDrink(response)) # get the drink from the response
 
-    rospy.wait_for_service('save_server') # wait for the knowledge service to be up and running           
-    callService = rospy.ServiceProxy('save_server', SaveInfo)# call the knowledge service
+    data = json.loads(getData(response))
 
-    if name != "None" and drink != "None":
+    name = data.get("names")
+    name = name[0] if name else None
+
+    drink = data.get("drinks")
+    drink = drink[0] if drink else None
+
+    # Managing the Knowledge Service Interface
+    rospy.wait_for_service('save_server')         
+    callService = rospy.ServiceProxy('save_server', SaveInfo)
+
+    if name != None and drink != None:
         try:        
             # call knowledge service with required data
             res = callService(f"{name}, {drink}, {str(person_id)}")
@@ -132,31 +141,46 @@ def receptionist(response):
         print("Either Name or Drink was not understood.")
         nlpFeedback.publish(False)
 
-def getDrink(data):
+def order(response):    #TODO logic
     '''
-    This function gets the json format from rasa and outputs the drink value
-    
+    Function for the Restaurant task.
+
+    Args:
+        response: Formatted .json from the record function.
+    '''
+    nlpOut.publish(response)
+
+
+def  getData(data):
+    '''
+    Function for getting names, drinks and foods from entities in a .json
+
     Args:
         data: The json data
+    Returns:
+        The list of entities
     '''
     entities = data.get("entities")
-    for ent, val  in entities:
-        if ent == "drink":
-            return val
-    return None
-
-def getName(data):
-    '''
-    This function gets the json format from rasa and outputs the NaturalPerson value
-
-    Args:    
-        data: The json data
-    '''
-    entities = data.get("entities")
+    drinks = []
+    foods = []
+    names = []
+    
+    # Filtering the entities list for drink, food and NaturalPerson
     for ent, val in entities:
-            if ent == "NaturalPerson":
-                return val
-    return None
+        if ent == "drink":
+            drinks.append(val)
+        elif ent == "food":
+            foods.append(val)
+        elif ent == "NaturalPerson":
+            names.append(val)
+        else:
+            pass
+    
+    # Build the .json
+    list = {"names": names, "drinks": drinks, "foods": foods}
+    return json.dumps(list)
+
+
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
