@@ -7,3 +7,4 @@ lobby
 balcony
 bedroom
 bathroom
+office

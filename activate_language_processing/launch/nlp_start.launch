@@ -1,6 +1,0 @@
-<launch>
-
-  <node name="activate_language_processing" pkg="activate_language_processing" type="activate_language_processing.py" output="screen" />
-
-</launch>
-
