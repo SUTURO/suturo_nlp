@@ -5,17 +5,12 @@ import json
 import rospy
 import audioop
 import collections
-import queue
 import numpy
 import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-#from knowledge_msgs.srv import SaveInfo
 import beepy
-
-# unique id for every new person
-person_id = 1.0
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
     '''
@@ -113,9 +108,6 @@ def receptionist(response):
     Args:
         response: Formatted .json from record function.
     '''
-    # Setting up all the variables
-    global person_id
-
     data = json.loads(getData(response))
 
     name = data.get("names")
@@ -124,18 +116,7 @@ def receptionist(response):
     drink = data.get("drinks")
     drink = drink[0] if drink else None
 
-    # Managing the Knowledge Service Interface
-    #rospy.wait_for_service('save_server')         
-    #callService = rospy.ServiceProxy('save_server', SaveInfo)
-
-    try:        
-            # call knowledge service with required data
-            #res = callService(f"{name}, {drink}, {str(person_id)}")
-            nlpOut.publish(f"<GUEST>, {name}, {drink}, {str(person_id)}")            
-            person_id += 1 # to give every new recognized person a unique id
-        # if the service does not process the request, print an error    
-    except rospy.ServiceException as exc:
-        print("Service did not process request: " + str(exc))
+    nlpOut.publish(f"<GUEST>, {name}, {drink}")
 
 def  getData(data):
     '''
