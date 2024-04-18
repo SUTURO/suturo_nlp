@@ -195,6 +195,12 @@ ontologyLoader.append(("food", "foods.txt", None, "foods"))
 ontologyLoader.append(("PhysicalArtifact", "physicalArtifacts.txt", None, "PhysicalArtifacts"))
 ontologyLoader.append(("PhysicalPlace", "physicalPlaces.txt", None, "PhysicalPlaces"))
 
+ontologyLoader.append(("E_Attribute_Item", "attributes_item.txt", None, "E_Attribute_Items"))
+ontologyLoader.append(("E_Attribute_Location", "attributes_location.txt", None, "E_Attribute_Locations"))
+ontologyLoader.append(("E_Attribute_Source", "attributes_location.txt", None, "E_Attribute_Sources"))
+ontologyLoader.append(("E_Attribute_Destination", "attributes_location.txt", None, "E_Attribute_Destinations"))
+ontologyLoader.append(("E_Attribute_Beneficiary", "attributes_beneficiary.txt", None, "E_Attribute_Beneficiaries"))
+
 #ontologyLoader.append(('LOCATION', 'locations.txt', 'location_categories.txt', 'locations'))
 #ontologyLoader.append(('ITEM', 'items.txt', 'item_categories.txt', 'items'))
 #ontologyLoader.append(('LOCATION_CATEGORY', 'location_categories.txt', None, 'locations'))

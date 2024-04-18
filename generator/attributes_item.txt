@@ -1,0 +1,15 @@
+red
+orange
+yellow
+green
+blue
+violet
+purple
+indigo
+magenta
+black
+white
+brown
+big
+small
+
