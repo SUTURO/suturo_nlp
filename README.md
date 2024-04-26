@@ -19,3 +19,9 @@ Contains the sling parser, its ros interfacing node and a text parser that simpl
 
 ### test_noisy_input
 A small and simple tool to test speech recognition while playing a recording of a loud and noisy environment. Parameters can be adjusted to test and improve detection quality.
+
+### audio_compare
+Contains the scripts used to recognize a doorbell from a .wav or microphone input.
+
+### pos_recognizer
+Scripts for recognizing parts of speech in commands used in the EGPSR

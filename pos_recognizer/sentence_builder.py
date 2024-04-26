@@ -4,61 +4,28 @@ import spacy
 import requests
 import json
 
-def deprecated():
-    pass
-    '''
-    class Tree:
-        def __init__(self, data):
-            self.children = []
-            self.data = data
-
-    def print_tree(node, depth=0):
-        indent = "  " * depth
-        print(f"{indent}{node.data}")
-        for child in node.children:
-            print_tree(child, depth + 1)
-    
-    def add_subsentences(token, parent_node):
-        for child in token.children:
-            if child.pos_ != "VERB":
-                node = Tree(child.text)
-                parent_node.children.append(node)
-                add_subsentences(child, node)
-            else:
-                break
-
-    root = Tree("Tree")
-
-    for token in doc:
-        if token.pos_ == "VERB":
-            node = Tree(token.text)
-            add_subsentences(token, node)
-            root.children.append(node)
-            
-    print_tree(root)
-    '''
-
 def main():
+    # initiate spaCy
     nlp = spacy.load("en_core_web_sm")
-
     doc = nlp(sent)
 
-    temp, sents, sem = "", [], {}
+    # Build partial sentences
+    temp, sents, sem = "", [], {} 
     for token in doc:
         sem.update({token.text:token.pos_})
-        if token.pos_ == "VERB":
+        if token.pos_ == "VERB" and token.text[-3:] != "ing":
             sents.append(temp)
             temp = token.text + " "
         else:
             temp = temp + token.text + " "
     sents.append(temp)
-
     sents = filter(None, sents)
 
+    # Get Rasa responses for partial sentences
     ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in sents]
-
     response = [json.loads(item.text) for item in ans]
 
+    # reshape rasa responses for easier use
     responses = {
     "sentences": [
         {
@@ -69,40 +36,82 @@ def main():
         for item in response
         ]
     }
+    # print(responses)
 
-    print(responses)
-    person_list, place_list, artifact_list = [], [], []
-    #Funktion um variablen zu setzen
+    # Build the lists of people, places and artifacts using the rasa responses
+    person_list, place_list, artifact_list = [], [], [] 
     for sentence in responses["sentences"]:
+        tperson_list, tplace_list, tartifact_list = [], [], []
         entities = sentence["entities"]
         for name, value in entities:
             if name == "NaturalPerson":
-                person_list.append(value)
-            elif name == "PhysicalPlace":
-                place_list = value
-            elif name == "PhysicalArtifact":
-                artifact_list.append(value)
+                tperson_list.append(value)
+            else:
+                tperson_list.append("")
+            if name == "PhysicalPlace":
+                tplace_list.append(value)
+            else:
+                tplace_list.append("")
+            if name == "PhysicalArtifact":
+                tartifact_list.append(value)
+            else:
+                tartifact_list.append("")
+        person_list.append(tperson_list)
+        place_list.append(tplace_list)
+        artifact_list.append(tartifact_list)
+    # print(f"Persons: {person_list}, Places: {place_list}, Artifacts: {artifact_list}")
 
-    print(f"Person: {person_list}, Place: {place_list}, Artifacts: {artifact_list}")
+    # Remove duplicates and empty strings from lists
+    person_list, place_list, artifact_list = [shorten(i) for i in person_list], [shorten(i) for i in place_list], [shorten(i) for i in artifact_list]
+
+    # Iterate over the whole sentence and exchange pronouns (and adverbs) with the same role from an earlier partial sentence
+    counter = 0
+    output = []
     for sentence in responses["sentences"]:
         text = sentence["text"]
         words = text.split()
         for word in words:
-            if  sem[word] == "PRON":    # also check role
-                print(word)
-                word = person_list[0]   # muss das direkte wort überschreiben nicht die variable
-                
+            if counter > 0:
+                if  sem[word] == "PRON" or sem[word] == "ADV":
+                    # These would be better in their own function..
+                    if word in place_list[counter]:
+                        # print(f"Place found: {word}")
+                        if place_list[counter-1] == []:
+                            word = place_list[0][0]
+                        place_list[counter].insert(0, word)
+                    
+                    elif word in person_list[counter]:
+                        # print(f"Person found: {word}")
+                        if person_list[counter-1] == []:
+                            word = person_list[0][0]
+                        person_list[counter].insert(0, word)
+                    
+                    elif word in artifact_list[counter]:
+                        # print(f"Artifact found: {word}")
+                        if artifact_list[counter-1] == []:
+                            word = artifact_list[0][0]
+                        artifact_list[counter].insert(0, word)
 
+            output.append(word)
+        counter += 1
+    print(output)
 
-    # Jetzt über alle wörter gehen und vergleichen, ob sem(wort)==PRON, wenn ja ersetzen durch physicalartifact oder naturalperson, wenn nein weiter
-    #for word in responses["sentences": [{"text"}]]:
-    #    print(word)
-    #    if sem[word] == "PRON":
-    #        word = person_list[0]
+'''
+Function that removes duplicates and empty Strings
 
+Args:
+    Any list
+Returns:
+    A List without duplicates and no empty Strings
+'''
+def shorten(array):
+    s = set(array)
+    if "" in s:
+        s.remove("")
+    return list(s)
 
 if __name__ == "__main__":
-    sent = "Bring me the fork and the Spoon from the kitchen then place them on the table and get the food from the garage."
+    sent = "Get a coffee from the kitchen then give it to the guy waving and go back there"
     #sent = "Could you please come over"
     server = "http://localhost:5005/model/parse" 
     main()

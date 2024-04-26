@@ -80,3 +80,7 @@ bag
 toyota HSR
 tea bag box
 rubiks cube
+it
+these
+those
+them

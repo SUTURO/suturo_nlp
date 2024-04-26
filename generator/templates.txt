@@ -101,7 +101,7 @@ Transporting: would you be able to move the PhysicalArtifact|Item holder to the 
 Transporting: would you be able to move the PhysicalArtifact|Item holder to the PhysicalPlace|Destination?
 Transporting: would you mind moving the PhysicalArtifact|Item to the PhysicalArtifact|Destination?
 Transporting: would you mind moving the PhysicalArtifact|Item to the PhysicalPlace|Destination?
-Transporting: would you mind moving the E_Attribute_Item|Attribute_Item PhysicalArtifact|Item to the E_Attribute_Destination|Attribute_Destination PhysicalPlace|Destination?
+Transporting: would you mind moving the PhysicalArtifact|Item to the PhysicalPlace|Destination?
 
 Arranging: can you assist NaturalPerson|BeneficiaryRole in arranging the PhysicalArtifact|Item on the PhysicalPlace|Location PhysicalArtifact|Destination, please?
 Arranging: can you collaborate with NaturalPerson|BeneficiaryRole to arrange the PhysicalArtifact|Item on the PhysicalArtifact|Destination?
