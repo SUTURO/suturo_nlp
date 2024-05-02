@@ -11,10 +11,6 @@ import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-from knowledge_msgs.srv import SaveInfo
-
-# unique id for every new person
-person_id = 1.0
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
     '''
@@ -100,10 +96,10 @@ def switch(case, response):
     '''
     return {
         "Receptionist": lambda: receptionist(response),
-        "affirm": lambda: confirmFeedback.publish(True),
-        "deny": lambda: confirmFeedback.publish(False),
+        "affirm": lambda: nlpOut.publish(f"<CONFIRM>, True"),
+        "deny": lambda: nlpOut.publish(f"<CONFIRM>, False"),
         "Order": lambda:  order(response)
-    }.get(case, lambda: nlpFeedback.publish(False))()
+    }.get(case, lambda: nlpOut.publish(f"<NONE>"))()
 
 def receptionist(response):
     '''
@@ -113,8 +109,6 @@ def receptionist(response):
         response: Formatted .json from record function.
     '''
     # Setting up all the variables
-    global person_id
-
     data = json.loads(getData(response))
 
     name = data.get("names")
@@ -123,32 +117,20 @@ def receptionist(response):
     drink = data.get("drinks")
     drink = drink[0] if drink else None
 
-    # Managing the Knowledge Service Interface
-    rospy.wait_for_service('save_server')         
-    callService = rospy.ServiceProxy('save_server', SaveInfo)
+    nlpOut.publish(f"<GUEST>, {name}, {drink}")
 
-    if name != None and drink != None:
-        try:        
-            # call knowledge service with required data
-            res = callService(f"{name}, {drink}, {str(person_id)}")
-            nlpOut.publish(f"{name}, {drink}, {str(person_id)}")            
-            person_id += 1 # to give every new recognized person a unique id
-        # if the service does not process the request, print an error    
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-            nlpFeedback.publish(False)
-    else:
-        print("Either Name or Drink was not understood.")
-        nlpFeedback.publish(False)
-
-def order(response):    #TODO logic
+def order(response):
     '''
     Function for the Restaurant task.
 
     Args:
         response: Formatted .json from the record function.
     '''
-    nlpOut.publish(response)
+    data = json.loads(getData(response))
+    
+    drinks = data.get("drinks")
+    foods = data.get("foods")
+    nlpOut.publish(f"<ORDER>, {drinks}, {foods}")
 
 
 def  getData(data):
@@ -289,9 +271,6 @@ if "__main__" == __name__:
 
     # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
-    # Publisher for the feedback
-    nlpFeedback = rospy.Publisher("nlp_feedback", Bool, queue_size=16)
-    confirmFeedback = rospy.Publisher("nlp_confirmation", Bool, queue_size=16)
     rate = rospy.Rate(1)
 
     # Alternative code to circumvent Knowledge Service. Don't forget to comment the rospy.wait_for_service and callService lines.
