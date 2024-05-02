@@ -12,4 +12,9 @@ white
 brown
 big
 small
-
+biggest
+largest
+smallest
+heaviest
+lightest
+thinnest

@@ -10,6 +10,12 @@ magenta
 black
 white
 brown
+gray
 big
 small
-
+biggest
+largest
+smallest
+heaviest
+lightest
+thinnest
