@@ -3,7 +3,6 @@ project(activate_language_processing)
 
 find_package(catkin REQUIRED COMPONENTS
   message_generation
-  suturo_msgs
   std_msgs
   rospy
 )
@@ -12,8 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 generate_messages(
   DEPENDENCIES
-  std_msgs
-  suturo_msgs)
+  std_msgs)
 
 catkin_package()
 

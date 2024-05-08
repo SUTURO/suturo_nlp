@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import rospy
 from audio_common_msgs.msg import AudioData
