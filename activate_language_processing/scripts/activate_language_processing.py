@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse
+from argparse import ArgumentParser
 import requests
 import speech_recognition as sr
 import json
@@ -62,14 +62,14 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     if recordFromTopic:
         with lock:
             flags["record"] = True
-        print("Say something (using backpack microphone)!")
+        # print("Say something (using hsr microphone)!")
         audio = listen2Queue(queue_data, r)
         with lock:
             flags["record"] = False
     else:
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, 2)
-            print("Say something (using hsr microphone)!")
+            print("Say something (using backpack microphone)!")
             audio = r.listen(source)
 
     # Use sr Whisper integration
@@ -230,6 +230,8 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
     
+    print("Say something (using hsr microphone)!")
+
     # Step 2: wait for speech to begin
     # If the energy level exceeds the threshold, consider speech started
     frames = collections.deque()
@@ -270,9 +272,9 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(prog='activate_language_processing')
+    parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
     queue_data = Queue() # Queue to store the audio data.
     lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.

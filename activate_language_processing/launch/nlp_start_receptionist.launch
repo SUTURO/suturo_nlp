@@ -1,6 +1,3 @@
 <launch>
-
-  <node name="activate_language_processing" pkg="activate_language_processing" type="nlp_receptionist.py" output="screen" args="-hsr"/>
-
+	<node pkg="activate_language_processing" type="nlp_receptionist.py" name="speech_recognition" output="screen" args="-hsr" />
 </launch>
-
