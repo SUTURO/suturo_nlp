@@ -13,6 +13,7 @@ from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
 import beepy
+# import time # for debugging
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
     '''
@@ -206,17 +207,17 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
         frameTime += soundDuration
+        # detect whether speaking has started on audio input
+        if energy > rec.energy_threshold: break
         while frameTime > rec.non_speaking_duration:
             d, _ = frames.popleft()
             frameTime -= d
-        # detect whether speaking has started on audio input
-        if energy > rec.energy_threshold: break
         # dynamically adjust the energy threshold using asymmetric weighted average
         if rec.dynamic_energy_threshold:
             adjustEnergyLevel(rec, soundDuration, energy)
 
     # At this step, frames contains a list of buffers, and the length of time these buffers recorded is given in
-    # frameTime. At this moment, speech should not have begun yet, nonetheless some initial silence is good to keep.
+    # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
     # Step 3: keep adding to the recorded speech until a long enough pause is detected.
     pauseTime = 0
     while True:
