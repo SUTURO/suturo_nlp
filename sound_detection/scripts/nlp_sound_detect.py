@@ -2,13 +2,23 @@
 
 import numpy as np
 import rospy
+from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 import scipy.io.wavfile
 import scipy as sp
-import time
+import rospkg
+import rospkg
+# import time
+
+# get the path to our package
+rospack = rospkg.RosPack()
+package_path = rospack.get_path('sound_detection')
+
+# construct full path to reference file
+reference_file_path = package_path + "/scripts/reference_16K.wav"
 
 # we don't care about the sample rate value, we just save the audio data of the reference sound
-_, reference_sound = scipy.io.wavfile.read("db2_16K.wav")
+_, reference_sound = scipy.io.wavfile.read(reference_file_path)
 reference = reference_sound
 
 # Initialize the numpy array to store the audio data
@@ -42,11 +52,15 @@ def compare(mic_data, threshold=None):
     # print(time.perf_counter()-s) # for performance measurement
 
     if calc > threshold:
-        print("\n\n #####     Doorbell detected!     #####")
+        nlpOut.publish(f"<DOORBELL>")
+        rospy.signal_shutdown('Doorbell detected')
 
 
 if __name__ == '__main__':
 
-    rospy.init_node('audio_listener', anonymous=True)
+    # Initialize ros node
+    rospy.init_node('audio_listener', anonymous=True)    
+    # Publisher for the nlp_out topic
+    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
     rospy.Subscriber("/audio/audio", AudioData, callback_fft)
     rospy.spin()

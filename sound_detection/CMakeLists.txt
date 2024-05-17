@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(activate_language_processing)
+project(sound_detection)
 
 find_package(catkin REQUIRED COMPONENTS
   message_generation

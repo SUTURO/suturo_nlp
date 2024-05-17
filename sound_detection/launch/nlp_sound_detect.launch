@@ -1,0 +1,3 @@
+<launch>
+	<node pkg="sound_detection" type="nlp_sound_detect.py" name="sound_detection" output="screen" />
+</launch>

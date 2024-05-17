@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>activate_language_processing</name>
+  <name>sound_detection</name>
   <version>0.0.0</version>
-  <description>The activate_language_processing package</description>
+  <description>The sound_detection package</description>
   <license>unpublished</license>
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -13,11 +13,10 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>message_generation</build_depend>
-  <depend>requests</depend>
-  <depend>whisper</depend>
-  <depend>speech_recognition</depend>
-  <depend>json</depend>
   <depend>rospy</depend>
+  <depend>numpy</depend>
+  <depend>scipy</depend>
+  <depend>rospkg</depend>
   <depend>std_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
