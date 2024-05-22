@@ -10,12 +10,20 @@ def main():
     doc = nlp(sent)
 
     # Build partial sentences
-    temp, sents, sem = "", [], {} 
+    # Initiate variables: Temporary partial sentence, List of Sentences, Dictionary for every word with "part of speech" as key, 
+    '''
+    temp: Temporary partial sentence
+    sents: List of partial sentences
+    sem: Dictionary for every word with "part of speech" as key, used for iterating over words later
+    splits: List of verbs in the Sentence, used for splitting
+    '''
+    temp, sents, sem, splits = "", [], {}, [] 
     for token in doc:
         sem.update({token.text:token.pos_})
         if token.pos_ == "VERB" and token.text[-3:] != "ing":
             sents.append(temp)
             temp = token.text + " "
+            splits.append(token.text)
         else:
             temp = temp + token.text + " "
     sents.append(temp)
@@ -36,7 +44,6 @@ def main():
         for item in response
         ]
     }
-    # print(responses)
 
     # Build the lists of people, places and artifacts using the rasa responses
     person_list, place_list, artifact_list = [], [], [] 
@@ -59,7 +66,13 @@ def main():
         person_list.append(tperson_list)
         place_list.append(tplace_list)
         artifact_list.append(tartifact_list)
-    # print(f"Persons: {person_list}, Places: {place_list}, Artifacts: {artifact_list}")
+
+    # Manually remove "then" from place_list...
+    i = 0
+    for l in place_list:
+        place_list[i] = filter(lambda word: word != "then", l)
+        i+=1
+
 
     # Remove duplicates and empty strings from lists
     person_list, place_list, artifact_list = [shorten(i) for i in person_list], [shorten(i) for i in place_list], [shorten(i) for i in artifact_list]
@@ -73,45 +86,74 @@ def main():
         for word in words:
             if counter > 0:
                 if  sem[word] == "PRON" or sem[word] == "ADV":
-                    # These would be better in their own function..
+                    # Repeating this for every list
                     if word in place_list[counter]:
-                        # print(f"Place found: {word}")
                         if place_list[counter-1] == []:
-                            word = place_list[0][0]
-                        place_list[counter].insert(0, word)
+                            word = place_list[0][0] if place_list[0] else word # don't do anything if list is empty
+                        else:
+                            word = place_list[counter-1][0]
+                            place_list[counter].insert(0, word)
                     
                     elif word in person_list[counter]:
-                        # print(f"Person found: {word}")
                         if person_list[counter-1] == []:
-                            word = person_list[0][0]
-                        person_list[counter].insert(0, word)
+                            word = person_list[0][0] if person_list[0] else word
+                        else:
+                            word = person_list[counter-1][0]
+                            person_list[counter].insert(0, word)
                     
                     elif word in artifact_list[counter]:
-                        # print(f"Artifact found: {word}")
                         if artifact_list[counter-1] == []:
-                            word = artifact_list[0][0]
-                        artifact_list[counter].insert(0, word)
+                            word = artifact_list[0][0] if artifact_list[0] else word
+                        else:
+                            word = artifact_list[counter-1][0]
+                            artifact_list[counter].insert(0, word)
 
             output.append(word)
         counter += 1
-    print(output)
 
-'''
-Function that removes duplicates and empty Strings
+    output = split_into_queue(splits, output)
+    print(list(output)) # Output for gpsr, list method only for print statement
 
-Args:
-    Any list
-Returns:
-    A List without duplicates and no empty Strings
-'''
 def shorten(array):
+    '''
+    Function that removes duplicates and empty Strings
+
+    Args:
+        array: Any list
+    Returns:
+        A List without duplicates and no empty Strings
+    '''
     s = set(array)
     if "" in s:
         s.remove("")
     return list(s)
 
+
+def split_into_queue(verbs, sent):
+    '''
+    Function that splits a sentence into parts at specific words.
+
+    Args:
+        verbs: A list of Strings
+        sent: A String
+    Returns:
+
+    '''
+    temp = ""
+    out = []
+    for word in sent:
+        if word in verbs:
+            out.append(temp)
+            temp = word
+        else:
+            temp += f" {word}"
+    out.append(temp)
+    out = filter(None, out)
+    return out
+
 if __name__ == "__main__":
-    sent = "Get a coffee from the kitchen then give it to the guy waving and go back there"
-    #sent = "Could you please come over"
+    # sent = "Get a coffee from the kitchen then give it to the guy waving and go back there"
+    # sent = "Move the milk from the kitchen to the dining room then get the fork from there and bring it back"
+    sent = "Locate a dice in the living room then fetch it and give it to Charlie in the living room"
     server = "http://localhost:5005/model/parse" 
     main()
