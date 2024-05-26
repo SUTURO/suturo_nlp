@@ -7,12 +7,13 @@ import json
 import rospy
 import audioop
 import collections
-import queue
+import queue # remove unnecessary imports?
 import numpy
 import threading
 from queue import Queue
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool # remove unnecessary imports?
 from audio_common_msgs.msg import AudioData
+import spacy
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
     '''
@@ -72,36 +73,55 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     result = r.recognize_whisper(audio, language="english")
     print(f"\n The whisper result is: {result}")
 
+    # Split Sentence into partials for handling multiple intents
+    partials = partial_builder(result)
+
     # send result to RASA
-    ans = requests.post(server, data=bytes(json.dumps({"text": result}), "utf-8"))
+    ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in partials]
 
     # load answer from RASA 
-    response = json.loads(ans.text)   
+    response = [json.loads(item.text) for item in ans]   
 
     # change response format
-    response = {"text": response.get("text", ), "intent": response.get("intent", {}).get("name"), 
-                "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
+    response = {
+    "sentences": [
+        {
+            "text": item.get("text", ""),
+            "intent": item.get("intent", {}).get("name"),
+            "entities": {(x.get("entity"), x.get("value")) for x in item.get("entities", [])}
+        }
+        for item in response
+        ]
+    }
+    # print(response) # debug print
+    # Assign variables for better readability
+    sentences = response.get("sentences")
+    intent = sentences[0].get("intent")
+    
+    # Check length of sentence list for multi-intents and filter "order" and "receptionist" to make sure it gets recognized correctly
+    if len(sentences) == 1 or intent == "Order" or intent == "Receptionist":
+        switch(sentences[0], sentences[0])
+    else:
+        multi(response)
 
-    # call the switch function to get the right function for the intent
-    switch(response.get("intent"), response)
-
-def switch(case, response):
+def switch(intent, response):
     '''
     Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
     
     Args:
-        case: The intent parsed from the response
+        intent: The intent parsed from the response
         response: The formatted .json from the record function
 
     Returns:
         The function corresponding to the intent
     '''
+    intent = intent.get("intent")
     return {
         "Receptionist": lambda: receptionist(response),
         "affirm": lambda: nlpOut.publish(f"<CONFIRM>, True"),
         "deny": lambda: nlpOut.publish(f"<CONFIRM>, False"),
         "Order": lambda:  order(response)
-    }.get(case, lambda: nlpOut.publish(f"<NONE>"))()
+    }.get(intent, lambda: nlpOut.publish("<NONE>"))()
 
 def receptionist(response):
     '''
@@ -129,13 +149,164 @@ def order(response):
         response: Formatted .json from the record function.
     '''
     data = json.loads(getData(response))
-    
+
     drinks = data.get("drinks")
     foods = data.get("foods")
     nlpOut.publish(f"<ORDER>, {drinks}, {foods}")
 
+def multi(responses):
+    '''
+    Handle multiple intents at once.
+    
+    Args:
+        responses: List of rasa responses
+    '''
+    # Build lists of people, places and artifacts using the rasa responses.
+    person_list, place_list, artifact_list = [], [], [] 
+    for sentence in responses["sentences"]:
+        tperson_list, tplace_list, tartifact_list = [], [], []
+        entities = sentence["entities"]
+        for name, value in entities:
+            if name == "NaturalPerson":
+                tperson_list.append(value)
+            else:
+                tperson_list.append("")
+            if name == "PhysicalPlace":
+                tplace_list.append(value)
+            else:
+                tplace_list.append("")
+            if name == "PhysicalArtifact":
+                tartifact_list.append(value)
+            else:
+                tartifact_list.append("")
+        person_list.append(tperson_list)
+        place_list.append(tplace_list)
+        artifact_list.append(tartifact_list)
 
-def  getData(data):
+    # Manually remove "then" from place_list because rasa recognizes it as a place
+    i = 0
+    for l in place_list:
+        place_list[i] = filter(lambda word: word != "then", l)
+        i+=1
+
+    # Remove duplicates and empty strings using the shorten function
+    person_list, place_list, artifact_list = [shorten(i) for i in person_list], [shorten(i) for i in place_list], [shorten(i) for i in artifact_list]
+
+    # Iterate over the whole sentence and exchange pronouns (and adverbs) with the same role from an earlier partial sentence
+    counter = 0
+    output = []
+    for sentence in responses["sentences"]:
+        text = sentence["text"]
+        words = text.split()
+        for word in words:
+            if counter > 0: # only replace words from the second sentence onwards
+                if  sem[word] == "PRON" or sem[word] == "ADV":
+                    # Repeating this for every list
+                    if word in place_list[counter]:
+                        if place_list[counter-1] == []:
+                            word = place_list[0][0] if place_list[0] else word # don't do anything if list is empty
+                        else:
+                            word = place_list[counter-1][0]
+                            place_list[counter].insert(0, word)
+                    
+                    elif word in person_list[counter]:
+                        if person_list[counter-1] == []:
+                            word = person_list[0][0] if person_list[0] else word
+                        else:
+                            word = person_list[counter-1][0]
+                            person_list[counter].insert(0, word)
+                    
+                    elif word in artifact_list[counter]:
+                        if artifact_list[counter-1] == []:
+                            word = artifact_list[0][0] if artifact_list[0] else word
+                        else:
+                            word = artifact_list[counter-1][0]
+                            artifact_list[counter].insert(0, word)
+
+            output.append(word)
+        counter += 1
+
+    # Convert the output for use in the GPSR
+    output = split_into_queue(splits, output)
+    print(list(output)) # Output for gpsr, list method only for print statement
+    nlpOut.publish(f"<MULTI>, {list(output)}")
+
+def partial_builder(sentence):
+    '''
+    Builds multiple partial sentences from a single sentence.
+    
+    Args:
+        sentence: A string
+    
+    Returns:
+        A List of partial sentences.
+    '''
+    # list of verbs to ignore when generating partial sentences, all lowercase
+    ignore_list = ["order"]
+
+    # Setting up variables for building partials and initiating spaCy 
+    doc = nlp(sentence)
+    global sem, splits
+    temp, sents, sem, splits = "", [], {}, [] 
+    first = True
+    
+    # Iterate over the words in the sentence and build up partial sentences by using temporary lists until verbs appear.
+    # Ignore gerunds and words from the ignore_list.
+    for token in doc:
+        sem.update({token.text:token.pos_})
+        if token.pos_ == "VERB" and token.text[-3:] != "ing" and str.lower(token.text) not in ignore_list:
+            if first == True:
+                temp = temp + token.text + " "
+                first = False
+            else:
+                sents.append(temp)
+                temp = token.text + " "
+                splits.append(token.text)
+        else:
+            temp = temp + token.text + " "
+    sents.append(temp)
+    # sents = list(filter(None, sents))
+    return sents
+
+def shorten(array):
+    '''
+    Function that removes duplicates and empty Strings
+
+    Args:
+        array: Any list
+    Returns:
+        A List without duplicates and no empty Strings
+    '''
+    # Sets don't allow duplicates
+    s = set(array)
+    if "" in s:
+        s.remove("")    # remove empty string
+    return list(s)
+
+def split_into_queue(verbs, sent):
+    '''
+    Function that splits a sentence into parts at specific words.
+
+    Args:
+        verbs: A list of Strings
+        sent: A String
+    Returns:
+        A list of partial sentences, split at the strings from verbs
+    '''
+    temp = ""
+    out = []
+    # Iterate over all the words in the sentence and split into new sentence on verbs from list
+    for word in sent:
+        if word in verbs:
+            out.append(temp)
+            temp = word
+        else:
+            temp += f" {word}"
+    out.append(temp)
+    out = list(filter(None, out))   # filter empty strings and make into a list to avoid python iterables
+    return out
+
+def getData(data):
     '''
     Function for getting names, drinks and foods from entities in a .json
 
@@ -144,6 +315,7 @@ def  getData(data):
     Returns:
         The list of entities
     '''
+    # Setup variables
     entities = data.get("entities")
     drinks = []
     foods = []
@@ -281,6 +453,10 @@ if "__main__" == __name__:
     nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)    
 
     # rasa Action server
-    server = "http://localhost:5005/model/parse" 
+    server = "http://localhost:5005/model/parse"
+    
+    # initiate spaCy
+    global nlp
+    nlp = spacy.load("en_core_web_sm")
     
     main()

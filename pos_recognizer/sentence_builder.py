@@ -15,8 +15,9 @@ def main():
     temp: Temporary partial sentence
     sents: List of partial sentences
     sem: Dictionary for every word with "part of speech" as key, used for iterating over words later
-    splits: List of verbs in the Sentence, used for splitting
+    global splits: List of verbs in the Sentence, used for splitting
     '''
+    global sem, splits
     temp, sents, sem, splits = "", [], {}, [] 
     for token in doc:
         sem.update({token.text:token.pos_})
@@ -32,6 +33,8 @@ def main():
     # Get Rasa responses for partial sentences
     ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in sents]
     response = [json.loads(item.text) for item in ans]
+    print(ans)
+    print(response)
 
     # reshape rasa responses for easier use
     responses = {
@@ -44,7 +47,7 @@ def main():
         for item in response
         ]
     }
-
+    print(len(responses.get("sentences")))
     # Build the lists of people, places and artifacts using the rasa responses
     person_list, place_list, artifact_list = [], [], [] 
     for sentence in responses["sentences"]:
@@ -155,5 +158,6 @@ if __name__ == "__main__":
     # sent = "Get a coffee from the kitchen then give it to the guy waving and go back there"
     # sent = "Move the milk from the kitchen to the dining room then get the fork from there and bring it back"
     sent = "Locate a dice in the living room then fetch it and give it to Charlie in the living room"
+    # sent =  "Bring me the milk"
     server = "http://localhost:5005/model/parse" 
     main()
