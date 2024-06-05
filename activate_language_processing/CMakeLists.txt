@@ -20,3 +20,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+
+catkin_install_python(PROGRAMS
+  scripts/activate_language_processing.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
