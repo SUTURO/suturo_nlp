@@ -7,11 +7,10 @@ import json
 import rospy
 import audioop
 import collections
-import queue # remove unnecessary imports?
 import numpy
 import threading
 from queue import Queue
-from std_msgs.msg import String, Bool # remove unnecessary imports?
+from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 import spacy
 
@@ -53,24 +52,27 @@ def record(data, recordFromTopic, queue_data, lock, flags):
         lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
         flags: Dictionary to store the record flag.
     '''
-    r = sr.Recognizer() # speech_recognition.Recognizer
-    r.pause_threshold = 1.5 # seconds
+    if not test_mode:
+        r = sr.Recognizer() # speech_recognition.Recognizer
+        r.pause_threshold = 1.5 # seconds
 
-    if recordFromTopic:
-        with lock:
-            flags["record"] = True
-        # print("Say something (using hsr microphone)!")
-        audio = listen2Queue(queue_data, r)
-        with lock:
-            flags["record"] = False
-    else:
-        with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 2)
-            print("Say something (using backpack microphone)!")
-            audio = r.listen(source)
+        if recordFromTopic:
+            with lock:
+                flags["record"] = True
+            # print("Say something (using hsr microphone)!")
+            audio = listen2Queue(queue_data, r)
+            with lock:
+                flags["record"] = False
+        else:
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source, 2)
+                print("Say something (using backpack microphone)!")
+                audio = r.listen(source)
 
-    # Use sr Whisper integration
-    result = r.recognize_whisper(audio, language="english")
+        # Use sr Whisper integration
+        result = r.recognize_whisper(audio, language="english")
+    if test_mode:
+        result = data.data
     print(f"\n The whisper result is: {result}")
 
     # Split Sentence into partials for handling multiple intents
@@ -99,7 +101,8 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     intent = sentences[0].get("intent")
     
     # Check length of sentence list for multi-intents and filter "order" and "receptionist" to make sure it gets recognized correctly
-    if len(sentences) == 1 or intent == "Order" or intent == "Receptionist":
+    # if len(sentences) == 1 or 
+    if intent in ["Order", "Receptionist", "affirm", "deny"]:
         switch(sentences[0], sentences[0])
     else:
         multi(response)
@@ -226,10 +229,35 @@ def multi(responses):
             output.append(word)
         counter += 1
 
-    # Convert the output for use in the GPSR
+    # Split the sentence into a list of partials at specific words
     output = split_into_queue(splits, output)
-    print(list(output)) # Output for gpsr, list method only for print statement
-    nlpOut.publish(f"<MULTI>, {list(output)}")
+
+    # calling rasa twice for each partial sentence seems bad practice
+    output = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in output]
+    output = [json.loads(item.text) for item in output]
+
+    # Change the format for better usability
+    output = {
+            item.get("text"):
+            {
+                "intent": item.get("intent", {}).get("name"),
+                "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalArtifact"] or [""])[0],
+                "object-type": "", # ?
+                "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
+                "person-type": "", # ?
+                "object-attribute": "", # filter attributes with spaCy
+                "person-action": "", # waving?
+                "color": "", # filter attributes with spaCy
+                "number": "", # spaCy can do that
+                "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # dpes not filter from/to yet
+                "to-location": "",
+                "from-room": "",
+                "to-room": ""
+            }
+        for item in output
+    }
+    print(output)
+    nlpOut.publish(f"<MULTI>, {output}")
 
 def partial_builder(sentence):
     '''
@@ -428,6 +456,7 @@ def main():
     # Parse command line arguments
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
+    parser.add_argument('-t', '--terminal', action='store_true', help='Flag to use the "/nlp_test" topic instead of microphone input.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
     queue_data = Queue() # Queue to store the audio data.
@@ -435,11 +464,19 @@ def main():
     flags = {"record": False} 
     acc_data = {"data": numpy.array([], dtype=numpy.int16)} # Accumulated audio data from HSR's microphone.
 
+    # Manage arguments
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
         rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, queue_data, acc_data, lock, flags))
-    # Execute record() callback function on receiving a message on /startListener
-    rospy.Subscriber('/startListener', String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))  # TODO test what happens when 2 signals overlap
+    
+    global test_mode
+    test_mode = args.terminal
+    if args.terminal:
+        # Subscribe to the nlp_test topic to 
+        rospy.Subscriber("/nlp_test", String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))
+    else:
+        # Execute record() callback function on receiving a message on /startListener
+        rospy.Subscriber('/startListener', String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))  # TODO test what happens when 2 signals overlap
     
     rospy.spin()
 
@@ -449,7 +486,7 @@ if "__main__" == __name__:
     rospy.init_node('nlp_out', anonymous=True)
     rate = rospy.Rate(1)
 
-    # Alternative code to circumvent Knowledge Service. Don't forget to comment the rospy.wait_for_service and callService lines.
+    # Initiate nlp_out publisher
     nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)    
 
     # rasa Action server

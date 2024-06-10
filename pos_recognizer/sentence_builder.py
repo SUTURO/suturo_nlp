@@ -34,7 +34,7 @@ def main():
     ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in sents]
     response = [json.loads(item.text) for item in ans]
     print(ans)
-    print(response)
+    #print(response)
 
     # reshape rasa responses for easier use
     responses = {
@@ -47,6 +47,7 @@ def main():
         for item in response
         ]
     }
+    print(responses)
     print(len(responses.get("sentences")))
     # Build the lists of people, places and artifacts using the rasa responses
     person_list, place_list, artifact_list = [], [], [] 
@@ -77,7 +78,7 @@ def main():
         i+=1
 
 
-    # Remove duplicates and empty strings from lists
+    # Remove duplicates and empty strings from lists TODO remove pronouns from these lists if not empty after
     person_list, place_list, artifact_list = [shorten(i) for i in person_list], [shorten(i) for i in place_list], [shorten(i) for i in artifact_list]
 
     # Iterate over the whole sentence and exchange pronouns (and adverbs) with the same role from an earlier partial sentence
@@ -157,7 +158,8 @@ def split_into_queue(verbs, sent):
 if __name__ == "__main__":
     # sent = "Get a coffee from the kitchen then give it to the guy waving and go back there"
     # sent = "Move the milk from the kitchen to the dining room then get the fork from there and bring it back"
-    sent = "Locate a dice in the living room then fetch it and give it to Charlie in the living room"
+    # sent = "Locate a dice in the living room then fetch it and give it to Charlie in the living room"
     # sent =  "Bring me the milk"
+    sent = "Bring Alice the dice from the living room  then take her to the kitchen"
     server = "http://localhost:5005/model/parse" 
     main()
