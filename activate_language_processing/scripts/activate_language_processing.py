@@ -249,15 +249,14 @@ def multi(responses):
             "person-action": "",  # waving?
             "color": "",  # filter attributes with spaCy
             "number": "",  # spaCy can do that
-            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0],
-            # dpes not filter from/to yet
+            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # does not filter from/to yet
             "to-location": "",
             "from-room": "",
             "to-room": ""
         }
 
-    print(str(result))
-    nlpOut.publish(str(result))
+        print(str(result))
+        nlpOut.publish(str(result))
 
 def partial_builder(sentence):
     '''
@@ -271,6 +270,8 @@ def partial_builder(sentence):
     '''
     # list of verbs to ignore when generating partial sentences, all lowercase
     ignore_list = ["order"]
+    # list of verbs to always let through, all lowercase
+    special_list = ["bring"]
 
     # Setting up variables for building partials and initiating spaCy 
     doc = nlp(sentence)
@@ -282,7 +283,7 @@ def partial_builder(sentence):
     # Ignore gerunds and words from the ignore_list.
     for token in doc:
         sem.update({token.text:token.pos_})
-        if token.pos_ == "VERB" and token.text[-3:] != "ing" and str.lower(token.text) not in ignore_list:
+        if token.pos_ == "VERB" and token.text[-3:] != "ing" and str.lower(token.text) not in ignore_list or str.lower(token.text) in special_list:
             if first == True:
                 temp = temp + token.text + " "
                 first = False
