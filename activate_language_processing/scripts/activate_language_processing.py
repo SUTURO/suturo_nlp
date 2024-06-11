@@ -37,7 +37,7 @@ def record_hsr(data, queue_data, acc_data, lock, flags):
     acc_data["data"] = numpy.concatenate([acc_data["data"], numpy.frombuffer(bytes(data.data), dtype=numpy.int16)])
     # put accumulated data into queue when it reaches a certain size
     if len(acc_data["data"]) >= 32000:
-        queue_data.put(acc_data["data"])    
+        queue_data.put(acc_data["data"])
         acc_data["data"] = numpy.array([], dtype=numpy.int16) # reset the array
 
 def record(data, recordFromTopic, queue_data, lock, flags):
@@ -82,7 +82,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in partials]
 
     # load answer from RASA 
-    response = [json.loads(item.text) for item in ans]   
+    response = [json.loads(item.text) for item in ans]
 
     # change response format
     response = {
@@ -99,7 +99,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     # Assign variables for better readability
     sentences = response.get("sentences")
     intent = sentences[0].get("intent")
-    
+
     # Check length of sentence list for multi-intents and filter "order" and "receptionist" to make sure it gets recognized correctly
     # if len(sentences) == 1 or 
     if intent in ["Order", "Receptionist", "affirm", "deny"]:
@@ -165,7 +165,7 @@ def multi(responses):
         responses: List of rasa responses
     '''
     # Build lists of people, places and artifacts using the rasa responses.
-    person_list, place_list, artifact_list = [], [], [] 
+    person_list, place_list, artifact_list = [], [], []
     for sentence in responses["sentences"]:
         tperson_list, tplace_list, tartifact_list = [], [], []
         entities = sentence["entities"]
@@ -211,14 +211,14 @@ def multi(responses):
                         else:
                             word = place_list[counter-1][0]
                             place_list[counter].insert(0, word)
-                    
+
                     elif word in person_list[counter]:
                         if person_list[counter-1] == []:
                             word = person_list[0][0] if person_list[0] else word
                         else:
                             word = person_list[counter-1][0]
                             person_list[counter].insert(0, word)
-                    
+
                     elif word in artifact_list[counter]:
                         if artifact_list[counter-1] == []:
                             word = artifact_list[0][0] if artifact_list[0] else word
@@ -237,27 +237,27 @@ def multi(responses):
     output = [json.loads(item.text) for item in output]
 
     # Change the format for better usability
-    output = {
-            item.get("text"):
-            {
-                "intent": item.get("intent", {}).get("name"),
-                "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalArtifact"] or [""])[0],
-                "object-type": "", # ?
-                "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
-                "person-type": "", # ?
-                "object-attribute": "", # filter attributes with spaCy
-                "person-action": "", # waving?
-                "color": "", # filter attributes with spaCy
-                "number": "", # spaCy can do that
-                "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # dpes not filter from/to yet
-                "to-location": "",
-                "from-room": "",
-                "to-room": ""
-            }
-        for item in output
-    }
-    print(output)
-    nlpOut.publish(f"<MULTI>, {output}")
+    for idx, item in enumerate(output):
+        result = {
+            "sentence": item.get("text"),
+            "intent": item.get("intent", {}).get("name"),
+            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalArtifact"] or [""])[0],
+            "object-type": "",  # ?
+            "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
+            "person-type": "",  # ?
+            "object-attribute": "",  # filter attributes with spaCy
+            "person-action": "",  # waving?
+            "color": "",  # filter attributes with spaCy
+            "number": "",  # spaCy can do that
+            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0],
+            # dpes not filter from/to yet
+            "to-location": "",
+            "from-room": "",
+            "to-room": ""
+        }
+
+    print(str(result))
+    nlpOut.publish(str(result))
 
 def partial_builder(sentence):
     '''
@@ -275,9 +275,9 @@ def partial_builder(sentence):
     # Setting up variables for building partials and initiating spaCy 
     doc = nlp(sentence)
     global sem, splits
-    temp, sents, sem, splits = "", [], {}, [] 
+    temp, sents, sem, splits = "", [], {}, []
     first = True
-    
+
     # Iterate over the words in the sentence and build up partial sentences by using temporary lists until verbs appear.
     # Ignore gerunds and words from the ignore_list.
     for token in doc:
@@ -348,7 +348,7 @@ def getData(data):
     drinks = []
     foods = []
     names = []
-    
+
     # Filtering the entities list for drink, food and NaturalPerson
     for ent, val in entities:
         if ent == "drink":
@@ -359,7 +359,7 @@ def getData(data):
             names.append(val)
         else:
             pass
-    
+
     # Build the .json
     list = {"names": names, "drinks": drinks, "foods": foods}
     return json.dumps(list)
@@ -387,20 +387,20 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     '''
     def soundLen(buffer, sampleRate):
         return (len(buffer) + 0.0) / sampleRate
-    
+
     def getNextBuffer(soundQueue, sampleRate, sampleWidth):
         buffer = soundQueue.get()
         soundQueue.task_done()
         soundDuration = soundLen(buffer, sampleRate)
         energy = audioop.rms(buffer, sampleWidth)
         return buffer, soundDuration, energy
-    
+
     def adjustEnergyLevel(rec, soundDuration, energy):
         # dynamically adjust the energy threshold using asymmetric weighted average
         damping = rec.dynamic_energy_adjustment_damping ** soundDuration
         target_energy = energy * rec.dynamic_energy_ratio
         rec.energy_threshold = rec.energy_threshold * damping + target_energy * (1 - damping)
-        
+
     sampleWidth = 2
     # Step 1: adjust to noise level
     # Assumes speech is preceded by at least <startSilence> seconds silence. Loops through this interval
@@ -411,7 +411,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
-    
+
     print("Say something (using hsr microphone)!")
 
     # Step 2: wait for speech to begin
@@ -461,14 +461,14 @@ def main():
 
     queue_data = Queue() # Queue to store the audio data.
     lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
-    flags = {"record": False} 
+    flags = {"record": False}
     acc_data = {"data": numpy.array([], dtype=numpy.int16)} # Accumulated audio data from HSR's microphone.
 
     # Manage arguments
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
         rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, queue_data, acc_data, lock, flags))
-    
+
     global test_mode
     test_mode = args.terminal
     if args.terminal:
@@ -477,7 +477,7 @@ def main():
     else:
         # Execute record() callback function on receiving a message on /startListener
         rospy.Subscriber('/startListener', String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))  # TODO test what happens when 2 signals overlap
-    
+
     rospy.spin()
 
 if "__main__" == __name__:
@@ -487,13 +487,13 @@ if "__main__" == __name__:
     rate = rospy.Rate(1)
 
     # Initiate nlp_out publisher
-    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)    
+    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
 
     # rasa Action server
     server = "http://localhost:5005/model/parse"
-    
+
     # initiate spaCy
     global nlp
     nlp = spacy.load("en_core_web_sm")
-    
+
     main()
