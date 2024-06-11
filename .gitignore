@@ -1,11 +1,3 @@
-## command generator
-
-generator/data/
-generator/tests.json
-generator/generated_training.txt
-generator/generated_testing.txt
-generator/domain.yml
-
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
