@@ -241,7 +241,7 @@ def multi(responses):
         result = {
             "sentence": item.get("text"),
             "intent": item.get("intent", {}).get("name"),
-            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalArtifact"] or [""])[0],
+            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
             "object-type": "",  # ?
             "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
             "person-type": "",  # ?
