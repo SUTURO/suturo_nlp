@@ -103,7 +103,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     # Check length of sentence list for multi-intents and filter "order" and "receptionist" to make sure it gets recognized correctly
     # if len(sentences) == 1 or 
     if intent in ["Order", "Receptionist", "affirm", "deny"]:
-        switch(sentences[0], sentences[0])
+        switch(sentences[0], sentences[0]) # TODO this looks wrong
     else:
         multi(response)
 
@@ -236,23 +236,29 @@ def multi(responses):
     output = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in output]
     output = [json.loads(item.text) for item in output]
 
+    rooms = ["living room", "kitchen", "bedroom", "bathroom", "dining room", "office", "guest room", "laundry room", "basement", "attic", "garage", "pantry", "hallway", "porch", "library", "storage room"]
+    colors =  ["red", "orange", "yellow", "green", "blue", "purple", "pink", "brown", "black", "white", "gray", "gray", "violet", "turquoise", "cyan", "magenta", "lime", "teal", "gold", "silver"]
+
+
     # Change the format for better usability
     for idx, item in enumerate(output):
+        words = str.lower(item.get("text")).split()
+        obj =  ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0]
         result = {
             "sentence": item.get("text"),
             "intent": item.get("intent", {}).get("name"),
-            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
+            "object-name": obj,
             "object-type": "",  # ?
             "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
             "person-type": "",  # ?
-            "object-attribute": "",  # filter attributes with spaCy
-            "person-action": "",  # waving?
-            "color": "",  # filter attributes with spaCy
-            "number": "",  # spaCy can do that
-            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # does not filter from/to yet
-            "to-location": "",
-            "from-room": "",
-            "to-room": ""
+            "object-attribute": attributes.get(obj),  # children of the object
+            "person-action": "",  # gerunds?
+            "color": [word for word in words if word in colors],
+            "number": [word for word in words if word in nums],
+            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0] if "from" in words else "",
+            "to-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0] if "to" in words else "",
+            "from-room": [room for room in rooms if room in item.get("text")] if "from" in words else "",
+            "to-room": [room for room in rooms if room in item.get("text")] if "to" in words else ""
         }
 
         print(str(result))
@@ -275,14 +281,18 @@ def partial_builder(sentence):
 
     # Setting up variables for building partials and initiating spaCy 
     doc = nlp(sentence)
-    global sem, splits
-    temp, sents, sem, splits = "", [], {}, []
+    global sem, splits, nums, attributes
+    temp, sents, sem, splits, nums, attributes = "", [], {}, [], [], {}
     first = True
 
     # Iterate over the words in the sentence and build up partial sentences by using temporary lists until verbs appear.
     # Ignore gerunds and words from the ignore_list.
     for token in doc:
         sem.update({token.text:token.pos_})
+        if token.like_num == True:
+            nums.append(token.text)
+        if token.pos_ == "NOUN":
+            attributes.update({token.text:token.children}) # needs filter for adjectives
         if token.pos_ == "VERB" and token.text[-3:] != "ing" and str.lower(token.text) not in ignore_list or str.lower(token.text) in special_list:
             if first == True:
                 temp = temp + token.text + " "
@@ -294,7 +304,6 @@ def partial_builder(sentence):
         else:
             temp = temp + token.text + " "
     sents.append(temp)
-    # sents = list(filter(None, sents))
     return sents
 
 def shorten(array):
