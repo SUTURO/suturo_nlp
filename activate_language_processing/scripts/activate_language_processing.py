@@ -1,4 +1,4 @@
-#! /home/hawkin/envs/whisper/bin/python3.8
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 import requests
