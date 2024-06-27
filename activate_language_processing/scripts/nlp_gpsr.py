@@ -13,6 +13,7 @@ from queue import Queue
 from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 import spacy
+import activate_language_processing.beep as beep
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
     '''
@@ -53,6 +54,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
         lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
         flags: Dictionary to store the record flag.
     '''
+    rospy.loginfo("[ALP] go start signal")
     if not test_mode:
         r = sr.Recognizer() # speech_recognition.Recognizer
         r.pause_threshold = 1.5 # seconds
@@ -418,8 +420,9 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
 
-    rospy.loginfo("Say something (using hsr microphone)!")
+    rospy.loginfo("Say something (using hsr microphone)! %s %s" % (os.path.realpath(__file__), beep.__file__))
     # Step 2: wait for speech to begin
+    beep.SoundRequestPublisher().publish_sound_request()
     # If the energy level exceeds the threshold, consider speech started
     frames = collections.deque()
     frameTime = 0

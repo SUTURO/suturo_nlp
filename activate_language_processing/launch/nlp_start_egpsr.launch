@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node name="activate_language_processing" pkg="activate_language_processing" type="activate_language_processing.py" output="screen" args="-hsr"/>
+  <node name="activate_language_processing" pkg="activate_language_processing" type="nlp_gpsr.py" output="screen" args="-hsr"/>
 
 </launch>
 

@@ -7,7 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
-# catkin_python_setup()
+catkin_python_setup()
 
 generate_messages(
   DEPENDENCIES
@@ -22,6 +22,7 @@ include_directories(
 
 
 catkin_install_python(PROGRAMS
-  scripts/activate_language_processing.py
+  # scripts/beep.py
+  scripts/nlp_gpsr.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
