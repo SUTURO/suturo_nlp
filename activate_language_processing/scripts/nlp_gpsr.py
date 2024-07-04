@@ -22,10 +22,15 @@ def _isTranscribing(context):
 def nluInternal(text, context):
     with context["lock"]:
         parses = semanticLabelling(text, context)
+        print(parses)
         for p in parses:
             pAdj = {"sentence": p["sentence"], "intent": p["intent"]}
             for k, v in p["entities"].items():
-                pAdj[k] = v.get("value")
+                role=v["role"]
+                pAdj[role] = v.copy()
+                pAdj[role].pop("role")
+                pAdj[role].pop("group")
+                pAdj[role].pop("idx")
             context["pub"].publish(json.dumps(pAdj))
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
 ''' TODO: not all these roles are currently recognized. In particular, attribute-like roles are not recognized.
@@ -81,6 +86,8 @@ def transcriberFn(context):
         rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
         with context["lock"]:
             context["listening"] = True
+        audio = listen2Queue(context["queue"], r)
+        audio = listen2Queue(context["queue"], r)
         audio = listen2Queue(context["queue"], r)
         with context["lock"]:
             context["listening"] = False
@@ -196,9 +203,10 @@ def main():
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
     parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
-    parser.add_argument('-o', '--outputTopic', default='nlp_out', help="Topic to send semantic parsing results on. Default: nlp_out")
-    parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: whisper_out")
-    parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the "/nlp_test" topic.')
+    parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
+    parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
+    parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: /whisper_out")
+    parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
     nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
@@ -226,3 +234,4 @@ def main():
 
 if "__main__" == __name__:
     main()
+
