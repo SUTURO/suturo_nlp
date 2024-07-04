@@ -8,15 +8,15 @@ import threading
 import time
 
 # recomended command if you don't want to get these terrible ALSA warnings
-# python3 activte_noisy_input.py 2>/dev/null/ 
+# python3 activate_noisy_input.py 2>/dev/null/ 
 
-'''
+def test_with_noise(pause_threshold, energy_threshold):
+    '''
 plays some annoying sounds while you can test the speech recognition
 *pause_threshold* silence until break
 *energy_threshold* sensitivity
-'''
-def test_with_noise(pause_threshold, energy_threshold):
-    
+    '''
+
     r = sr.Recognizer()
     r.pause_threshold = pause_threshold
 
