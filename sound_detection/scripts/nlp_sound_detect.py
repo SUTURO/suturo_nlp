@@ -27,9 +27,17 @@ acc_data = {"data": np.zeros(len(reference), dtype=np.int16), "writeAt": 0}
 # Initialize the compare frequency
 compare_frequecy = 0
 
+# Initialize the active flag
+active = False
+
 def callback_fft(data):
 
     global compare_frequecy
+    global active
+    
+    if not active:
+        return
+    
     compare_frequecy += 1
     
     new_data = np.frombuffer(bytes(data.data), dtype=np.int16)
@@ -41,9 +49,10 @@ def callback_fft(data):
         compare(acc_data["data"])
 
 def compare(mic_data, threshold=None):
+    global active
 
     if threshold is None:
-        threshold = 100
+        threshold = 10
     
     # s = time.perf_counter() # for performance measurement
     comp = sp.signal.fftconvolve(mic_data, reference, mode="valid")
@@ -53,8 +62,13 @@ def compare(mic_data, threshold=None):
 
     if calc > threshold:
         nlpOut.publish(f"<DOORBELL>")
-        rospy.signal_shutdown('Doorbell detected')
+        rospy.loginfo("Doorbell was detected!")
+        active = False
 
+def callback_activate(msg):
+    rospy.loginfo("Got activation message from Planning!")
+    global active
+    active = True
 
 if __name__ == '__main__':
 
@@ -62,5 +76,8 @@ if __name__ == '__main__':
     rospy.init_node('audio_listener', anonymous=True)    
     # Publisher for the nlp_out topic
     nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
-    rospy.Subscriber("/audio/audio", AudioData, callback_fft)
+    # Subscriber for the audio topic
+    rospy.Subscriber('/audio/audio', AudioData, callback_fft)
+    # Subscriber for the activation_topic
+    rospy.Subscriber('/startSoundDetection', String, callback_activate)
     rospy.spin()
