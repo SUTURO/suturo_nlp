@@ -75,7 +75,7 @@ def startListener(msg, context):
     rospy.loginfo("[ALP] got start signal")
     with context["lock"]:
         if not _isTranscribing(context):
-            context["transcriber"] = Thread(target=transcriberFn, args=(context,))
+            context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,))
             context["transcriber"].start()
 
 def transcriberFn(context):
