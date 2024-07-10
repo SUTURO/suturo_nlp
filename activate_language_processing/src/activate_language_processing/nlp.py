@@ -183,9 +183,11 @@ def semanticLabelling(text, context):
     for k,e in enumerate(parsedIntents):
         if (0==len(e["entities"])) and (k < len(parsedIntents)-1):
             j=0
-            for role, value, group, entity, propAttr, actAttr, numAttr in parsedIntents[k+1]["entities"].values():
+            for espec in parsedIntents[k+1]["entities"].values():
+                 role = espec.get("role", "UndefinedRole")
                  if role in context[intent2Roles[e["intent"]]]:
-                     e["entities"][j] = (role,value,group)
+                     e["entities"][j] = espec.copy()
+                     e["entities"][j]["idx"] = j
                      j+=1
     return parsedIntents
 
