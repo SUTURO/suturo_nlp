@@ -76,7 +76,7 @@ Use RASA to parse a simple sentence (one intent).
         eEnd = e.get("end", 0)+sStart
         if subtreeDep(eStart, eEnd, idx2Tok) in roleForbiddenDeps:
             continue
-        retq["entities"][k] = {"idx": k, "role": e.get("role", "UndefinedRole"), "value": e.get("value", "UnparsedEntity"), "group": e.get("group", 0), "entity": e.get("entity", "owl:Thing"), "propertyAttribute": getAttributes(eStart, eEnd, idx2Tok, attrDeps, propAttrPOS), "actionAttribute": getAttributes(eStart, eEnd, idx2Tok, attrDeps, actAttrPOS), "numberAttribute": getAttributes(eStart, eEnd, idx2Tok, numDeps, numAttrPOS)}
+        retq["entities"][k] = {"idx": k, "role": e.get("role", "UndefinedRole"), "value": e.get("value", "UnparsedEntity"), "group": int(e.get("group", 0)), "entity": e.get("entity", "owl:Thing"), "propertyAttribute": getAttributes(eStart, eEnd, idx2Tok, attrDeps, propAttrPOS), "actionAttribute": getAttributes(eStart, eEnd, idx2Tok, attrDeps, actAttrPOS), "numberAttribute": getAttributes(eStart, eEnd, idx2Tok, numDeps, numAttrPOS)}
     return retq
 
 def degroup(parses):
@@ -84,6 +84,7 @@ def degroup(parses):
 Convert a parse that may have groups (sets of entities to act on in the same way in parallel) into a list
 of parses.
     """
+    print(parses)
     retq=[]
     for e in parses:
         intent=e["intent"]
