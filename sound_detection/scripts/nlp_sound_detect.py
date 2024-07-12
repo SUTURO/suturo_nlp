@@ -15,7 +15,7 @@ rospack = rospkg.RosPack()
 package_path = rospack.get_path('sound_detection')
 
 # construct full path to reference file
-reference_file_path = package_path + "/scripts/reference_16K.wav.bak"
+reference_file_path = package_path + "/scripts/reference_16K.wav"
 
 # we don't care about the sample rate value, we just save the audio data of the reference sound
 _, reference_sound = scipy.io.wavfile.read(reference_file_path)
@@ -30,7 +30,7 @@ compare_frequecy = 0
 # Initialize the active flag
 active = False
 
-def callback_fft(data):
+def callback_fft(data, nlpOut):
 
     global compare_frequecy
     global active
@@ -46,9 +46,9 @@ def callback_fft(data):
     
     # Compare only every 100 samples to save computation time 
     if compare_frequecy % 100 == 0:
-        compare(acc_data["data"])
+        compare(acc_data["data"], nlpOut)
 
-def compare(mic_data, threshold=None):
+def compare(mic_data, nlpOut, threshold=None):
     global active
 
     if threshold is None:
@@ -59,16 +59,11 @@ def compare(mic_data, threshold=None):
 
     calc = np.multiply(comp.max(), np.float64(1e-9))
     # print(time.perf_counter()-s) # for performance measurement
-    # print(calc)
 
     if calc > threshold:
         nlpOut.publish(f"<DOORBELL>")
-        rospy.signal_shutdown('Doorbell detected')
-        print("########################")
-        print("bellsound detected")
-        print("########################")
+        rospy.loginfo("Doorbell was detected!")
         active = False
-
 
 def callback_activate(msg):
     rospy.loginfo("Got activation message from Planning!")
@@ -87,9 +82,7 @@ if __name__ == '__main__':
     rospy.Subscriber("/audio/audio", AudioData, callback_fft)
 
     # Subscriber for the audio topic
-    rospy.Subscriber('/audio/audio', AudioData, callback_fft)
-
+    rospy.Subscriber('/audio/audio', AudioData, lambda x: callback_fft(x, nlpOut))
     # Subscriber for the activation_topic
     rospy.Subscriber('/startSoundDetection', String, callback_activate)
     rospy.spin()
-
