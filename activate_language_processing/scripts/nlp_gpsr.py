@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /home/hawkin/envs/whisper/bin/python3.8
 
 from argparse import ArgumentParser
 import requests
@@ -420,7 +420,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
 
-    rospy.loginfo("Say something (using hsr microphone)! %s %s" % (os.path.realpath(__file__), beep.__file__))
+    rospy.loginfo("Say something (using hsr microphone)!")
     # Step 2: wait for speech to begin
     beep.SoundRequestPublisher().publish_sound_request()
     # If the energy level exceeds the threshold, consider speech started
