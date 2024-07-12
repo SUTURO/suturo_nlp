@@ -15,7 +15,7 @@ rospack = rospkg.RosPack()
 package_path = rospack.get_path('sound_detection')
 
 # construct full path to reference file
-reference_file_path = package_path + "/scripts/reference_16K.wav"
+reference_file_path = package_path + "/scripts/reference_16K.wav.bak"
 
 # we don't care about the sample rate value, we just save the audio data of the reference sound
 _, reference_sound = scipy.io.wavfile.read(reference_file_path)
@@ -65,6 +65,7 @@ def compare(mic_data, nlpOut, threshold=None):
         rospy.loginfo("Doorbell was detected!")
         active = False
 
+
 def callback_activate(msg):
     rospy.loginfo("Got activation message from Planning!")
     global active
@@ -86,3 +87,4 @@ if __name__ == '__main__':
     # Subscriber for the activation_topic
     rospy.Subscriber('/startSoundDetection', String, callback_activate)
     rospy.spin()
+
