@@ -30,7 +30,7 @@ compare_frequecy = 0
 # Initialize the active flag
 active = False
 
-def callback_fft(data):
+def callback_fft(data, nlpOut):
 
     global compare_frequecy
     global active
@@ -46,9 +46,9 @@ def callback_fft(data):
     
     # Compare only every 100 samples to save computation time 
     if compare_frequecy % 100 == 0:
-        compare(acc_data["data"])
+        compare(acc_data["data"], nlpOut)
 
-def compare(mic_data, threshold=None):
+def compare(mic_data, nlpOut, threshold=None):
     global active
 
     if threshold is None:
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # Publisher for the nlp_out topic
     nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
     # Subscriber for the audio topic
-    rospy.Subscriber('/audio/audio', AudioData, callback_fft)
+    rospy.Subscriber('/audio/audio', AudioData, lambda x: callback_fft(x, nlpOut))
     # Subscriber for the activation_topic
     rospy.Subscriber('/startSoundDetection', String, callback_activate)
     rospy.spin()
