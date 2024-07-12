@@ -15,7 +15,7 @@ rospack = rospkg.RosPack()
 package_path = rospack.get_path('sound_detection')
 
 # construct full path to reference file
-reference_file_path = package_path + "/scripts/reference_16K.wav"
+reference_file_path = package_path + "/scripts/reference_16K.wav.bak"
 
 # we don't care about the sample rate value, we just save the audio data of the reference sound
 _, reference_sound = scipy.io.wavfile.read(reference_file_path)
@@ -43,24 +43,30 @@ def callback_fft(data):
 def compare(mic_data, threshold=None):
 
     if threshold is None:
-        threshold = 100
+        threshold = 10
     
     # s = time.perf_counter() # for performance measurement
     comp = sp.signal.fftconvolve(mic_data, reference, mode="valid")
 
     calc = np.multiply(comp.max(), np.float64(1e-9))
     # print(time.perf_counter()-s) # for performance measurement
+    # print(calc)
 
     if calc > threshold:
         nlpOut.publish(f"<DOORBELL>")
         rospy.signal_shutdown('Doorbell detected')
+        print("########################")
+        print("bellsound detected")
+        print("########################")
 
 
 if __name__ == '__main__':
-
+    print("########################")
+    print("bellsound detection is on!!!")
+    print("########################")
     # Initialize ros node
     rospy.init_node('audio_listener', anonymous=True)    
     # Publisher for the nlp_out topic
-    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
+    nlpOut = rospy.Publisher("nlp_out2", String, queue_size=16)
     rospy.Subscriber("/audio/audio", AudioData, callback_fft)
     rospy.spin()
