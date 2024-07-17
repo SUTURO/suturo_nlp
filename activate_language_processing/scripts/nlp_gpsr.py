@@ -92,11 +92,15 @@ def transcriberFn(context):
             context["data"] = numpy.array([], dtype=numpy.int16)
             context["queue"] = Queue()
     else:
+        with context["lock"]:
+            context["listening"] = True
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, 1)
             rospy.loginfo("Say something into the BACKPACK microphone!")
 #            beep.SoundRequestPublisher().publish_sound_request()
             audio = r.listen(source)
+        with context["lock"]:
+            context["listening"] = False
 
     # Use sr Whisper integration
     rospy.loginfo("[Whisper]: processing...")
