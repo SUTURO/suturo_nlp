@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /home/hawkin/envs/whisper/bin/python3.8
 
 from argparse import ArgumentParser
 import requests
@@ -93,8 +93,9 @@ def transcriberFn(context):
             context["queue"] = Queue()
     else:
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 2)
+            r.adjust_for_ambient_noise(source, 1)
             rospy.loginfo("Say something into the BACKPACK microphone!")
+#            beep.SoundRequestPublisher().publish_sound_request()
             audio = r.listen(source)
 
     # Use sr Whisper integration
