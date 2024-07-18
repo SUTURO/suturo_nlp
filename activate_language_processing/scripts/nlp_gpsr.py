@@ -80,7 +80,7 @@ def startListener(msg, context):
 
 def transcriberFn(context):
     r = sr.Recognizer() # speech_recognition.Recognizer
-    r.pause_threshold = 1.5 # seconds
+    r.pause_threshold = 1.0 # seconds
     
     if context["useHSR"]:
         rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
@@ -97,8 +97,10 @@ def transcriberFn(context):
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, 1)
             rospy.loginfo("Say something into the BACKPACK microphone!")
-#            beep.SoundRequestPublisher().publish_sound_request()
+            beep.SoundRequestPublisher().publish_sound_request()
+            rospy.loginfo("[ALP] listening....")
             audio = r.listen(source)
+            rospy.loginfo("[ALP] Done listening.")
         with context["lock"]:
             context["listening"] = False
 
