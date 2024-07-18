@@ -12,7 +12,7 @@ import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-import beepy
+#import beepy
 import activate_language_processing.beep as beep
 # import time # for debugging
 
@@ -55,7 +55,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
         flags: Dictionary to store the record flag.
     '''
     r = sr.Recognizer() # speech_recognition.Recognizer
-    r.pause_threshold = 1.5 # seconds
+    r.pause_threshold = 1 # seconds
 
     if recordFromTopic:
         with lock:
@@ -66,7 +66,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
             flags["record"] = False
     else:
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 2)
+            r.adjust_for_ambient_noise(source, 1)
             print("Say something after the beep! (using backpack microphone)")
             #beepy.beep(sound=1)
             beep.SoundRequestPublisher().publish_sound_request()
