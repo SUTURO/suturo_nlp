@@ -68,9 +68,12 @@ def record(data, recordFromTopic, queue_data, lock, flags):
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, 2)
             print("Say something after the beep! (using backpack microphone)")
-            beepy.beep(sound=1)
-            audio = r.listen(source)
+            #beepy.beep(sound=1)
             beep.SoundRequestPublisher().publish_sound_request()
+            rospy.sleep(1.0)
+            print("Listening")
+            audio = r.listen(source)
+            print("Stopped listening.")
 
     # Use sr Whisper integration
     result = r.recognize_whisper(audio, language="english")
