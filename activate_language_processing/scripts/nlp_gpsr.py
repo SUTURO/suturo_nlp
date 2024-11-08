@@ -14,240 +14,26 @@ from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 import spacy
 import activate_language_processing.beep as beep
+from activate_language_processing.nlp import semanticLabelling
 
-def record_hsr(data, queue_data, acc_data, lock, flags):
-    '''
-    Callback function for the /audio/audio subscriber to use HSR's microphone for recording. 
-    Accumulates a numpy array with the recieved AudioData and puts it into a queue which 
-    gets processed by whisper an rasa.
+def _isTranscribing(context):
+    return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
 
-    Args:
-        data: AudioData recieved from ros topic /audio/audio
-        queue_data: Queue to store the audio data.
-        acc_data: Accumulated audio data from HSR's microphone.
-        lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
-        flags: Dictionary to store the record flag.
-    '''
-    doSomething = False
-    with lock:
-        doSomething = flags["record"]
-    if not doSomething:
-        acc_data["data"] = numpy.array([], dtype=numpy.int16)
-        return
-    # accumulating raw data in numpy array
-    acc_data["data"] = numpy.concatenate([acc_data["data"], numpy.frombuffer(bytes(data.data), dtype=numpy.int16)])
-    # put accumulated data into queue when it reaches a certain size
-    if len(acc_data["data"]) >= 32000:
-        queue_data.put(acc_data["data"])
-        acc_data["data"] = numpy.array([], dtype=numpy.int16) # reset the array
-
-
-def record(data, recordFromTopic, queue_data, lock, flags):
-    '''
-    This callback function records from the microphone, sends it to whisper and to the Rasa server
-    and then processes the response.
-
-    Args:
-        data: String message recieved from the /startListener topic
-        recordFromTopic: Flag to select the microphone to record from.
-        queue_data: Queue to store the audio data.
-        lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
-        flags: Dictionary to store the record flag.
-    '''
-    rospy.loginfo("[ALP] go start signal")
-    if not test_mode:
-        r = sr.Recognizer() # speech_recognition.Recognizer
-        r.pause_threshold = 1.5 # seconds
-
-        if recordFromTopic:
-            with lock:
-                flags["record"] = True
-            # print("Say something (using hsr microphone)!")
-            audio = listen2Queue(queue_data, r)
-            with lock:
-                flags["record"] = False
-        else:
-            with sr.Microphone() as source:
-                r.adjust_for_ambient_noise(source, 2)
-                rospy.loginfo("Say something (using backpack microphone)!")
-                audio = r.listen(source)
-
-        # Use sr Whisper integration
-        rospy.loginfo("[Whisper]: processing...")
-        result = r.recognize_whisper(audio, language="english")
-        rospy.loginfo("[Whisper]: done")
-    if test_mode:
-        result = data.data
-    print(f"\n The whisper result is: {result}")
-
-    # Split Sentence into partials for handling multiple intents
-    partials = partial_builder(result)
-
-    # send result to RASA
-    rospy.loginfo("[Rasa]: processing...")
-    ans = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in partials]
-
-    # load answer from RASA 
-    response = [json.loads(item.text) for item in ans]
-    rospy.loginfo("[Rasa]: done")
-
-    # change response format
-    response = {
-    "sentences": [
-        {
-            "text": item.get("text", ""),
-            "intent": item.get("intent", {}).get("name"),
-            "entities": {(x.get("entity"), x.get("value")) for x in item.get("entities", [])}
-        }
-        for item in response
-        ]
-    }
-    # print(response) # debug print
-    # Assign variables for better readability
-    sentences = response.get("sentences")
-    intent = sentences[0].get("intent")
-
-    # Check length of sentence list for multi-intents and filter "order" and "receptionist" to make sure it gets recognized correctly
-    # if len(sentences) == 1 or 
-    if intent in ["Order", "Receptionist", "affirm", "deny"]:
-        switch(sentences[0], sentences[0])
-    else:
-        multi(response)
-
-def switch(intent, response):
-    '''
-    Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
-    
-    Args:
-        intent: The intent parsed from the response
-        response: The formatted .json from the record function
-
-    Returns:
-        The function corresponding to the intent
-    '''
-    intent = intent.get("intent")
-    return {
-        "Receptionist": lambda: receptionist(response),
-        "affirm": lambda: nlpOut.publish(f"<CONFIRM>, True"),
-        "deny": lambda: nlpOut.publish(f"<CONFIRM>, False"),
-        "Order": lambda:  order(response)
-    }.get(intent, lambda: nlpOut.publish("<NONE>"))()
-
-def receptionist(response):
-    '''
-    Function for the receptionist task. 
-
-    Args:
-        response: Formatted .json from record function.
-    '''
-    # Setting up all the variables
-    data = json.loads(getData(response))
-
-    name = data.get("names")
-    name = name[0] if name else None
-
-    drink = data.get("drinks")
-    drink = drink[0] if drink else None
-
-    nlpOut.publish(f"<GUEST>, {name}, {drink}")
-
-def order(response):
-    '''
-    Function for the Restaurant task.
-
-    Args:
-        response: Formatted .json from the record function.
-    '''
-    data = json.loads(getData(response))
-
-    drinks = data.get("drinks")
-    foods = data.get("foods")
-    nlpOut.publish(f"<ORDER>, {drinks}, {foods}")
-
-def multi(responses):
-    '''
-    Handle multiple intents at once.
-    
-    Args:
-        responses: List of rasa responses
-    '''
-    # Build lists of people, places and artifacts using the rasa responses.
-    person_list, place_list, artifact_list = [], [], []
-    for sentence in responses["sentences"]:
-        tperson_list, tplace_list, tartifact_list = [], [], []
-        entities = sentence["entities"]
-        for name, value in entities:
-            if name == "NaturalPerson":
-                tperson_list.append(value)
-            else:
-                tperson_list.append("")
-            if name == "PhysicalPlace":
-                tplace_list.append(value)
-            else:
-                tplace_list.append("")
-            if name == "PhysicalArtifact":
-                tartifact_list.append(value)
-            else:
-                tartifact_list.append("")
-        person_list.append(tperson_list)
-        place_list.append(tplace_list)
-        artifact_list.append(tartifact_list)
-
-    # Manually remove "then" from place_list because rasa recognizes it as a place
-    i = 0
-    for l in place_list:
-        place_list[i] = filter(lambda word: word != "then", l)
-        i+=1
-
-    # Remove duplicates and empty strings using the shorten function
-    person_list, place_list, artifact_list = [shorten(i) for i in person_list], [shorten(i) for i in place_list], [shorten(i) for i in artifact_list]
-
-    # Iterate over the whole sentence and exchange pronouns (and adverbs) with the same role from an earlier partial sentence
-    counter = 0
-    output = []
-    for sentence in responses["sentences"]:
-        text = sentence["text"]
-        words = text.split()
-        for word in words:
-            if counter > 0: # only replace words from the second sentence onwards
-                if  sem[word] == "PRON" or sem[word] == "ADV":
-                    # Repeating this for every list
-                    if word in place_list[counter]:
-                        if place_list[counter-1] == []:
-                            word = place_list[0][0] if place_list[0] else word # don't do anything if list is empty
-                        else:
-                            word = place_list[counter-1][0]
-                            place_list[counter].insert(0, word)
-
-                    elif word in person_list[counter]:
-                        if person_list[counter-1] == []:
-                            word = person_list[0][0] if person_list[0] else word
-                        else:
-                            word = person_list[counter-1][0]
-                            person_list[counter].insert(0, word)
-
-                    elif word in artifact_list[counter]:
-                        if artifact_list[counter-1] == []:
-                            word = artifact_list[0][0] if artifact_list[0] else word
-                        else:
-                            word = artifact_list[counter-1][0]
-                            artifact_list[counter].insert(0, word)
-
-            output.append(word)
-        counter += 1
-
-    # Split the sentence into a list of partials at specific words
-    output = split_into_queue(splits, output)
-
-    # calling rasa twice for each partial sentence seems bad practice
-    output = [requests.post(server, data=bytes(json.dumps({"text": item}), "utf-8")) for item in output]
-    output = [json.loads(item.text) for item in output]
-
-    # Change the format for better usability
-    for idx, item in enumerate(output):
-        result = {
-            "sentence": item.get("text"),
-            "intent": item.get("intent", {}).get("name"),
+def nluInternal(text, context):
+    with context["lock"]:
+        parses = semanticLabelling(text, context)
+        print(parses)
+        for p in parses:
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"]}
+            for k, v in p["entities"].items():
+                role=v["role"]
+                pAdj[role] = v.copy()
+                pAdj[role].pop("role")
+                pAdj[role].pop("group")
+                pAdj[role].pop("idx")
+            context["pub"].publish(json.dumps(pAdj))
+    rospy.loginfo("[ALP]: Done. Waiting for next command.")
+''' TODO: not all these roles are currently recognized. In particular, attribute-like roles are not recognized.
             "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
             "object-type": "",  # ?
             "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
@@ -260,119 +46,72 @@ def multi(responses):
             "to-location": "",
             "from-room": "",
             "to-room": ""
-        }
-
-        rospy.loginfo("[ALP]: Done. Waiting for next command.")
-        print(str(result))
-        nlpOut.publish(str(result))
-
-def partial_builder(sentence):
-    '''
-    Builds multiple partial sentences from a single sentence.
+'''
     
+def record_hsr(data, context):
+    '''
+    Callback function for the /audio/audio subscriber to use HSR's microphone for recording. 
+    Accumulates a numpy array with the recieved AudioData and puts it into a queue which 
+    gets processed by whisper an rasa.
+
     Args:
-        sentence: A string
+        data: AudioData recieved from ros topic /audio/audio
+        context: a dictionary containing several flags and useful variables
+            queue: Queue to store the audio data.
+            data: Accumulated audio data from HSR's microphone.
+            lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
+            transcriber: thread to perform sound to text
+    '''
+    with context["lock"]:
+        if context["listening"]:
+            # accumulating raw data in numpy array
+            context["data"] = numpy.concatenate([context["data"], numpy.frombuffer(bytes(data.data), dtype=numpy.int16)])
+            # put accumulated data into queue when it reaches a certain size
+            if len(context["data"]) >= 32000:
+                context["queue"].put(context["data"])
+                context["data"] = numpy.array([], dtype=numpy.int16) # reset the array
+
+def startListener(msg, context):
+    rospy.loginfo("[ALP] got start signal")
+    with context["lock"]:
+        if not _isTranscribing(context):
+            context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,))
+            context["transcriber"].start()
+
+def transcriberFn(context):
+    r = sr.Recognizer() # speech_recognition.Recognizer
+    r.pause_threshold = 1.0 # seconds
     
-    Returns:
-        A List of partial sentences.
-    '''
-    # list of verbs to ignore when generating partial sentences, all lowercase
-    ignore_list = ["order"]
-    # list of verbs to always let through, all lowercase
-    special_list = ["bring"]
+    if context["useHSR"]:
+        rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
+        with context["lock"]:
+            context["listening"] = True
+        audio = listen2Queue(context["queue"], r)
+        with context["lock"]:
+            context["listening"] = False
+            context["data"] = numpy.array([], dtype=numpy.int16)
+            context["queue"] = Queue()
+    else:
+        with context["lock"]:
+            context["listening"] = True
+        with sr.Microphone() as source:
+            r.adjust_for_ambient_noise(source, 1)
+            rospy.loginfo("Say something into the BACKPACK microphone!")
+            beep.SoundRequestPublisher().publish_sound_request()
+            rospy.loginfo("[ALP] listening....")
+            audio = r.listen(source)
+            rospy.loginfo("[ALP] Done listening.")
+        with context["lock"]:
+            context["listening"] = False
 
-    # Setting up variables for building partials and initiating spaCy 
-    doc = nlp(sentence)
-    global sem, splits
-    temp, sents, sem, splits = "", [], {}, []
-    first = True
+    # Use sr Whisper integration
+    rospy.loginfo("[Whisper]: processing...")
+    result = r.recognize_whisper(audio, language="english")
+    rospy.loginfo("[Whisper]: done")
 
-    # Iterate over the words in the sentence and build up partial sentences by using temporary lists until verbs appear.
-    # Ignore gerunds and words from the ignore_list.
-    for token in doc:
-        sem.update({token.text:token.pos_})
-        if token.pos_ == "VERB" and token.text[-3:] != "ing" and str.lower(token.text) not in ignore_list or str.lower(token.text) in special_list:
-            if first == True:
-                temp = temp + token.text + " "
-                first = False
-            else:
-                sents.append(temp)
-                temp = token.text + " "
-                splits.append(token.text)
-        else:
-            temp = temp + token.text + " "
-    sents.append(temp)
-    return sents
-
-def shorten(array):
-    '''
-    Function that removes duplicates and empty Strings
-
-    Args:
-        array: Any list
-    Returns:
-        A List without duplicates and no empty Strings
-    '''
-    # Sets don't allow duplicates
-    s = set(array)
-    if "" in s:
-        s.remove("")    # remove empty string
-    return list(s)
-
-def split_into_queue(verbs, sent):
-    '''
-    Function that splits a sentence into parts at specific words.
-
-    Args:
-        verbs: A list of Strings
-        sent: A String
-    Returns:
-        A list of partial sentences, split at the strings from verbs
-    '''
-    temp = ""
-    out = []
-    # Iterate over all the words in the sentence and split into new sentence on verbs from list
-    for word in sent:
-        if word in verbs:
-            out.append(temp)
-            temp = word
-        else:
-            temp += f" {word}"
-    out.append(temp)
-    out = list(filter(None, out))   # filter empty strings and make into a list to avoid python iterables
-    return out
-
-def getData(data):
-    '''
-    Function for getting names, drinks and foods from entities in a .json
-
-    Args:
-        data: The json data
-    Returns:
-        The list of entities
-    '''
-    # Setup variables
-    entities = data.get("entities")
-    drinks = []
-    foods = []
-    names = []
-
-    # Filtering the entities list for drink, food and NaturalPerson
-    for ent, val in entities:
-        if ent == "drink":
-            drinks.append(val)
-        elif ent == "food":
-            foods.append(val)
-        elif ent == "NaturalPerson":
-            names.append(val)
-        else:
-            pass
-
-    # Build the .json
-    list = {"names": names, "drinks": drinks, "foods": foods}
-    return json.dumps(list)
-
-
+    print(f"\n The whisper result is: {result}")
+    context["stt"].publish(result)
+    nluInternal(result, context)
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
@@ -461,48 +200,43 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     return sr.AudioData(frame_data, sampleRate, sampleWidth)
 
 def main():
-    # Parse command line arguments
-    parser = ArgumentParser(prog='activate_language_processing')
-    parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
-    parser.add_argument('-t', '--terminal', action='store_true', help='Flag to use the "/nlp_test" topic instead of microphone input.')
-    args, unknown = parser.parse_known_args(rospy.myargv()[1:])
-
-    queue_data = Queue() # Queue to store the audio data.
-    lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
-    flags = {"record": False}
-    acc_data = {"data": numpy.array([], dtype=numpy.int16)} # Accumulated audio data from HSR's microphone.
-
-    # Manage arguments
-    if args.useHSR:
-        # Subscribe to the audio topic to get the audio data from HSR's microphone
-        rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, queue_data, acc_data, lock, flags))
-
-    global test_mode
-    test_mode = args.terminal
-    if args.terminal:
-        # Subscribe to the nlp_test topic to 
-        rospy.Subscriber("/nlp_test", String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))
-    else:
-        # Execute record() callback function on receiving a message on /startListener
-        rospy.Subscriber('/startListener', String, lambda msg : record(msg, args.useHSR, queue_data, lock, flags))  # TODO test what happens when 2 signals overlap
-
-    rospy.spin()
-
-if "__main__" == __name__:
-
     # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
     rospy.loginfo("[ALP]: NLP node initialized")
-    rate = rospy.Rate(1)
 
-    # Initiate nlp_out publisher
-    nlpOut = rospy.Publisher("nlp_out", String, queue_size=16)
+    # Parse command line arguments
+    parser = ArgumentParser(prog='activate_language_processing')
+    parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
+    parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
+    parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
+    parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
+    parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: /whisper_out")
+    parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
+    args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
-    # rasa Action server
-    server = "http://localhost:5005/model/parse"
+    nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
+    rasaURI = args.nluURI
+    stt = rospy.Publisher(args.speechToTextTopic, String, queue_size=1)
+    intent2Roles = {}
 
-    # initiate spaCy
-    global nlp
-    nlp = spacy.load("en_core_web_sm")
+    queue_data = Queue() # Queue to store the audio data.
+    lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
 
+    context={"data": numpy.array([], dtype=numpy.int16), "useHSR": args.useHSR, "transcriber": None, "listening": False, "speaking": False, "queue": queue_data, "lock": lock, "pub": nlpOut, "stt": stt, "rasaURI": rasaURI, "nlp": spacy.load("en_core_web_sm"), "intent2Roles": intent2Roles, "role2Roles": {}}
+
+    if args.useHSR:
+        # Subscribe to the audio topic to get the audio data from HSR's microphone
+        rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
+
+    # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
+    rospy.Subscriber("/nlp_test", String, lambda msg : nluInternal(msg.data, context))
+
+    # Execute record() callback function on receiving a message on /startListener
+    rospy.Subscriber('/startListener', String, lambda msg : startListener(msg, context))
+
+    rospy.loginfo("[ALP]: NLP node started")
+    rospy.spin()
+
+if "__main__" == __name__:
     main()
+
