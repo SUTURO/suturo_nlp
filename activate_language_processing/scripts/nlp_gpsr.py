@@ -13,8 +13,9 @@ from queue import Queue
 from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 import spacy
-import activate_language_processing.beep as beep
-from activate_language_processing.nlp import semanticLabelling
+import activate_language_processing.beep as beep # type: ignore
+from activate_language_processing.nlp import semanticLabelling # type: ignore
+import noisereduce as nr
 
 def _isTranscribing(context):
     return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
@@ -66,10 +67,18 @@ def record_hsr(data, context):
         if context["listening"]:
             # accumulating raw data in numpy array
             context["data"] = numpy.concatenate([context["data"], numpy.frombuffer(bytes(data.data), dtype=numpy.int16)])
-            # put accumulated data into queue when it reaches a certain size
+            
+            """
+            Checks if the length of context["data"] has at least 32,000 samples. Why do we do this?
+            Assuming a sample rate of 16,000 Hz, 32,000 samples would represent 2 seconds of audio. By waiting until the 
+            data array has 2 seconds' worth of audio, the we accumulate enough data to process.     
+            """
             if len(context["data"]) >= 32000:
-                context["queue"].put(context["data"])
-                context["data"] = numpy.array([], dtype=numpy.int16) # reset the array
+                noise_sample = context["data"][:16000] # We extract the first 16.000 points of data to use as reference for noisereduction.
+                reduced_noise_data = nr.reduce_noise(y=context["data"], sr=16000, y_noise=noise_sample) # Uses the noise sample to remove backround noise from the entire data.
+
+                context["queue"].put(context[reduced_noise_data]) # Adds the reduced_noise_data in the context["queue"].
+                context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
 
 def startListener(msg, context):
     rospy.loginfo("[ALP] got start signal")
@@ -196,8 +205,16 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
             pauseTime += soundDuration
         if pauseTime > rec.pause_threshold:  # end of the phrase
             break
-    frame_data = b"".join([x[1] for x in frames])
-    return sr.AudioData(frame_data, sampleRate, sampleWidth)
+
+    frame_data = b"".join([x[1] for x in frames]) # Concatenate all the audio frames in frames into a single byte string called frame_data.
+    
+    frame_data_array = numpy.frombuffer(frame_data, dtype=numpy.int16) # Convert the now byte string frame_data into a NumPy array called frame_data_array.
+
+    noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=sampleRate) # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
+    
+    frame_data_clean = noise_reduced_data.tobytes()  # Convert the cleaned audio data in noise_reduced_data back into a byte string format, frame_data_clean.
+
+    return sr.AudioData(frame_data_clean, sampleRate, sampleWidth) # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
 
 def main():
     # Initialize ros node

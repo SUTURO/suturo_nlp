@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/home/siwall/venvs/whisper_venv/bin/python3.8
+
 
 from argparse import ArgumentParser
 import requests
@@ -12,7 +13,7 @@ import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-import beepy
+
 # import time # for debugging
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
@@ -67,7 +68,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, 2)
             print("Say something after the beep! (using backpack microphone)")
-            beepy.beep(sound=1)
+            #beepy.beep(sound=1)
             audio = r.listen(source)
 
     # Use sr Whisper integration
@@ -196,7 +197,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
     
-    beepy.beep(sound=1)
+    #.beep(sound=1)
     print("Say something after the beep! (using hsr microphone)!")
 
     # Step 2: wait for speech to begin
