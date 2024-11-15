@@ -1,4 +1,4 @@
-#! /home/hawkin/envs/whisper/bin/python3.8
+#!/home/siwall/venvs/whisper_venv/bin/python3.8
 
 from argparse import ArgumentParser
 import requests
@@ -17,22 +17,42 @@ import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
 
+
 def _isTranscribing(context):
+    """
+    Checks whether a transcription process is currently active and running. 
+    Returns True if a transcriber object exists and is actively running (i.e., the transcription process is ongoing), and False otherwise.
+
+    Args:
+        context: a dictionary containing several flags and useful variables
+            transcriber: The transcriber object, which is expected to be either a thread or process responsible for transcription.
+    """
     return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
 
+
 def nluInternal(text, context):
-    with context["lock"]:
-        parses = semanticLabelling(text, context)
+    """
+    Process a text input to extract semantic information like intent and entities, 
+    formats the extracted data, and publishes it as JSON to a ROS topic.
+
+    Args:
+        text: The input text to be analyzed.
+        context: a dictionary containing several flags and useful variables
+            lock: a threading lock to ensure thread-safe access to shared resources.
+            pub: a ROS publisher object to publish processed results to a specified topic.
+    """
+    with context["lock"]: # Lock so only ne thread may execute this code at a time
+        parses = semanticLabelling(text, context) # Analyze text and return parses (a structured object like a dictionary)
         print(parses)
         for p in parses:
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"]}
-            for k, v in p["entities"].items():
-                role=v["role"]
-                pAdj[role] = v.copy()
-                pAdj[role].pop("role")
-                pAdj[role].pop("group")
-                pAdj[role].pop("idx")
-            context["pub"].publish(json.dumps(pAdj))
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"]} # create a dictionary and store the sentence and intent extracted from a parse p 
+            for k, v in p["entities"].items(): 
+                role=v["role"] # Extract the value of a "role" in an entity
+                pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
+                pAdj[role].pop("role") # Remove the "role" since its already used as key
+                pAdj[role].pop("group") # Remove metadate that is not needed
+                pAdj[role].pop("idx") # Remove metadate that is not needed
+            context["pub"].publish(json.dumps(pAdj)) # Convert pAdj to JSON string and publish to a rostopic
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
 ''' TODO: not all these roles are currently recognized. In particular, attribute-like roles are not recognized.
             "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
@@ -48,7 +68,8 @@ def nluInternal(text, context):
             "from-room": "",
             "to-room": ""
 '''
-    
+
+
 def record_hsr(data, context):
     '''
     Callback function for the /audio/audio subscriber to use HSR's microphone for recording. 
@@ -58,9 +79,9 @@ def record_hsr(data, context):
     Args:
         data: AudioData recieved from ros topic /audio/audio
         context: a dictionary containing several flags and useful variables
-            queue: Queue to store the audio data.
-            data: Accumulated audio data from HSR's microphone.
-            lock: Lock to ensure that the record_hsr callback does not interfere with the record callback.
+            queue: queue to store the audio data.
+            data: accumulated audio data from HSR's microphone.
+            lock: lock to ensure that the record_hsr callback does not interfere with the record callback.
             transcriber: thread to perform sound to text
     '''
     with context["lock"]:
@@ -80,47 +101,71 @@ def record_hsr(data, context):
                 context["queue"].put(context[reduced_noise_data]) # Adds the reduced_noise_data in the context["queue"].
                 context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
 
+
 def startListener(msg, context):
+    """
+    In case transcription is not already in process: creates a new thread that executes the transcribeFn function when stared
+
+    msg: the message that triggers the start of the listener.
+    context: a dictionary containing several flags and useful variables
+        lock: a threading lock to ensure thread-safe access to shared resources.
+        transcriber: the transcriber thread object, which will be created and started if transcription is not currently active.
+    """
     rospy.loginfo("[ALP] got start signal")
-    with context["lock"]:
-        if not _isTranscribing(context):
-            context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,))
-            context["transcriber"].start()
+    with context["lock"]: # Lock so only ne thread may execute this code at a time.
+        if not _isTranscribing(context): # Check if transciption is not already in process.
+            context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,)) # Create a new thread that executes the transcriberFn function when started
+            context["transcriber"].start() # Start the transcription.
+
 
 def transcriberFn(context):
+    """
+    Responsible for handling the transcription process.
+    Captures audio input, transcribes it using the whisper speech recognition model, and then publishes the result.
+
+    Args:
+    context: a dictionary containing shared resources and state information required for transcription. It should include:
+        lock: a threading lock to ensure thread-safe access to shared resources.
+        useHSR: a flag indicating whether to use the HSR microphone (`True`) or the Backpack microphone (`False`).
+        queue: a queue used for handling audio data when using the HSR microphone.
+        data: an array for storing audio data when using the HSR microphone.
+        listening: a flag indicating whether transcription is currently in progress.
+        stt: a ROS publisher object used to publish the transcription result to other ROS nodes.
+    """
     r = sr.Recognizer() # speech_recognition.Recognizer
     r.pause_threshold = 1.0 # seconds
     
-    if context["useHSR"]:
+    if context["useHSR"]: # If true, function assumes an HSR-specific microphone setup
         rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
-        with context["lock"]:
-            context["listening"] = True
-        audio = listen2Queue(context["queue"], r)
-        with context["lock"]:
-            context["listening"] = False
-            context["data"] = numpy.array([], dtype=numpy.int16)
-            context["queue"] = Queue()
+        with context["lock"]: 
+            context["listening"] = True # Transcirption is in progress
+        audio = listen2Queue(context["queue"], r) # Capture audio
+        with context["lock"]: 
+            context["listening"] = False # Transcription is no longer in progress
+            context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
+            context["queue"] = Queue() # Reset the queue to be empty 
     else:
         with context["lock"]:
-            context["listening"] = True
+            context["listening"] = True # Transcirption is in progress
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 1)
+            r.adjust_for_ambient_noise(source, 1) # Adjust for noisy environment
             rospy.loginfo("Say something into the BACKPACK microphone!")
-            beep.SoundRequestPublisher().publish_sound_request()
+            beep.SoundRequestPublisher().publish_sound_request() # Publish beep sound
             rospy.loginfo("[ALP] listening....")
-            audio = r.listen(source)
+            audio = r.listen(source) # Recognizer listens to audio
             rospy.loginfo("[ALP] Done listening.")
         with context["lock"]:
-            context["listening"] = False
+            context["listening"] = False # Transcription is no longer in progress
 
     # Use sr Whisper integration
     rospy.loginfo("[Whisper]: processing...")
-    result = r.recognize_whisper(audio, language="english")
+    result = r.recognize_whisper(audio, language="english") # Process the audio using the english whisper model to convert speech to text
     rospy.loginfo("[Whisper]: done")
 
     print(f"\n The whisper result is: {result}")
-    context["stt"].publish(result)
-    nluInternal(result, context)
+    context["stt"].publish(result) # Transcription result is published to a rostopic
+    nluInternal(result, context) # Call nluInternal to process transcription result
+
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
@@ -142,33 +187,37 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         a speech_recognition.AudioData which contains a recording of speech.
     '''
     def soundLen(buffer, sampleRate):
-        return (len(buffer) + 0.0) / sampleRate
+        return (len(buffer) + 0.0) / sampleRate # Computes the duration of the audio buffer in seconds based on its length and sample rate.
 
     def getNextBuffer(soundQueue, sampleRate, sampleWidth):
-        buffer = soundQueue.get()
+        buffer = soundQueue.get() # Retrieves the next buffer from the queue
         soundQueue.task_done()
-        soundDuration = soundLen(buffer, sampleRate)
-        energy = audioop.rms(buffer, sampleWidth)
+        soundDuration = soundLen(buffer, sampleRate) # Calculate buffer duration
+        energy = audioop.rms(buffer, sampleWidth) # Calculate buffer energy level for detecting speech
         return buffer, soundDuration, energy
 
     def adjustEnergyLevel(rec, soundDuration, energy):
-        # dynamically adjust the energy threshold using asymmetric weighted average
+        # dynamically adjust the energy threshold using asymmetric weighted average.
         damping = rec.dynamic_energy_adjustment_damping ** soundDuration
         target_energy = energy * rec.dynamic_energy_ratio
         rec.energy_threshold = rec.energy_threshold * damping + target_energy * (1 - damping)
-
-    sampleWidth = 2
+    
+    sampleWidth = 2 # Audio samples are 16-bit (2 bytes/sample)
+    
     # Step 1: adjust to noise level
     # Assumes speech is preceded by at least <startSilence> seconds silence. Loops through this interval
     # to adjust an energy threshold that will subsequently be used to detect speech start.
-    elapsed_time = 0
+    elapsed_time = 0 #  Tracks total time for adjusting noise levels.
     seconds_per_buffer = 0
-    while elapsed_time < startSilence:
+
+    
+    while elapsed_time < startSilence: # Reads audio buffers for a duration of startSilence seconds.
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
-        adjustEnergyLevel(rec, soundDuration, energy)
+        adjustEnergyLevel(rec, soundDuration, energy) # Adjusts the recognizer's energy threshold to the ambient noise level using adjustEnergyLevel
         elapsed_time += soundDuration
 
     rospy.loginfo("Say something (using hsr microphone)!")
+    
     # Step 2: wait for speech to begin
     beep.SoundRequestPublisher().publish_sound_request()
     # If the energy level exceeds the threshold, consider speech started
@@ -191,6 +240,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
     # Step 3: keep adding to the recorded speech until a long enough pause is detected.
     pauseTime = 0
+    
     while True:
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
@@ -208,7 +258,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
 
     frame_data = b"".join([x[1] for x in frames]) # Concatenate all the audio frames in frames into a single byte string called frame_data.
     
-    frame_data_array = numpy.frombuffer(frame_data, dtype=numpy.int16) # Convert the now byte string frame_data into a NumPy array called frame_data_array.
+    frame_data_array = numpy.frombuffer(frame_data, dtype=numpy.int16) # Convert the now byte string "frame_data" into a NumPy array called frame_data_array.
 
     noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=sampleRate) # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
     
