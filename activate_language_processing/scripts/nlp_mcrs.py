@@ -16,7 +16,7 @@ import spacy
 import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
-
+from nlp_challenges import *
 
 def _isTranscribing(context):
     """
@@ -28,6 +28,7 @@ def _isTranscribing(context):
             transcriber: The transcriber object, which is expected to be either a thread or process responsible for transcription.
     """
     return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
+
 
 def nluInternal(text, context):
     """
@@ -49,24 +50,28 @@ def nluInternal(text, context):
                 role=v["role"] # Extract the value of a "role" in an entity
                 pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
                 pAdj[role].pop("role") # Remove the "role" since its already used as key
-                pAdj[role].pop("group") # Remove metadate that is not needed
+                pAdj[role].pop("group") # Remove metadata that is not needed
                 pAdj[role].pop("idx") # Remove metadate that is not needed
-            context["pub"].publish(json.dumps(pAdj)) # Convert pAdj to JSON string and publish to a rostopic
+            switch(pAdj["intent"],json.dumps(pAdj),context) # Convert pAdj to JSON string and publish to a rostopic
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
-''' TODO: not all these roles are currently recognized. In particular, attribute-like roles are not recognized.
-            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
-            "object-type": "",  # ?
-            "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
-            "person-type": "",  # ?
-            "object-attribute": "",  # filter attributes with spaCy
-            "person-action": "",  # waving?
-            "color": "",  # filter attributes with spaCy
-            "number": "",  # spaCy can do that
-            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # does not filter from/to yet
-            "to-location": "",
-            "from-room": "",
-            "to-room": ""
-'''
+
+
+def switch(case, response, context):
+    '''
+    Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
+    
+    Args:
+        case: The intent parsed from the response
+        response: The formatted .json from the record function
+
+    Returns:
+        The function corresponding to the intent
+    '''
+    return {
+        "Receptionist": lambda: Receptionist.receptionist(response,context),
+        "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
+        "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
+    }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
 
 
 def record_hsr(data, context):
@@ -263,6 +268,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
 
     return sr.AudioData(frame_data_clean, sampleRate, sampleWidth) # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
 
+
 def main():
     # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
@@ -303,4 +309,3 @@ def main():
 
 if "__main__" == __name__:
     main()
-
