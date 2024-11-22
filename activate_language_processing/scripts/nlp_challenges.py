@@ -19,19 +19,22 @@ class Receptionist:
         """
         Function for extracting names, drinks, and foods from entities in a JSON response.
 
-            Args:
-                response: The JSON string containing entities.
-            """
-            
-            # Parse the response JSON string into a dictionary
-            try:
-                response_dict = json.loads(response)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON response: {e}")
+        Args:
+            response: The JSON string containing entities.
+        """
+        
+        # Parse the response JSON string into a dictionary
+        try:
+            response_dict = json.loads(response)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON response: {e}")
 
-            drinks = []
-            foods = []
-            names = []
+        drinks = []
+        foods = []
+        names = []
+        
+        # Iterate through the response_dict to process entities
+        for role, ent in response_dict.items():
             
             # Filtering the entities list for Drink, Food and NaturalPerson
             if isinstance(ent, dict):
