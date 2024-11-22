@@ -37,23 +37,26 @@ def nluInternal(text, context):
 
     Args:
         text: The input text to be analyzed.
-        context: a dictionary containing several flags and useful variables
+        context: a dictionary containing several flags and useful variables:
             lock: a threading lock to ensure thread-safe access to shared resources.
             pub: a ROS publisher object to publish processed results to a specified topic.
     """
-    with context["lock"]: # Lock so only one thread may execute this code at a time
-        parses = semanticLabelling(text, context) # Analyze text and return parses (a structured object like a dictionary)
+    with context["lock"]:  # Lock so only one thread may execute this code at a time
+        parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
         print(parses)
+        
         for p in parses:
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"]} # create a dictionary and store the sentence and intent extracted from a parse p 
-            for k, v in p["entities"].items(): 
-                role=v["role"] # Extract the value of a "role" in an entity
-                pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
-                pAdj[role].pop("role") # Remove the "role" since its already used as key
-                pAdj[role].pop("group") # Remove metadata that is not needed
-                pAdj[role].pop("idx") # Remove metadate that is not needed
-            switch(pAdj["intent"],json.dumps(pAdj),context) # Convert pAdj to JSON string and publish to a rostopic
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []} # create a dictionary and store the sentence and intent and entities extracted from a parse p 
+            # Process entities and define "entities" list in pAdj
+            for k, v in p["entities"].items():
+                entity_data = v.copy()  # Copy entity’s data dictionary
+                entity_data["role"] = v["role"]  # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
+                entity_data.pop("group")  # Remove metadata that is not needed
+                entity_data.pop("idx") # Remove metadate that is not needed
+                pAdj["entities"].append(entity_data)  # Add processed entity to the list
+            switch(pAdj["intent"], json.dumps(pAdj), context)
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
+
 
 
 def switch(case, response, context):
@@ -69,6 +72,7 @@ def switch(case, response, context):
     '''
     return {
         "Receptionist": lambda: Receptionist.receptionist(response,context),
+        "Order": lambda: Restaurant.order(response,context),
         "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
         "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
