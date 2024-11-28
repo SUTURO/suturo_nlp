@@ -43,18 +43,26 @@ def nluInternal(text, context):
     """
     with context["lock"]:  # Lock so only one thread may execute this code at a time
         parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
-        print(parses)
         
         for p in parses:
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []} # create a dictionary and store the sentence and intent and entities extracted from a parse p 
+            
+            # Skip processing if sentence is empty or entities list is empty
+            if not p["sentence"].strip() or not p["entities"]:
+                rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
+                continue  
+
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
+            
             # Process entities and define "entities" list in pAdj
             for k, v in p["entities"].items():
                 entity_data = v.copy()  # Copy entity’s data dictionary
-                entity_data["role"] = v["role"]  # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
+                entity_data["role"] = v["role"]  # Copy entity’s data dictionary to pAdj under the key corresponding to the role
                 entity_data.pop("group")  # Remove metadata that is not needed
-                entity_data.pop("idx") # Remove metadate that is not needed
+                entity_data.pop("idx")  # Remove metadata that is not needed
                 pAdj["entities"].append(entity_data)  # Add processed entity to the list
+
             switch(pAdj["intent"], json.dumps(pAdj), context)
+    
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
 
 
@@ -106,7 +114,7 @@ def record_hsr(data, context):
                 noise_sample = context["data"][:16000] # We extract the first 16.000 points of data to use as reference for noisereduction.
                 reduced_noise_data = nr.reduce_noise(y=context["data"], sr=16000, y_noise=noise_sample) # Uses the noise sample to remove backround noise from the entire data.
 
-                context["queue"].put(context[reduced_noise_data]) # Adds the reduced_noise_data in the context["queue"].
+                context["queue"].put(reduced_noise_data) # Adds the reduced_noise_data in the context["queue"].
                 context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
 
 
