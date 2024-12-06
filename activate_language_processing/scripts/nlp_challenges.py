@@ -34,17 +34,17 @@ def getData(response):
 
                 if entity == "drink":
                     if not number:
-                        drinks.append((value,"one"))
+                        drinks.append((value,1))
                     else:
                         drinks.append((value,number[0]))
                 elif entity == "food":
                     if not number:
-                        foods.append((value,"one"))
+                        foods.append((value,1))
                     else:
                         foods.append((value,number[0]))
                 elif entity == "NaturalPerson":
                     if not number:
-                        names.append((value,"one"))
+                        names.append((value,1))
                     else:
                         names.append((value,number[0]))
 
@@ -93,8 +93,7 @@ class Restaurant:
 
     Methods:
         restaurant(response, context):
-            Processes the date given by getData and publishes a string
-            with the extracted NaturalPerson and Drink.
+            Processes the date given by getData and publishes a string with the extracted NaturalPerson and Drink.
     """
 
     def order(response, context):

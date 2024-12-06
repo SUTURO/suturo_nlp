@@ -263,6 +263,8 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
 
     return sr.AudioData(frame_data_clean, sampleRate, sampleWidth) # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
 
+
+
 def main():
     # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
