@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/home/siwall/venvs/whisper_venv/bin/python3.8
+
 
 from argparse import ArgumentParser
 import requests
@@ -12,8 +13,7 @@ import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-import beepy
-import activate_language_processing.beep as beep
+
 # import time # for debugging
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
@@ -69,11 +69,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
             r.adjust_for_ambient_noise(source, 2)
             print("Say something after the beep! (using backpack microphone)")
             #beepy.beep(sound=1)
-            beep.SoundRequestPublisher().publish_sound_request()
-            rospy.sleep(1.0)
-            print("Listening")
             audio = r.listen(source)
-            print("Stopped listening.")
 
     # Use sr Whisper integration
     result = r.recognize_whisper(audio, language="english")
@@ -89,6 +85,7 @@ def record(data, recordFromTopic, queue_data, lock, flags):
     response = {"text": response.get("text", ), "intent": response.get("intent", {}).get("name"), 
                 "entities": set([(x.get("entity"), x.get("value")) for x in response.get("entities", [])])}
 
+    print(f"\n The whisper result is: " + response.get("intent"))
     # call the switch function to get the right function for the intent
     switch(response.get("intent"), response)
 
@@ -104,27 +101,31 @@ def switch(case, response):
         The function corresponding to the intent
     '''
     return {
-        "Receptionist": lambda: receptionist(response),
+        "Order": lambda: order(response),
         "affirm": lambda: nlpOut.publish(f"<CONFIRM>, True"),
         "deny": lambda: nlpOut.publish(f"<CONFIRM>, False")
     }.get(case, lambda: nlpOut.publish(f"<NONE>"))()
 
-def receptionist(response):
-    '''
-    Function for the receptionist task. 
+def order(response):
+    """
+    Function for the order task.
 
     Args:
-        response: Formatted .json from record function.
-    '''
+        response: JSON string with entities from `nluInternal`.
+        context: Context dictionary, including:
+            pub: ROS publisher object to publish results to a specified topic.
+    """
     data = json.loads(getData(response))
 
-    name = data.get("names")
-    name = name[0] if name else None
+    food = data.get("foods")
+    print(food)
+    food = food[0] if food else None
 
     drink = data.get("drinks")
     drink = drink[0] if drink else None
 
-    nlpOut.publish(f"<GUEST>, {name}, {drink}")
+    # Publish the order
+    nlpOut.publish(f"<ORDER>, {food}, {drink}")
 
 def  getData(data):
     '''
@@ -139,21 +140,33 @@ def  getData(data):
     drinks = []
     foods = []
     names = []
-    
-    # Filtering the entities list for drink, food and NaturalPerson
-    for ent, val in entities:
-        if ent == "drink":
-            drinks.append(val)
-        elif ent == "food":
-            foods.append(val)
-        elif ent == "NaturalPerson":
-            names.append(val)
-        else:
-            pass
-    
+
+    # Filtering the entities list for drink, food and NaturalPerson and the amount of each
+    for ent in entities:
+        if isinstance(ent, dict):
+            entity = ent.get("entity")
+            value = ent.get("value")
+            number = ent.get("numberAttribute")
+
+            if entity == "drink":
+                if not number:
+                    drinks.append((value,1))
+                else:
+                    drinks.append((value,number[0]))
+            elif entity == "food":
+                if not number:
+                    foods.append((value,1))
+                else:
+                    foods.append((value,number[0]))
+            elif entity == "NaturalPerson":
+                if not number:
+                    names.append((value,1))
+                else:
+                    names.append((value,number[0]))
+
     # Build the .json
-    list = {"names": names, "drinks": drinks, "foods": foods}
-    return json.dumps(list)
+    values= {"names": names, "drinks": drinks, "foods": foods}
+    return json.dumps(values)
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
@@ -201,9 +214,8 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
     
-    beepy.beep(sound=1)
+    #.beep(sound=1)
     print("Say something after the beep! (using hsr microphone)!")
-    beep.SoundRequestPublisher().publish_sound_request()
 
     # Step 2: wait for speech to begin
     # If the energy level exceeds the threshold, consider speech started
@@ -272,5 +284,5 @@ if "__main__" == __name__:
     
     # rasa Action server
     server = "http://localhost:5005/model/parse" 
-    print("main nlp")
+    
     main()

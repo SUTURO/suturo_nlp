@@ -16,7 +16,7 @@ import spacy
 import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
-
+from nlp_challenges import *
 
 def _isTranscribing(context):
     """
@@ -29,6 +29,7 @@ def _isTranscribing(context):
     """
     return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
 
+
 def nluInternal(text, context):
     """
     Process a text input to extract semantic information like intent and entities, 
@@ -36,37 +37,53 @@ def nluInternal(text, context):
 
     Args:
         text: The input text to be analyzed.
-        context: a dictionary containing several flags and useful variables
+        context: a dictionary containing several flags and useful variables:
             lock: a threading lock to ensure thread-safe access to shared resources.
             pub: a ROS publisher object to publish processed results to a specified topic.
     """
-    with context["lock"]: # Lock so only one thread may execute this code at a time
-        parses = semanticLabelling(text, context) # Analyze text and return parses (a structured object like a dictionary)
-        print(parses)
+    with context["lock"]:  # Lock so only one thread may execute this code at a time
+        parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
+        
         for p in parses:
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"]} # create a dictionary and store the sentence and intent extracted from a parse p 
-            for k, v in p["entities"].items(): 
-                role=v["role"] # Extract the value of a "role" in an entity
-                pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
-                pAdj[role].pop("role") # Remove the "role" since its already used as key
-                pAdj[role].pop("group") # Remove metadata that is not needed
-                pAdj[role].pop("idx") # Remove metadate that is not needed
-            context["pub"].publish(json.dumps(pAdj)) # Convert pAdj to JSON string and publish to a rostopic
+            
+            # Skip processing if sentence is empty or entities list is empty
+            if not p["sentence"].strip() or not p["entities"]:
+                rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
+                continue  
+
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
+            
+            # Process entities and define "entities" list in pAdj
+            for k, v in p["entities"].items():
+                entity_data = v.copy()  # Copy entity’s data dictionary
+                entity_data["role"] = v["role"]  # Copy entity’s data dictionary to pAdj under the key corresponding to the role
+                entity_data.pop("group")  # Remove metadata that is not needed
+                entity_data.pop("idx")  # Remove metadata that is not needed
+                pAdj["entities"].append(entity_data)  # Add processed entity to the list
+
+            switch(pAdj["intent"], json.dumps(pAdj), context)
+    
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
-''' TODO: not all these roles are currently recognized. In particular, attribute-like roles are not recognized.
-            "object-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") in ["PhysicalArtifact", "drink", "food"]] or [""])[0],
-            "object-type": "",  # ?
-            "person-name": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "NaturalPerson"] or [""])[0],
-            "person-type": "",  # ?
-            "object-attribute": "",  # filter attributes with spaCy
-            "person-action": "",  # waving?
-            "color": "",  # filter attributes with spaCy
-            "number": "",  # spaCy can do that
-            "from-location": ([(x.get("value")) for x in item.get("entities", []) if x.get("entity") == "PhysicalPlace"] or [""])[0], # does not filter from/to yet
-            "to-location": "",
-            "from-room": "",
-            "to-room": ""
-'''
+
+
+
+def switch(case, response, context):
+    '''
+    Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
+    
+    Args:
+        case: The intent parsed from the response
+        response: The formatted .json from the record function
+
+    Returns:
+        The function corresponding to the intent
+    '''
+    return {
+        "Receptionist": lambda: Receptionist.receptionist(response,context),
+        "Order": lambda: Restaurant.order(response,context),
+        "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
+        "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
+    }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
 
 
 def record_hsr(data, context):
@@ -97,7 +114,7 @@ def record_hsr(data, context):
                 noise_sample = context["data"][:16000] # We extract the first 16.000 points of data to use as reference for noisereduction.
                 reduced_noise_data = nr.reduce_noise(y=context["data"], sr=16000, y_noise=noise_sample) # Uses the noise sample to remove backround noise from the entire data.
 
-                context["queue"].put(context[reduced_noise_data]) # Adds the reduced_noise_data in the context["queue"].
+                context["queue"].put(reduced_noise_data) # Adds the reduced_noise_data in the context["queue"].
                 context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
 
 
@@ -143,6 +160,17 @@ def transcriberFn(context):
             context["listening"] = False # Transcription is no longer in progress
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
+    elif context["useAudio"]:
+        r = sr.Recognizer()
+        with sr.AudioFile('./audio/Order.wav') as source:
+            audio = r.record(source) 
+        try:
+            result = r.recognize_whisper(audio, language="english")  # Process the audio using the Whisper model
+            print(f"\nThe whisper result is: {result}")
+        except sr.UnknownValueError:
+            print("Whisper could not understand the audio.")
+        except sr.RequestError as e:
+            print(f"Could not request results from Whisper service; {e}")
     else:
         with context["lock"]:
             context["listening"] = True # Transcirption is in progress
@@ -264,7 +292,6 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     return sr.AudioData(frame_data_clean, sampleRate, sampleWidth) # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
 
 
-
 def main():
     # Initialize ros node
     rospy.init_node('nlp_out', anonymous=True)
@@ -273,6 +300,7 @@ def main():
     # Parse command line arguments
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
+    parser.add_argument('-a', '--useAudio', action='store_true', help="Use audio file")
     parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
     parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
     parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
@@ -288,7 +316,7 @@ def main():
     queue_data = Queue() # Queue to store the audio data.
     lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
 
-    context={"data": numpy.array([], dtype=numpy.int16), "useHSR": args.useHSR, "transcriber": None, "listening": False, "speaking": False, "queue": queue_data, "lock": lock, "pub": nlpOut, "stt": stt, "rasaURI": rasaURI, "nlp": spacy.load("en_core_web_sm"), "intent2Roles": intent2Roles, "role2Roles": {}}
+    context={"data": numpy.array([], dtype=numpy.int16), "useHSR": args.useHSR,"useAudio": args.useAudio, "transcriber": None, "listening": False, "speaking": False, "queue": queue_data, "lock": lock, "pub": nlpOut, "stt": stt, "rasaURI": rasaURI, "nlp": spacy.load("en_core_web_sm"), "intent2Roles": intent2Roles, "role2Roles": {}}
 
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
@@ -305,4 +333,3 @@ def main():
 
 if "__main__" == __name__:
     main()
-
