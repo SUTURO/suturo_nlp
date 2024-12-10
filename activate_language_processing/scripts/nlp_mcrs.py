@@ -162,7 +162,7 @@ def transcriberFn(context):
             context["queue"] = Queue() # Reset the queue to be empty 
     elif context["useAudio"]:
         r = sr.Recognizer()
-        with sr.AudioFile('./audio/Order.wav') as source:
+        with sr.AudioFile(audio) as source:
             audio = r.record(source) 
         try:
             result = r.recognize_whisper(audio, language="english")  # Process the audio using the Whisper model
@@ -300,13 +300,15 @@ def main():
     # Parse command line arguments
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
-    parser.add_argument('-a', '--useAudio', action='store_true', help="Use audio file")
+    parser.add_argument('-a', '--useAudio', default="./", help="Path to a audio file.")
     parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
     parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
     parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
     parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: /whisper_out")
     parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
+
+    audio = args.useAudio
 
     nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
     rasaURI = args.nluURI

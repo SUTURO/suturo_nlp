@@ -4,7 +4,8 @@ from nlp_gpsr import *
 from nlp_mcrs import *
 from scipy.io import wavfile
 import speech_recognition as sr
-import speech_recognition as sr
+import subprocess
+
 
 class test_gpsr:
     """
@@ -37,22 +38,6 @@ class test_mcrs:
         """
         This function is used to run the nlp_mcrs.py script with an audio file as input instead of using a microphone.
         """
-        return 0
+        subprocess.call("python nlp_mcrs.py -a", shell=True)
 
-
-def transcriberFn():
-    r = sr.Recognizer()
-    with sr.AudioFile('./audio/BringYellowObject.wav') as source:
-        audio = r.record(source) 
-        
-    try:
-        result = r.recognize_whisper(audio, language="english")  # Process the audio using the Whisper model
-        print(f"\nThe whisper result is: {result}")
-        return(result)
-    except sr.UnknownValueError:
-        print("Whisper could not understand the audio.")
-    except sr.RequestError as e:
-        print(f"Could not request results from Whisper service; {e}")
-
-
-transcriberFn()
+test_mcrs.run_mcrs()
