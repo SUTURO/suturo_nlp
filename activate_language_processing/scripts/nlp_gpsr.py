@@ -143,6 +143,14 @@ def transcriberFn(context):
             context["listening"] = False # Transcription is no longer in progress
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
+    elif context["useAudio"]:
+        audio = context["audio"]
+        with context["lock"]:
+            context["listening"] = True
+        with sr.AudioFile(audio) as source:
+            audio = r.record(source) 
+        with context["lock"]:
+            context["listening"] = False
     else:
         with context["lock"]:
             context["listening"] = True # Transcirption is in progress
@@ -273,6 +281,7 @@ def main():
     # Parse command line arguments
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
+    parser.add_argument('-a', '--useAudio', default="./", help="Use an audio file instead of a microphone.Takes the path to an audio file as argument.")
     parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
     parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
     parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
@@ -288,8 +297,24 @@ def main():
     queue_data = Queue() # Queue to store the audio data.
     lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
 
-    context={"data": numpy.array([], dtype=numpy.int16), "useHSR": args.useHSR, "transcriber": None, "listening": False, "speaking": False, "queue": queue_data, "lock": lock, "pub": nlpOut, "stt": stt, "rasaURI": rasaURI, "nlp": spacy.load("en_core_web_sm"), "intent2Roles": intent2Roles, "role2Roles": {}}
-
+    context = {
+        "data": numpy.array([], dtype=numpy.int16),
+        "useHSR": args.useHSR,
+        "useAudio": args.useAudio,
+        "audio": args.useAudio,     
+        "transcriber": None,
+        "listening": False,
+        "speaking": False,
+        "queue": queue_data,
+        "lock": lock,
+        "pub": nlpOut,
+        "stt": stt,
+        "rasaURI": rasaURI,
+        "nlp": spacy.load("en_core_web_sm"),
+        "intent2Roles": intent2Roles,
+        "role2Roles": {},
+    }
+    
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
         rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
