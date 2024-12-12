@@ -1,10 +1,12 @@
 #!/home/siwall/venvs/whisper_venv/bin/python3.8
 
+import subprocess
 from nlp_gpsr import *
-from nlp_mcrs import *
-from scipy.io import wavfile
-import speech_recognition as sr
-import speech_recognition as sr
+import nlp_mcrs 
+import os
+import sys
+
+audios = ["./audio/Order.wav", "./audio/Order2.wav", "./audio/Order3.wav"]
 
 class test_gpsr:
     """
@@ -19,9 +21,23 @@ class test_gpsr:
 
     def run_gpsr():
         """
-        This function is used to run the nlp_gpsr.py script with an audio file as input instead of using a microphone.
+        This function is used to run the nlp_gpsr.py script with an audio file as input multiple times in a row.
         """
-        return 0
+        for audio in audios:
+            print(f"Processing {audio}...")
+
+            process = subprocess.Popen(['python', 'nlp_gpsr.py', '-a', audio])
+
+            try:
+                process.wait(timeout=10)  
+            except subprocess.TimeoutExpired:
+                print(f"Timeout expired for {audio}, killing process.")
+                process.kill() 
+
+            process.terminate()
+            process.wait() 
+
+            print(f"Finished processing {audio}.\n")
 
 
 class test_mcrs:
@@ -35,24 +51,24 @@ class test_mcrs:
     """
     def run_mcrs():
         """
-        This function is used to run the nlp_mcrs.py script with an audio file as input instead of using a microphone.
+        This function is used to run the nlp_mcrs.py script with an audio file as input multiple times in a row.
         """
-        return 0
+        for audio in audios:
+            print(f"Processing {audio}...")
+
+            process = subprocess.Popen(['python', 'nlp_mcrs.py', '-a', audio])
+
+            try:
+                process.wait(timeout=10)  
+            except subprocess.TimeoutExpired:
+                print(f"Timeout expired for {audio}, killing process.")
+                process.kill() 
+
+            process.terminate()
+            process.wait() 
+
+            print(f"Finished processing {audio}.\n")
 
 
-def transcriberFn():
-    r = sr.Recognizer()
-    with sr.AudioFile('./audio/BringYellowObject.wav') as source:
-        audio = r.record(source) 
-        
-    try:
-        result = r.recognize_whisper(audio, language="english")  # Process the audio using the Whisper model
-        print(f"\nThe whisper result is: {result}")
-        return(result)
-    except sr.UnknownValueError:
-        print("Whisper could not understand the audio.")
-    except sr.RequestError as e:
-        print(f"Could not request results from Whisper service; {e}")
+test_mcrs.run_mcrs()
 
-
-transcriberFn()
