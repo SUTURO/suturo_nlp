@@ -97,7 +97,7 @@ def record_hsr(data, context):
                 noise_sample = context["data"][:16000] # We extract the first 16.000 points of data to use as reference for noisereduction.
                 reduced_noise_data = nr.reduce_noise(y=context["data"], sr=16000, y_noise=noise_sample) # Uses the noise sample to remove backround noise from the entire data.
 
-                context["queue"].put(context[reduced_noise_data]) # Adds the reduced_noise_data in the context["queue"].
+                context["queue"].put(reduced_noise_data) # Adds the reduced_noise_data in the context["queue"].
                 context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
 
 

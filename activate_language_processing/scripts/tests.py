@@ -67,8 +67,5 @@ class test_mcrs:
             process.terminate()
             process.wait() 
 
-            print(f"Finished processing {audio}.\n")
 
-
-test_mcrs.run_mcrs()
 
