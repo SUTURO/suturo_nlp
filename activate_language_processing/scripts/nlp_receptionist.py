@@ -1,5 +1,4 @@
-#!/home/siwall/venvs/whisper_venv/bin/python3.8
-
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 import requests
@@ -13,7 +12,8 @@ import threading
 from queue import Queue
 from std_msgs.msg import String, Bool
 from audio_common_msgs.msg import AudioData
-
+import beepy
+import activate_language_processing.beep as beep
 # import time # for debugging
 
 def record_hsr(data, queue_data, acc_data, lock, flags):
@@ -69,7 +69,11 @@ def record(data, recordFromTopic, queue_data, lock, flags):
             r.adjust_for_ambient_noise(source, 2)
             print("Say something after the beep! (using backpack microphone)")
             #beepy.beep(sound=1)
+            beep.SoundRequestPublisher().publish_sound_request()
+            rospy.sleep(1.0)
+            print("Listening")
             audio = r.listen(source)
+            print("Stopped listening.")
 
     # Use sr Whisper integration
     result = r.recognize_whisper(audio, language="english")
@@ -197,8 +201,9 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         adjustEnergyLevel(rec, soundDuration, energy)
         elapsed_time += soundDuration
     
-    #.beep(sound=1)
+    beepy.beep(sound=1)
     print("Say something after the beep! (using hsr microphone)!")
+    beep.SoundRequestPublisher().publish_sound_request()
 
     # Step 2: wait for speech to begin
     # If the energy level exceeds the threshold, consider speech started
@@ -267,5 +272,5 @@ if "__main__" == __name__:
     
     # rasa Action server
     server = "http://localhost:5005/model/parse" 
-    
+    print("main nlp")
     main()

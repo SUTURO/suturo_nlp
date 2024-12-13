@@ -306,6 +306,8 @@ def main():
     parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
+    audio = args.useAudio
+
     nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
     rasaURI = args.nluURI
     stt = rospy.Publisher(args.speechToTextTopic, String, queue_size=1)
