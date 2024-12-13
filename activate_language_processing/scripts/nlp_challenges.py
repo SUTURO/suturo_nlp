@@ -1,4 +1,5 @@
 import json
+from word2number import w2n
 
 def getData(response):
         """
@@ -36,17 +37,17 @@ def getData(response):
                     if not number:
                         drinks.append((value,1))
                     else:
-                        drinks.append((value,number[0]))
+                        drinks.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
                 elif entity == "food":
                     if not number:
                         foods.append((value,1))
                     else:
-                        foods.append((value,number[0]))
+                        foods.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
                     if not number:
                         names.append((value,1))
                     else:
-                        names.append((value,number[0]))
+                        names.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
 
         # Build the .json
         values= {"names": names, "drinks": drinks, "foods": foods}
