@@ -17,6 +17,7 @@ import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
 from nlp_challenges import *
+import os
 
 def _isTranscribing(context):
     """
@@ -61,7 +62,6 @@ def nluInternal(text, context):
                 entity_data.pop("idx")  # Remove metadata that is not needed
                 pAdj["entities"].append(entity_data)  # Add processed entity to the list
 
-            print(f"\n The parse result is: {pAdj}")
             switch(pAdj["intent"], json.dumps(pAdj), context)
     
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
@@ -82,6 +82,7 @@ def switch(case, response, context):
     return {
         "Receptionist": lambda: Receptionist.receptionist(response,context),
         "Order": lambda: Restaurant.order(response,context),
+        "Hobbies": lambda: Receptionist.hobbies(response,context),
         "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
         "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
@@ -161,15 +162,7 @@ def transcriberFn(context):
             context["listening"] = False # Transcription is no longer in progress
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
-    elif context["useAudio"]:
-        audio = context["audio"]
-        with context["lock"]:
-            context["listening"] = True
-        with sr.AudioFile(audio) as source:
-            audio = r.record(source) 
-        with context["lock"]:
-            context["listening"] = False
-    else:
+    elif context["audio"] == "./":
         with context["lock"]:
             context["listening"] = True # Transcirption is in progress
         with sr.Microphone() as source:
@@ -181,6 +174,15 @@ def transcriberFn(context):
             rospy.loginfo("[ALP] Done listening.")
         with context["lock"]:
             context["listening"] = False # Transcription is no longer in progress
+    elif context["useAudio"]:
+        audio = context["audio"]
+        with context["lock"]:
+            context["listening"] = True
+        with sr.AudioFile(audio) as source:
+            audio = r.record(source) 
+        with context["lock"]:
+            context["listening"] = False
+    
 
     # Use sr Whisper integration
     rospy.loginfo("[Whisper]: processing...")

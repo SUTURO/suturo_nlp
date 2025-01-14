@@ -20,6 +20,7 @@ def getData(response):
         drinks = []
         foods = []
         names = []
+        interests = []
 
         
         entities = response_dict.get("entities", [])
@@ -44,13 +45,13 @@ def getData(response):
                     else:
                         foods.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
-                    if not number:
-                        names.append((value,1))
-                    else:
-                        names.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
+                    names.append(value)
+                elif entity == "Interest":
+                    interests.append(value)
+                
 
         # Build the .json
-        values= {"names": names, "drinks": drinks, "foods": foods}
+        values= {"names": names, "drinks": drinks, "foods": foods, "hobbies": interests}
         return json.dumps(values)
 
 
@@ -62,13 +63,17 @@ class Receptionist:
 
     Methods:
         receptionist(response, context):
-            Processes the date given by getData and publishes a string
-            with the extracted NaturalPerson and Drink.
+            Processes the data given by getData and publishes a string
+            with the extracted NaturalPerson and drink.
+        hobbies(response, context):
+            Processes the data given by getData and publishes a string
+            with the extracted Interest.
     """
     
     def receptionist(response,context):
         '''
-        Function for the receptionist task. 
+        Function for the receptionist task. Extracts the first name and drink in the list of names 
+        and drinks the getData() function may return and publishes those. 
 
         Args:
             response: Formatted .json from record function.
@@ -84,6 +89,22 @@ class Receptionist:
         drink = [x[0] for x in drink][0] if drink else None
 
         context["pub"].publish(f"<GUEST>, {name}, {drink}")
+
+    def hobbies(response, context):
+        '''
+        Function to extract interests from the list of hobbies the getData() function may return
+        and publishes those.
+
+        Args:
+            response: Formatted .json from record function.
+            context:
+                pub: a ROS publisher object to publish processed results to a specified topic.
+        '''
+        data = json.loads(getData(response))
+
+        hobby = data.get("hobbies")
+
+        context["pub"].publish(f"<INTERESTS>, {hobby}")
 
 
 class Restaurant:
