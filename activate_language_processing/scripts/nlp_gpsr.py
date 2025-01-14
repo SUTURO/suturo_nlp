@@ -143,15 +143,7 @@ def transcriberFn(context):
             context["listening"] = False # Transcription is no longer in progress
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
-    elif context["useAudio"]:
-        audio = context["audio"]
-        with context["lock"]:
-            context["listening"] = True
-        with sr.AudioFile(audio) as source:
-            audio = r.record(source) 
-        with context["lock"]:
-            context["listening"] = False
-    else:
+    elif context["audio"] == "./":
         with context["lock"]:
             context["listening"] = True # Transcirption is in progress
         with sr.Microphone() as source:
@@ -163,6 +155,14 @@ def transcriberFn(context):
             rospy.loginfo("[ALP] Done listening.")
         with context["lock"]:
             context["listening"] = False # Transcription is no longer in progress
+    elif context["useAudio"]:
+        audio = context["audio"]
+        with context["lock"]:
+            context["listening"] = True
+        with sr.AudioFile(audio) as source:
+            audio = r.record(source) 
+        with context["lock"]:
+            context["listening"] = False
 
     # Use sr Whisper integration
     rospy.loginfo("[Whisper]: processing...")
