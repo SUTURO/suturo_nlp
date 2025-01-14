@@ -83,8 +83,9 @@ class Receptionist:
         data = json.loads(getData(response)) 
 
         name = data.get("names")
-        name = [x[0] for x in name][0] if name else None
-
+        if name:
+            name = name[0]
+            
         drink = data.get("drinks")
         drink = [x[0] for x in drink][0] if drink else None
 
