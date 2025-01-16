@@ -1,6 +1,26 @@
 import json
 from word2number import w2n
 
+def switch(case, response, context):
+    '''
+    Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
+    
+    Args:
+        case: The intent parsed from the response
+        response: The formatted .json from the record function
+
+    Returns:
+        The function corresponding to the intent
+    '''
+    return {
+        "Receptionist": lambda: Receptionist.receptionist(response,context),
+        "Order": lambda: Restaurant.order(response,context),
+        "Hobbies": lambda: Receptionist.hobbies(response,context),
+        "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
+        "deny": lambda: context["pub"].publish(f"<DENY>, False")
+    }.get(case, lambda: context["pub"].publish(response))()
+
+
 def getData(response):
         """
         Function for extracting names, drinks, and foods from entities in a JSON response.
@@ -38,18 +58,17 @@ def getData(response):
                     if not number:
                         drinks.append((value,1))
                     else:
-                        drinks.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
+                        drinks.append((value,number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "food":
                     if not number:
                         foods.append((value,1))
                     else:
-                        foods.append((value,number[0] if type(number[0]) == str else w2n.word_to_num(number[0])))
+                        foods.append((value,number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
                     names.append(value)
                 elif entity == "Interest":
                     interests.append(value)
                 
-
         # Build the .json
         values= {"names": names, "drinks": drinks, "foods": foods, "hobbies": interests}
         return json.dumps(values)
