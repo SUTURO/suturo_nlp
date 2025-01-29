@@ -49,7 +49,7 @@ def nluInternal(text, context):
             
             # Skip processing if sentence is empty or entities list is empty                
             if not p["sentence"].strip() or not p["entities"]:
-                if (p["intent"] != 'affirm' and p["intent"] != "deny") or p["sentence"] == " ":
+                if (p["intent"] != 'affirm' and p["intent"] != "deny") or not p["sentence"].strip():
                     rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                     continue  
 
