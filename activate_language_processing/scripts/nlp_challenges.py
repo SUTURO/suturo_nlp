@@ -18,7 +18,7 @@ def switch(case, response, context):
         "Hobbies": lambda: Receptionist.hobbies(response,context),
         "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
         "deny": lambda: context["pub"].publish(f"<DENY>, False")
-    }.get(case, lambda: context["pub"].publish(response))()
+    }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
 
 
 def getData(response):
@@ -108,7 +108,7 @@ class Receptionist:
         drink = data.get("drinks")
         drink = [x[0] for x in drink][0] if drink else None
 
-        context["pub"].publish(f"<GUEST>, {name}, {drink}")
+        context["pub"].publish(f"<GUEST>; {name}; {drink}")
 
     def hobbies(response, context):
         '''
@@ -124,7 +124,7 @@ class Receptionist:
 
         hobby = data.get("hobbies")
 
-        context["pub"].publish(f"<INTERESTS>, {hobby}")
+        context["pub"].publish(f"<INTERESTS>; {hobby}")
 
 
 class Restaurant:

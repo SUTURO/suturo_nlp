@@ -47,12 +47,13 @@ def nluInternal(text, context):
         
         for p in parses:
             
-            print('affirm' == p["intent"])
             # Skip processing if sentence is empty or entities list is empty                
             if not p["sentence"].strip() or not p["entities"]:
-                if p["intent"] != 'affirm' and p["intent"] != "deny":
+                if (p["intent"] != 'affirm' and p["intent"] != "deny") or p["sentence"] == " ":
                     rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                     continue  
+
+            print("The sentence is" + p["sentence"])
 
             pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
             
