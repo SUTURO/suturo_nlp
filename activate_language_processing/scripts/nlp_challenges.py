@@ -56,14 +56,14 @@ def getData(response):
 
                 if entity == "drink":
                     if not number:
-                        drinks.append((value,1))
+                        drinks.append((value, 1))
                     else:
-                        drinks.append((value,number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        drinks.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "food":
                     if not number:
                         foods.append((value,1))
                     else:
-                        foods.append((value,number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        foods.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
                     names.append(value)
                 elif entity == "Interest":

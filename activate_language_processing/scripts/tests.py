@@ -3,22 +3,22 @@
 from nlp_mcrs_test import *
 from pathlib import Path
 
-directory1 = Path("./AudioFiles/Condition1/")
+directory1 = Path("./AudioFiles2/Condition1/")
 audios1 = [str(file) for file in directory1.glob("*") if file.is_file()]
 
-directory2 = Path("./AudioFiles/Condition2/")
+directory2 = Path("./AudioFiles2/Condition2/")
 audios2 = [str(file) for file in directory2.glob("*") if file.is_file()]
 
-directory3 = Path("./AudioFiles/Condition3/")
+directory3 = Path("./AudioFiles2/Condition3/")
 audios3 = [str(file) for file in directory3.glob("*") if file.is_file()]
 
-directory4 = Path("./AudioFiles/Condition4/")
+directory4 = Path("./AudioFiles2/Condition4/")
 audios4 = [str(file) for file in directory4.glob("*") if file.is_file()]
 
-directory5 = Path("./AudioFiles/Condition5/")
+directory5 = Path("./AudioFiles2/Condition5/")
 audios5 = [str(file) for file in directory5.glob("*") if file.is_file()]
 
-directory6 = Path("./AudioFiles/Condition6/")
+directory6 = Path("./AudioFiles2/Condition6/")
 audios6 = [str(file) for file in directory6.glob("*") if file.is_file()]
 
 files = [audios1, audios2, audios3, audios4, audios5, audios6]
@@ -52,6 +52,11 @@ class test_mcrs:
         OrderCount = 0
         HobbyCount = 0
         counter = 1
+
+        falseName = []
+        falseOrder = []
+        falseHobby = []
+
         for folder in files:
             score = 0
             for audio in folder:
@@ -65,16 +70,22 @@ class test_mcrs:
                     if transcribed_text == groundtruth:
                         score += 1
                         NameCount += 1
+                    else:
+                        falseName.append(transcribed_text + "\n")
                 if "Order" in audio:
                     groundtruth = Order
                     if transcribed_text == groundtruth:
                         score += 1
                         OrderCount += 1
+                    else:
+                        falseOrder.append(transcribed_text + "\n")
                 if "Hobby" in audio:
                     groundtruth = Hobby
                     if transcribed_text == groundtruth:
                         score += 1
                         HobbyCount += 1
+                    else:
+                        falseHobby.append(transcribed_text + "\n")
             
             if counter == 1:
                 Condition1 = score
@@ -91,18 +102,31 @@ class test_mcrs:
 
             counter += 1
 
-        print(Condition1)
-        print(Condition2)
-        print(Condition3)
-        print(Condition4)
-        print(Condition5)
-        print(Condition6)
+        print(f"Correct Condition 1: {str(Condition1)}/{len(audios1)}")
+        print(f"Correct Condition 2: {str(Condition2)}/{len(audios2)}")
+        print(f"Correct Condition 3: {str(Condition3)}/{len(audios3)}")
+        print(f"Correct Condition 4: {str(Condition4)}/{len(audios4)}")
+        print(f"Correct Condition 5: {str(Condition5)}/{len(audios5)}")
+        print(f"Correct Condition 6: {str(Condition6)}/{len(audios6)}")
 
-        print(NameCount)
-        print(OrderCount)
-        print(HobbyCount)
+        totalCorrect = sum([Condition1,Condition2,Condition3,Condition4,Condition5,Condition6])
+        totalAudios = sum([len(audios1),len(audios2),len(audios3),len(audios4),len(audios5),len(audios6)])
+
+        print(f"Overall correctly identified audios: {totalCorrect}/{totalAudios}")
+
+        print("Correct per sentence")
+        print(f"NameAndDrink: {str(NameCount)}/{totalCorrect}")
+        print(f"Order: {str(OrderCount)}/{totalCorrect}")
+        print(f"Hobby: {str(HobbyCount)}/{totalCorrect}")
             
+        for st in falseName:
+            print(st)
 
+        for st in falseOrder:
+            print(st)
+        
+        for st in falseHobby:
+            print(st)
 
 # Run the test
 test_mcrs.run_mcrs()
