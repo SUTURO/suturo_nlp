@@ -35,7 +35,7 @@ In boring speak, a few preprocessing steps that MIGHT steer spacy
 away from some dumb failures.
     """
     # Avoid a then-clause -advcls-> previous clause, should instead have previous clause -dep|conj-> then-clause
-    text = text.replace(", then", " then") 
+    text = text.replace(", then", " then").replace("'d", " would").replace(",", " ,").replace("'ll", " will")
     return text
 
 def getAttributes(idxS, idxE, idx2Tok, deps, poss):
@@ -73,7 +73,7 @@ Use RASA to parse a simple sentence (one intent).
     response = json.loads(r.text)
     retq = {"sentence": text, "intent": response['intent']['name'], "entities": {}}
     for k,e in enumerate(response["entities"]):
-        print("Entity", e, sStart)
+        #print("Entity", e, sStart)
         eStart = e.get("start", 0)+sStart
         eEnd = e.get("end", 0)+sStart
         if subtreeDep(eStart, eEnd, idx2Tok) in roleForbiddenDeps:

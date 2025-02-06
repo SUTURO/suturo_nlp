@@ -20,6 +20,34 @@ def switch(case, response, context):
         "deny": lambda: context["pub"].publish(f"<DENY>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
 
+def is_number(value):
+    """
+    Check if a given string is a number (either numeral or word).
+
+    Args:
+        value: a string, that might be a digit or word representation of a number.
+    
+    Returns:
+        True if the string is a textual representation of a number (or a digit) else False.
+    """
+    try:
+     
+        w2n.word_to_num(value)  
+        return True
+    except ValueError:
+        return value.isdigit() 
+
+def to_number(value):
+    """
+    Converts a number in words or numerals to an integer.
+
+    Args:
+        value: A string that contains a digit or word representation of a number.
+        
+    Returns:
+        The input number as an integer.
+    """
+    return int(value) if value.isdigit() else w2n.word_to_num(value)
 
 def getData(response):
         """
@@ -42,7 +70,9 @@ def getData(response):
         names = []
         interests = []
 
-        
+        cachedNumer = 0
+        falseNumber = False
+
         entities = response_dict.get("entities", [])
         if not isinstance(entities, list):
             raise ValueError("Expected 'entities' to be a list in the response.")
@@ -52,18 +82,35 @@ def getData(response):
             if isinstance(ent, dict):
                 entity = ent.get("entity")
                 value = ent.get("value")
+                value = value.strip()
+                print(value)
                 number = ent.get("numberAttribute")
+                
+                if is_number(value):
+                    cachedNumer = to_number(value)
+                    falseNumber = True
+                    continue
 
                 if entity == "drink":
-                    if not number:
-                        drinks.append((value, 1))
+                    if falseNumber:
+                        drinks.append((value,cachedNumer))
+                        cachedNumer = 0
+                        falseNumber = False
                     else:
-                        drinks.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        if not number:
+                            drinks.append((value, 1))
+                        else:
+                            drinks.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "food":
-                    if not number:
-                        foods.append((value,1))
+                    if falseNumber:
+                        foods.append((value,cachedNumer))
+                        cachedNumer = 0
+                        falseNumber = False
                     else:
-                        foods.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        if not number:
+                            foods.append((value,1))
+                        else:
+                            foods.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
                     names.append(value)
                 elif entity == "Interest":
@@ -71,7 +118,8 @@ def getData(response):
                 
         # Build the .json
         values= {"names": names, "drinks": drinks, "foods": foods, "hobbies": interests}
-        return json.dumps(values)
+        return json.dumps(values) 
+
 
 
 class Receptionist:
