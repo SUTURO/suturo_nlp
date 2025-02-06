@@ -120,8 +120,8 @@ This allows splitting a text into sentences.
     idx2Tok = {tok.idx: tok}
     excluded = set()
     for c in tok.children:
-        if (("VERB" == c.pos_) and (c.dep_ in conjDeps)) or (("AUX" == c.pos_ ) and ((c.dep_ in conjDeps) or (c.dep_ in auxDeps)) and ("be" == c.lemma_)):
-        #if (("VERB" == c.pos_) and (c.dep_ in conjDeps)):
+        #if (("VERB" == c.pos_) and (c.dep_ in conjDeps)) or (("AUX" == c.pos_ ) and ((c.dep_ in conjDeps) or (c.dep_ in auxDeps)) and ("be" == c.lemma_)):
+        if (("VERB" == c.pos_) and (c.dep_ in conjDeps)):
             next.append(c)
             excluded.add(c.idx)
     while todo:
