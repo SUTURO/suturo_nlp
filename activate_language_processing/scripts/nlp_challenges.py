@@ -1,5 +1,6 @@
 import json
 from word2number import w2n
+import re
 
 def switch(case, response, context):
     '''
@@ -20,8 +21,14 @@ def switch(case, response, context):
         "deny": lambda: context["pub"].publish(f"<DENY>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
 
+def replace_word_and_next(text, target_word, replacement):
+    # Regular expression to find the target word followed by another word
+    pattern = rf"\b{target_word}\s+\w+\b"
+    return re.sub(pattern, replacement, text)
+
+"""
 def is_number(value):
-    """
+    
     Check if a given string is a number (either numeral or word).
 
     Args:
@@ -29,16 +36,18 @@ def is_number(value):
     
     Returns:
         True if the string is a textual representation of a number (or a digit) else False.
-    """
+    
     try:
      
         w2n.word_to_num(value)  
         return True
     except ValueError:
         return value.isdigit() 
+"""
 
+"""        
 def to_number(value):
-    """
+    
     Converts a number in words or numerals to an integer.
 
     Args:
@@ -46,8 +55,17 @@ def to_number(value):
         
     Returns:
         The input number as an integer.
-    """
+    
     return int(value) if value.isdigit() else w2n.word_to_num(value)
+"""
+
+blacklist = {"states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
+        "red boy": "red bull", "redbull": "red bull", "whetball": "red bull", "whet ball": "red bull",
+        "red bullseye": "red bull", "red balloon": "red bull", "red bullet": "red bull", "bed pull": "red bull",
+        "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
+        "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
+        "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
+        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull"}
 
 def getData(response):
         """
@@ -59,6 +77,7 @@ def getData(response):
         Returns:
             A JSON string categorizing names, drinks, and foods.
         """
+        
         # Parse the response JSON string into a dictionary
         try:
             response_dict = json.loads(response)
@@ -83,34 +102,33 @@ def getData(response):
                 entity = ent.get("entity")
                 value = ent.get("value")
                 value = value.strip()
-                print(value)
+
+                if value == "boy":
+                    entity = "drink"
+
+                if value in blacklist:
+                    value = blacklist.get(value)
+
+                #print(value)
                 number = ent.get("numberAttribute")
                 
+                """
                 if is_number(value):
                     cachedNumer = to_number(value)
                     falseNumber = True
                     continue
-
+                """
+                    
                 if entity == "drink":
-                    if falseNumber:
-                        drinks.append((value,cachedNumer))
-                        cachedNumer = 0
-                        falseNumber = False
+                    if not number:
+                        drinks.append((value, 1))
                     else:
-                        if not number:
-                            drinks.append((value, 1))
-                        else:
-                            drinks.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        drinks.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "food":
-                    if falseNumber:
-                        foods.append((value,cachedNumer))
-                        cachedNumer = 0
-                        falseNumber = False
+                    if not number:
+                        foods.append((value,1))
                     else:
-                        if not number:
-                            foods.append((value,1))
-                        else:
-                            foods.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
+                        foods.append((value, number[0] if type(number[0]) == int else w2n.word_to_num(number[0])))
                 elif entity == "NaturalPerson":
                     names.append(value)
                 elif entity == "Interest":
