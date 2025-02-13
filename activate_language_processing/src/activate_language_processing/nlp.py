@@ -15,6 +15,7 @@ install_spacy_required_packages()
 
 placeholderWords = {"her", "him", "it", "them", "there"}
 conjDeps = {"conj", "dep"}
+auxDeps = {"ccomp"}
 attrDeps = {"acl", "amod", "relcl"}
 numDeps = {"nummod"}
 actAttrPOS = {"VERB"}
@@ -34,13 +35,13 @@ In boring speak, a few preprocessing steps that MIGHT steer spacy
 away from some dumb failures.
     """
     # Avoid a then-clause -advcls-> previous clause, should instead have previous clause -dep|conj-> then-clause
-    text = text.replace(", then", " then") 
+    text = text.replace(", then", " then").replace("'d", " would").replace(",", " ,").replace("'ll", " will")
     return text
 
 def getAttributes(idxS, idxE, idx2Tok, deps, poss):
     retq = []
     for idx, tok in idx2Tok.items():
-        if inRange(idx, idxS, idxE):
+       if inRange(idx, idxS, idxE):
             for c in tok.children:
                 if (not inRange(c.idx, idxS, idxE)) and (c.dep_ in deps) and (c.pos_ in poss):
                     _, text, _ = getSubtree(c)
@@ -72,6 +73,7 @@ Use RASA to parse a simple sentence (one intent).
     response = json.loads(r.text)
     retq = {"sentence": text, "intent": response['intent']['name'], "entities": {}}
     for k,e in enumerate(response["entities"]):
+        #print("Entity", e, sStart)
         eStart = e.get("start", 0)+sStart
         eEnd = e.get("end", 0)+sStart
         if subtreeDep(eStart, eEnd, idx2Tok) in roleForbiddenDeps:
@@ -118,7 +120,8 @@ This allows splitting a text into sentences.
     idx2Tok = {tok.idx: tok}
     excluded = set()
     for c in tok.children:
-        if ("VERB" == c.pos_) and (c.dep_ in conjDeps):
+        #if (("VERB" == c.pos_) and (c.dep_ in conjDeps)) or (("AUX" == c.pos_ ) and ((c.dep_ in conjDeps) or (c.dep_ in auxDeps)) and ("be" == c.lemma_)):
+        if (("VERB" == c.pos_) and (c.dep_ in conjDeps)):
             next.append(c)
             excluded.add(c.idx)
     while todo:
@@ -176,6 +179,7 @@ def guessRoles(parses, context, needsGuessFn):
     return retq
 
 def semanticLabelling(text, context):
+    text = text.strip()
     text = rainDance(text)
     intentUtterances=splitIntents(text, context)
     parsedIntents=degroup([parseIntent(x, context) for x in intentUtterances])

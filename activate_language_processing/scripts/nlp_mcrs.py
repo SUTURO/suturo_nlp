@@ -47,10 +47,13 @@ def nluInternal(text, context):
         
         for p in parses:
             
-            # Skip processing if sentence is empty or entities list is empty
+            # Skip processing if sentence is empty or entities list is empty                
             if not p["sentence"].strip() or not p["entities"]:
-                rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
-                continue  
+                if (p["intent"] != 'affirm' and p["intent"] != "deny") or not p["sentence"].strip():
+                    rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
+                    continue  
+
+            print("The sentence is" + p["sentence"])
 
             pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
             
@@ -67,7 +70,7 @@ def nluInternal(text, context):
     rospy.loginfo("[ALP]: Done. Waiting for next command.")
 
 
-
+"""
 def switch(case, response, context):
     '''
     Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
@@ -86,7 +89,7 @@ def switch(case, response, context):
         "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
         "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
-
+"""
 
 def record_hsr(data, context):
     '''
