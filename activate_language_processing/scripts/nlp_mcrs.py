@@ -166,17 +166,14 @@ def transcriberFn(context):
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
     elif context["audio"] == "./":
-        with context["lock"]:
+        rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
+        with context["lock"]: 
             context["listening"] = True # Transcirption is in progress
-        with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 1) # Adjust for noisy environment
-            rospy.loginfo("Say something into the BACKPACK microphone!")
-            #beep.SoundRequestPublisher().publish_sound_request() # Publish beep sound
-            rospy.loginfo("[ALP] listening....")
-            audio = r.listen(source) # Recognizer listens to audio
-            rospy.loginfo("[ALP] Done listening.")
-        with context["lock"]:
+        audio = listen2Queue(context["queue"], r) # Capture audio
+        with context["lock"]: 
             context["listening"] = False # Transcription is no longer in progress
+            context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
+            context["queue"] = Queue() # Reset the queue to be empty 
     elif context["useAudio"]:
         audio = context["audio"]
         with context["lock"]:
@@ -240,6 +237,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     elapsed_time = 0 #  Tracks total time for adjusting noise levels.
     seconds_per_buffer = 0
 
+    rospy.loginfo("We are in listen2queue")
     
     while elapsed_time < startSilence: # Reads audio buffers for a duration of startSilence seconds.
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
@@ -257,6 +255,8 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
         frameTime += soundDuration
+        rospy.loginfo("Step 2 energy: " + str(energy))
+        rospy.loginfo("Step 2 energy_threshold: " + str(rec.energy_threshold))
         if energy > rec.energy_threshold: break # Wait until the energy of an audio buffer exceeds the threshold, indicating speech has started.
         while frameTime > rec.non_speaking_duration: 
             d, _ = frames.popleft() 
@@ -278,6 +278,8 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
             break
         # check if speaking has stopped for longer than the pause threshold on the audio input
         if energy > rec.energy_threshold:
+            rospy.loginfo("Step 3 energy: " + str(energy))
+            rospy.loginfo("Step 3 energy_threshold: " + str(rec.energy_threshold))
             pauseTime = 0
         else:
             pauseTime += soundDuration
@@ -311,8 +313,6 @@ def main():
     parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
-    audio = args.useAudio
-
     nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
     rasaURI = args.nluURI
     stt = rospy.Publisher(args.speechToTextTopic, String, queue_size=1)
@@ -343,6 +343,9 @@ def main():
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
         rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
+    elif context["audio"] == "./":
+        rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
+
 
     # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
     rospy.Subscriber("/nlp_test", String, lambda msg : nluInternal(msg.data, context))
