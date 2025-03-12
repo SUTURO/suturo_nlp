@@ -59,13 +59,105 @@ def to_number(value):
     return int(value) if value.isdigit() else w2n.word_to_num(value)
 """
 
-blacklist = {"states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
+blacklist = {
+        "states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
+        "stakes": "steaks", "stekes": "steaks", "steeks": "steaks", "staks": "steaks", "stayks": "steaks", 
+        "stex": "steaks", "steiks": "steaks", "steyks": "steaks", "steks": "steaks", "stakess": "steaks",
+        
         "red boy": "red bull", "redbull": "red bull", "whetball": "red bull", "whet ball": "red bull",
         "red bullseye": "red bull", "red balloon": "red bull", "red bullet": "red bull", "bed pull": "red bull",
         "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
         "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
         "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
-        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull"}
+        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull", 
+
+        "maxo mix": "mezzo mix", "mazzle mix": "mezzo mix", "mezzle mix": "mezzo mix", "maxelmix": "mezzo mix", "maxel mix": "mezzo mix",
+        "maxelmix": "mezzo mix", "meckso Mix": "mezzo mix", "mezzel mix": "mezzo mix", "mezzal mix": "mezzo mix",
+        "mezo mix": "mezzo mix", "metzo mix": "mezzo mix", "mezoh mix": "mezzo mix", "mezzow mix": "mezzo mix", "messo mix": "mezzo mix", 
+        "mezzo mex": "mezzo mix", "mezo mex": "mezzo mix", "metzo mex": "mezzo mix", "mezzo mitx": "mezzo mix", "mezzo micks": "mezzo mix",
+        
+        "emilia": "Amelia","emelia": "Amelia", "a. milya": "amelia", "amaliya": "Amelia", "amelya": "Amelia", "amellia": "Amelia", "amalia": "Amelia", 
+        "ameliah": "Amelia", "amelliya": "Amelia", "ameliaa": "Amelia", "amelija": "Amelia", "amilia": "Amelia", "ameelia": "Amelia",
+
+        "spide": "sprite", "spright": "sprite", "sprit": "sprite", "sprait": "sprite", "spryte": "sprite", "sproit": "sprite", "spriete": "sprite", 
+        "spreet": "sprite", "spriht": "sprite", "spriite": "sprite", "spraight": "sprite",
+        
+        "ashur": "Asher", "ashro": "Asher", "ashaw": "Asher", "ershuer": "Asher", "ershor": "Asher", "ashaur": "Asher",
+        "ashera": "Asher", "ashaw": "Asher", "aysher": "Asher", "ashar": "Asher", "ashor": "Asher", "asherd": "Asher", 
+        "ashair": "Asher", "ayshur": "Asher", "ashyer": "Asher",
+        
+        "eliya": "Elijah", "elia": "Elijah", "illia": "Elijah", "eliyar": "Elijah", "elija": "Elijah", "elisha": "Elijah", 
+        "elieja": "Elijah", "elijha": "Elijah", "elijiah": "Elijah", "elijahh": "Elijah", "alayja": "Elijah", 
+        "alijah": "Elijah", "elijae": "Elijah", "elijuh": "Elijah",
+        
+        "open milk": "oat milk", "oak milk": "oat milk", "ote milk": "oat milk", "oatmilc": "oat milk", "oht milk": "oat milk", "oatmulk": "oat milk", 
+        "oat meelk": "oat milk", "out milk": "oat milk", "ote meelk": "oat milk", "oatmilk": "oat milk", "ohtmilc": "oat milk", "oat melk": "oat milk",
+
+        "olevia": "Olivia", "olivya": "Olivia", "oliviah": "Olivia", "alivia": "Olivia", "oliviea": "Olivia", "olivva": "Olivia", "ollivia": "Olivia", 
+        "olivija": "Olivia", "oliviyya": "Olivia", "ulivia": "Olivia",
+
+        "charlot": "Charlotte", "sharlotte": "Charlotte", "charlott": "Charlotte", "charlote": "Charlotte", "charlett": "Charlotte", "charlottte": "Charlotte", 
+        "charloot": "Charlotte", "charlottah": "Charlotte", "charlotta": "Charlotte", "sharlot": "Charlotte",
+
+        "ezrah": "Ezra", "esra": "Ezra", "ezraah": "Ezra", "ezrahh": "Ezra", "ezraah": "Ezra", "ezrah": "Ezra", "ezraaa": "Ezra", 
+        "esrah": "Ezra", "ezrae": "Ezra", "ezraahh": "Ezra", "s-r": "Ezra", "s-r.": "Ezra", "s-w-a": "Ezra", "s.w.a": "Ezra",
+        "s.w.r": "Ezra", "ись War": "Ezra", "s-ware": "Ezra", "iswa": "Ezra", "ishwar": "Ezra", "Ishwa": "Ezra", "isreal": "Ezra",
+        "iswar": "Ezra",
+
+        "harpor": "Harper", "harrper": "Harper", "harperr": "Harper", "harpr": "Harper", "haprer": "Harper", "harrper": "Harper", 
+        "harpurr": "Harper", "harprr": "Harper", "harpyr": "Harper", "hapr": "Harper",
+
+        "jamesh": "James", "jaymes": "James", "jamz": "James", "jaimes": "James", "jaymesh": "James", "jamez": "James", "jams": "James", 
+        "jaems": "James", "jamies": "James", "jays": "James", 
+
+        "arora": "Aurora", "aurra": "Aurora", "auroraa": "Aurora", "aurorah": "Aurora", "aura": "Aurora", "orora": "Aurora", 
+        "aurorae": "Aurora", "arorra": "Aurora", "aurorra": "Aurora", "aurorra": "Aurora", "auroa": "Aurora", "awawa": "Aurora",
+
+        "luka": "Luca", "louca": "Luca", "lucah": "Luca", "lucaah": "Luca", "luhca": "Luca", 
+        "luka": "Luca", "lucca": "Luca", "louka": "Luca", "luce": "Luca", "lucas": "Luca",
+
+        "evlin": "Evelyn", "evelynne": "Evelyn", "evlyn": "Evelyn", "evlaine": "Evelyn", "evlinn": "Evelyn", 
+        "everlyn": "Evelyn", "evelin": "Evelyn", "evelynn": "Evelyn", "evlynne": "Evelyn", "evleh": "Evelyn",
+
+        "henree": "Henry", "henri": "Henry", "henryy": "Henry", "henrie": "Henry", "henrya": "Henry", "henrieh": "Henry", 
+        "herry": "Henry", "henray": "Henry", "henryx": "Henry", "hennry": "Henry",
+
+        "elianaah": "Eliana", "elliana": "Eliana", "elina": "Eliana", "ellianaah": "Eliana", "ellina": "Eliana", "elainah": 
+        "Eliana", "elianah": "Eliana", "eliahna": "Eliana", "elena": "Eliana", "ehliana": "Eliana",
+
+        "hudsonn": "Hudson", "hudsun": "Hudson", "hudsin": "Hudson", "huddson": "Hudson", "hudsen": "Hudson", "hudsone": "Hudson", 
+        "hudsonne": "Hudson", "hudsohn": "Hudson", "haddson": "Hudson", "hudsone": "Hudson",
+
+        "ariya": "Aria", "areeah": "Aria", "ariah": "Aria", "aryah": "Aria", "areea": "Aria", "arrah": "Aria", 
+        "arrea": "Aria", "areah": "Aria", "aryah": "Aria", "arayah": "Aria",
+
+        "ethanah": "Ethan", "eathan": "Ethan", "ethanx": "Ethan", "ethann": "Ethan", "eethan": "Ethan", "ethyn": "Ethan", 
+        "ehtan": "Ethan", "ethean": "Ethan", "ethen": "Ethan", "etahn": "Ethan",
+
+        "red cabage": "red cabbage", "redd cabbage": "red cabbage", "re cabbage": "red cabbage", "red cabbish": "red cabbage", 
+        "red cabage": "red cabbage", "redcabbage": "red cabbage", "red cabet": "red cabbage", "redcabbge": "red cabbage", "red cabagee": "red cabbage", 
+        "re cabage": "red cabbage",
+
+        "instan noodles": "instant noodles", "instent noodles": "instant noodles", "instat noodles": "instant noodles", "instin noodles": "instant noodles", 
+        "insta noodles": "instant noodles", "instan nooddles": "instant noodles", "instant noodels": "instant noodles", "instant noodels": "instant noodles", 
+        "insta noodes": "instant noodles", "instand noodles": "instant noodles",
+
+        "tomato soupl": "tomato soup", "tomato soub": "tomato soup", "tomato soupp": "tomato soup", "tomattosoup": "tomato soup", "tomato soum": "tomato soup", 
+        "tomato soop": "tomato soup", "tomato soupa": "tomato soup", "tomaato soup": "tomato soup", "tommato soup": "tomato soup", "tomato sup": "tomato soup",
+
+        "creme": "creamer", "creammer": "creamer", "creamerh": "creamer", "cremmer": "creamer", "cremar": "creamer", "cremmer": "creamer", "cremeur": "creamer", 
+        "crehmer": "creamer", "cremer": "creamer", "cremra": "creamer",
+
+        "sweetner": "sweetener", "sweeterner": "sweetener", "sweetennar": "sweetener", "sweethner": "sweetener", "sweeterner": "sweetener", "sweatern": "sweetener", 
+        "sweenter": "sweetener", "sweetenr": "sweetener", "sweetnr": "sweetener", "sweener": "sweetener",
+
+        "cornflaks": "cornflakes", "cornfleks": "cornflakes", "cornflayes": "cornflakes", "cornflak": "cornflakes", "cornflikes": "cornflakes", "cornfakes": "cornflakes", 
+        "cornflakesh": "cornflakes", "cornflaiks": "cornflakes", "cornflakses": "cornflakes", "cornflaakes": "cornflakes",
+
+        "pastae": "pasta", "pastaa": "pasta", "passta": "pasta", "paasta": "pasta", "pastaah": "pasta", "pastae": "pasta", "pahsta": "pasta", "pastar": "pasta", 
+        "pastah": "pasta", "pastae": "pasta"
+}
+
 
 def getData(response):
         """

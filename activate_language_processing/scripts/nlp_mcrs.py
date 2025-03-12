@@ -194,6 +194,14 @@ def transcriberFn(context):
 
     print(f"\n The whisper result is: {result}")
     context["stt"].publish(result) # Transcription result is published to a rostopic
+
+  
+    pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, blacklist.keys())) + r')\b', re.IGNORECASE)
+    match = pattern.search(result)
+    if match:
+        replacement = blacklist[match.group().lower()]
+        result = pattern.sub(replacement, result)
+
     nluInternal(result, context) # Call nluInternal to process transcription result
 
 
