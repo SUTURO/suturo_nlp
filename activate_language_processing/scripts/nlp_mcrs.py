@@ -236,8 +236,6 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     # to adjust an energy threshold that will subsequently be used to detect speech start.
     elapsed_time = 0 #  Tracks total time for adjusting noise levels.
     seconds_per_buffer = 0
-
-    rospy.loginfo("We are in listen2queue")
     
     while elapsed_time < startSilence: # Reads audio buffers for a duration of startSilence seconds.
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
@@ -268,21 +266,39 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
     # Step 3: keep adding to the recorded speech until a long enough pause is detected.
     pauseTime = 0
+
+    # Define initial thresholds
+    upper_threshold = rec.energy_threshold * 1.5  # Upper threshold for speech start
+    lower_threshold = rec.energy_threshold * 0.7  # Lower threshold for speech end
     
     while True:
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
         frameTime += soundDuration
+
         # handle phrase being too long by cutting off the audio
         if phraseTimeLimit and frameTime > phraseTimeLimit:
             break
+
+
         # check if speaking has stopped for longer than the pause threshold on the audio input
-        if energy > rec.energy_threshold:
+        if energy > upper_threshold:
             rospy.loginfo("Step 3 energy: " + str(energy))
             rospy.loginfo("Step 3 energy_threshold: " + str(rec.energy_threshold))
             pauseTime = 0
-        else:
+
+            # Dynamically adjust the upper and lower thresholds
+            upper_threshold = energy * 1.2  # Increase upper threshold slightly
+            lower_threshold = energy * 0.8  # Increase lower threshold slightly
+
+        elif energy < lower_threshold:
             pauseTime += soundDuration
+            rospy.loginfo("Step 3 energy2: "+ str(energy))
+
+            # Dynamically adjust the upper and lower thresholds
+            upper_threshold = max(upper_threshold * 0.9, rec.energy_threshold * 1.5)  # Decrease upper threshold slightly
+            lower_threshold = max(lower_threshold * 0.9, rec.energy_threshold * 0.7)  # Decrease lower threshold slightly
+        
         if pauseTime > rec.pause_threshold:  # end of the phrase
             break
 

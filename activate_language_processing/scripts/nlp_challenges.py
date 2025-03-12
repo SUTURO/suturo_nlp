@@ -65,7 +65,7 @@ blacklist = {"states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes
         "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
         "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
         "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
-        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull"}
+        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull", "wet bull": "red bull"}
 
 def getData(response):
         """
