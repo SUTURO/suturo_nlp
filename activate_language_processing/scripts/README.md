@@ -11,6 +11,8 @@ pip install spacy==3.7.5
 
 pip install numpy==1.24.4
 
+pip install SpeechRecognition==3.10.4
+
 # nlp_mcrs.py
 
 This file is supposed to cover multiple challanges like Receptionist and Restaurant. 
@@ -23,6 +25,8 @@ pip install noisereduce==3.0.3
 pip install spacy==3.7.5
 
 pip install numpy==1.24.4
+
+pip install SpeechRecognition==3.10.4
 
 # nlp_challenges.py
 
