@@ -1,7 +1,6 @@
 #!/home/siwall/venvs/whisper_venv/bin/python3.8
 
 from argparse import ArgumentParser
-import requests
 import speech_recognition as sr
 import json
 import rospy
@@ -17,7 +16,6 @@ import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
 from nlp_challenges import *
-import os
 
 def _isTranscribing(context):
     """
@@ -195,7 +193,6 @@ def transcriberFn(context):
     print(f"\n The whisper result is: {result}")
     context["stt"].publish(result) # Transcription result is published to a rostopic
 
-  
     pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, blacklist.keys())) + r')\b', re.IGNORECASE)
     match = pattern.search(result)
     if match:
