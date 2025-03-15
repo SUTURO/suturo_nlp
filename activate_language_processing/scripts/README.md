@@ -6,7 +6,9 @@ This file is for the gpsr (general purpose service robot) challenge.
 ## Dependencies
 
 pip install noisereduce==3.0.3
+
 pip install spacy==3.7.5
+
 pip install numpy==1.24.4
 
 # nlp_mcrs.py
@@ -17,7 +19,9 @@ It works with the nlp_challanges.py script.
 ## Dependencies
 
 pip install noisereduce==3.0.3
+
 pip install spacy==3.7.5
+
 pip install numpy==1.24.4
 
 # nlp_challenges.py
@@ -28,6 +32,7 @@ needed for the respective challenge.
 ## Dependencies
 
 pip install word2number==1.1
+
 pip install regex==2024.11.6
 
 # nlp_receptionist.py
