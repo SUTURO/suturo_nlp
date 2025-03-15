@@ -43,11 +43,6 @@ pip install regex==2024.11.6
 
 This file is for the Receptionist challenge. Might be deleted later, if nlp_mcrs.py works.
 
-
-# nlp_restaurant.py
-
-This file is for the Restaurant challenge. Might be deleted later, if nlp_mcrs.py works.
-
 # test.py
 
 Will be the file to test existing scripts in their accuracy in different scenarios.
