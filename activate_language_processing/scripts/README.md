@@ -15,8 +15,8 @@ pip install SpeechRecognition==3.10.4
 
 # nlp_mcrs.py
 
-This file is supposed to cover multiple challanges like Receptionist and Restaurant. 
-It works with the nlp_challanges.py script.
+This file is supposed to cover multiple challenges like Receptionist and Restaurant. 
+It works with the nlp_challenges.py script.
 
 ### Dependencies
 
