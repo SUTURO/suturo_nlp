@@ -23,6 +23,8 @@
 *main.pdf
 *.idx
 
+#### Für Python ####
+*.pyc
 
 #### Für Java ####
 
