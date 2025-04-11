@@ -24,7 +24,7 @@
 *.idx
 
 #### Für Python ####
-*.pyc
+*.cpython-38.pyc
 
 #### Für Java ####
 
