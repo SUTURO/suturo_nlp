@@ -1,6 +1,22 @@
 import json
 from word2number import w2n
 import re
+from typing import List
+from pydantic import BaseModel
+from ollama import chat # type: ignore
+
+entities = [
+    "apple juice", "beer", "bottle of wine", "cafe au lait", "coffee", "coffee can", "can of coffee", 
+    "coffee with milk", "coke", "can of coke", "cola", "cola can", "cup of coffee", "cup of coffee with milk", 
+    "milk coffee", "cup of tea", "gin tonic", "ginger ale", "glass of milk", "glass of mineral water", 
+    "glass of water", "ice tea bottle", "bottle of ice tea", "iced coffee", "iced tea", "jug of milk", 
+    "juice box", "juice pack", "pack of juice", "lemonade", "milk", "milk pack", "mineral water", 
+    "orange juice", "orange juice box", "box of orange juice", "sprite", "tea", "tropical juice bottle", 
+    "bottle of tropical juice", "water", "wine bottle", "wine glass", "glass of wine", "milk bottle", 
+    "bottle of milk", "ice tea", "ice tea can", "can of ice tea", "water bottle", "bottle of water", 
+    "big coke", "big cola", "fanta", "fanta can", "can of fanta", "dubbelfris", "red bull", 
+    "lactosefree milk", "mezzo mix", "oat milk"
+]
 
 def switch(case, response, context):
     '''
@@ -20,52 +36,6 @@ def switch(case, response, context):
         "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
         "deny": lambda: context["pub"].publish(f"<DENY>, False")
     }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
-
-def replace_word_and_next(text, target_word, replacement):
-    # Regular expression to find the target word followed by another word
-    pattern = rf"\b{target_word}\s+\w+\b"
-    return re.sub(pattern, replacement, text)
-
-"""
-def is_number(value):
-    
-    Check if a given string is a number (either numeral or word).
-
-    Args:
-        value: a string, that might be a digit or word representation of a number.
-    
-    Returns:
-        True if the string is a textual representation of a number (or a digit) else False.
-    
-    try:
-     
-        w2n.word_to_num(value)  
-        return True
-    except ValueError:
-        return value.isdigit() 
-"""
-
-"""        
-def to_number(value):
-    
-    Converts a number in words or numerals to an integer.
-
-    Args:
-        value: A string that contains a digit or word representation of a number.
-        
-    Returns:
-        The input number as an integer.
-    
-    return int(value) if value.isdigit() else w2n.word_to_num(value)
-"""
-
-blacklist = {"states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
-        "red boy": "red bull", "redbull": "red bull", "whetball": "red bull", "whet ball": "red bull",
-        "red bullseye": "red bull", "red balloon": "red bull", "red bullet": "red bull", "bed pull": "red bull",
-        "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
-        "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
-        "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
-        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull", "wet bull": "red bull"}
 
 def getData(response):
         """
@@ -103,22 +73,9 @@ def getData(response):
                 value = ent.get("value")
                 value = value.strip()
 
-                if value == "boy":
-                    entity = "drink"
-
-                if value in blacklist:
-                    value = blacklist.get(value)
-
                 #print(value)
                 number = ent.get("numberAttribute")
-                
-                """
-                if is_number(value):
-                    cachedNumer = to_number(value)
-                    falseNumber = True
-                    continue
-                """
-                    
+ 
                 if entity == "drink":
                     if not number:
                         drinks.append((value, 1))
@@ -138,7 +95,28 @@ def getData(response):
         values= {"names": names, "drinks": drinks, "foods": foods, "hobbies": interests}
         return json.dumps(values) 
 
+def replace(false_term):
+    # Define the schema for the response
+    class Entity(BaseModel):
+        name: str
 
+    class ReplacementList(BaseModel):
+        replacements: List[Entity]
+
+    response = chat(
+        model='gemma3',
+        messages=[{
+            'role': 'user',
+            'content': "You will be given a term and a list of entities. Please select an entity that sounds closest to the given term when pronounced and return it in json format. For example: the term 'wet boy' should be replaced with 'red bull'. Entities:" + ", ".join(entities) + ". Term: " + false_term
+        }],
+        format=ReplacementList.model_json_schema(),
+        options={'temperature': 1},
+    )
+
+    # Validate response
+    response = ReplacementList.model_validate_json(response.message.content)
+    replacement_term = response.replacements[0].name 
+    return replacement_term
 
 class Receptionist:
     """
@@ -173,6 +151,13 @@ class Receptionist:
             
         drink = data.get("drinks")
         drink = [x[0] for x in drink][0] if drink else None
+
+        print('Original drink:', drink) 
+
+        if drink not in entities and drink is not None:
+            drink = replace(drink)
+
+        print('Replaced drink:', drink)
 
         context["pub"].publish(f"<GUEST>; {name}; {drink}")
 

@@ -1,7 +1,6 @@
 #!/home/siwall/venvs/whisper_venv/bin/python3.8
 
 from argparse import ArgumentParser
-import requests
 import speech_recognition as sr
 import json
 import rospy
@@ -17,7 +16,6 @@ import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
 from nlp_challenges import *
-import os
 
 def _isTranscribing(context):
     """
@@ -166,14 +164,17 @@ def transcriberFn(context):
             context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
             context["queue"] = Queue() # Reset the queue to be empty 
     elif context["audio"] == "./":
-        rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
-        with context["lock"]: 
+        with context["lock"]:
             context["listening"] = True # Transcirption is in progress
-        audio = listen2Queue(context["queue"], r) # Capture audio
-        with context["lock"]: 
+        with sr.Microphone() as source:
+            r.adjust_for_ambient_noise(source, 1) # Adjust for noisy environment
+            rospy.loginfo("Say something into the BACKPACK microphone!")
+            #beep.SoundRequestPublisher().publish_sound_request() # Publish beep sound
+            rospy.loginfo("[ALP] listening....")
+            audio = r.listen(source) # Recognizer listens to audio
+            rospy.loginfo("[ALP] Done listening.")
+        with context["lock"]:
             context["listening"] = False # Transcription is no longer in progress
-            context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
-            context["queue"] = Queue() # Reset the queue to be empty 
     elif context["useAudio"]:
         audio = context["audio"]
         with context["lock"]:
@@ -191,6 +192,7 @@ def transcriberFn(context):
 
     print(f"\n The whisper result is: {result}")
     context["stt"].publish(result) # Transcription result is published to a rostopic
+
     nluInternal(result, context) # Call nluInternal to process transcription result
 
 
@@ -236,6 +238,7 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     # to adjust an energy threshold that will subsequently be used to detect speech start.
     elapsed_time = 0 #  Tracks total time for adjusting noise levels.
     seconds_per_buffer = 0
+
     
     while elapsed_time < startSilence: # Reads audio buffers for a duration of startSilence seconds.
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
@@ -253,8 +256,6 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
         frameTime += soundDuration
-        rospy.loginfo("Step 2 energy: " + str(energy))
-        rospy.loginfo("Step 2 energy_threshold: " + str(rec.energy_threshold))
         if energy > rec.energy_threshold: break # Wait until the energy of an audio buffer exceeds the threshold, indicating speech has started.
         while frameTime > rec.non_speaking_duration: 
             d, _ = frames.popleft() 
@@ -266,39 +267,19 @@ def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRa
     # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
     # Step 3: keep adding to the recorded speech until a long enough pause is detected.
     pauseTime = 0
-
-    # Define initial thresholds
-    upper_threshold = rec.energy_threshold * 1.5  # Upper threshold for speech start
-    lower_threshold = rec.energy_threshold * 0.7  # Lower threshold for speech end
     
     while True:
         buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
         frames.append((soundDuration, buffer))
         frameTime += soundDuration
-
         # handle phrase being too long by cutting off the audio
         if phraseTimeLimit and frameTime > phraseTimeLimit:
             break
-
-
         # check if speaking has stopped for longer than the pause threshold on the audio input
-        if energy > upper_threshold:
-            rospy.loginfo("Step 3 energy: " + str(energy))
-            rospy.loginfo("Step 3 energy_threshold: " + str(rec.energy_threshold))
+        if energy > rec.energy_threshold:
             pauseTime = 0
-
-            # Dynamically adjust the upper and lower thresholds
-            upper_threshold = energy * 1.2  # Increase upper threshold slightly
-            lower_threshold = energy * 0.8  # Increase lower threshold slightly
-
-        elif energy < lower_threshold:
+        else:
             pauseTime += soundDuration
-            rospy.loginfo("Step 3 energy2: "+ str(energy))
-
-            # Dynamically adjust the upper and lower thresholds
-            upper_threshold = max(upper_threshold * 0.9, rec.energy_threshold * 1.5)  # Decrease upper threshold slightly
-            lower_threshold = max(lower_threshold * 0.9, rec.energy_threshold * 0.7)  # Decrease lower threshold slightly
-        
         if pauseTime > rec.pause_threshold:  # end of the phrase
             break
 
@@ -328,6 +309,8 @@ def main():
     parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: /whisper_out")
     parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
+
+    audio = args.useAudio
 
     nlpOut = rospy.Publisher(args.outputTopic, String, queue_size=16)
     rasaURI = args.nluURI
@@ -359,9 +342,6 @@ def main():
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
         rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
-    elif context["audio"] == "./":
-        rospy.Subscriber('/audio/audio', AudioData, lambda msg: record_hsr(msg, context))
-
 
     # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
     rospy.Subscriber("/nlp_test", String, lambda msg : nluInternal(msg.data, context))
