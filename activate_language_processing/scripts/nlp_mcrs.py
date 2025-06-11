@@ -16,6 +16,9 @@ import activate_language_processing.beep as beep # type: ignore
 from activate_language_processing.nlp import semanticLabelling # type: ignore
 import noisereduce as nr
 from nlp_challenges import *
+import numpy as np
+import librosa
+from pathlib import Path
 
 def _isTranscribing(context):
     """
@@ -29,7 +32,7 @@ def _isTranscribing(context):
     return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
 
 
-def nluInternal(text, context):
+def nluInternal(text, audio, context):
     """
     Process a text input to extract semantic information like intent and entities, 
     formats the extracted data, and publishes it as JSON to a ROS topic.
@@ -41,6 +44,8 @@ def nluInternal(text, context):
             pub: a ROS publisher object to publish processed results to a specified topic.
     """
     with context["lock"]:  # Lock so only one thread may execute this code at a time
+        text = replace_text(text, audio)
+
         parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
         
         for p in parses:
@@ -51,7 +56,7 @@ def nluInternal(text, context):
                     rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                     continue  
 
-            print("The sentence is" + p["sentence"])
+            print("The sentence is: " + p["sentence"])
 
             pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
             
@@ -136,6 +141,32 @@ def startListener(msg, context):
             context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,)) # Create a new thread that executes the transcriberFn function when started
             context["transcriber"].start() # Start the transcription.
 
+def audio_data_to_numpy(audio_data, target_sr=16000):
+    """
+    Convert speech_recognition.AudioData to a NumPy float32 waveform.
+    
+    Args:
+        audio_data (speech_recognition.AudioData): Audio from `r.listen()`.
+        target_sr (int): Target sample rate (default: 16000, common in speech recognition).
+    
+    Returns:
+        np.ndarray: Audio waveform in float32 format (normalized to [-1, 1]).
+        int: Sample rate.
+    """
+    # Get raw WAV bytes and convert to NumPy array (int16)
+    wav_bytes = audio_data.get_wav_data()
+    wav_array = np.frombuffer(wav_bytes, dtype=np.int16)
+    
+    # Skip WAV header (first 44 bytes for standard WAV files)
+    # Note: speech_recognition's WAV data may or may not include a header.
+    # If the array is unusually long, assume it has a header.
+    if len(wav_array) > audio_data.sample_rate:  # Rough check for header
+        wav_array = wav_array[22:]  # Skip header (adjust if needed)
+    
+    # Convert to float32 and normalize to [-1, 1]
+    waveform = librosa.util.buf_to_float(wav_array, dtype=np.float32)
+    
+    return waveform, target_sr
 
 def transcriberFn(context):
     """
@@ -151,55 +182,52 @@ def transcriberFn(context):
         listening: a flag indicating whether transcription is currently in progress.
         stt: a ROS publisher object used to publish the transcription result to other ROS nodes.
     """
-    r = sr.Recognizer() # speech_recognition.Recognizer
-    r.pause_threshold = 1.0 # seconds
-    
-    if context["useHSR"]: # If true, function assumes an HSR-specific microphone setup
-        rospy.loginfo("Wait for the beep, then say something into the HSR microphone!")
-        with context["lock"]: 
-            context["listening"] = True # Transcirption is in progress
-        audio = listen2Queue(context["queue"], r) # Capture audio
-        with context["lock"]: 
-            context["listening"] = False # Transcription is no longer in progress
-            context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty
-            context["queue"] = Queue() # Reset the queue to be empty 
-    elif context["audio"] == "./":
-        with context["lock"]:
-            context["listening"] = True # Transcirption is in progress
-        with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, 1) # Adjust for noisy environment
-            rospy.loginfo("Say something into the BACKPACK microphone!")
-            #beep.SoundRequestPublisher().publish_sound_request() # Publish beep sound
-            rospy.loginfo("[ALP] listening....")
-            audio = r.listen(source) # Recognizer listens to audio
-            rospy.loginfo("[ALP] Done listening.")
-        with context["lock"]:
-            context["listening"] = False # Transcription is no longer in progress
-    elif context["useAudio"]:
-        audio = context["audio"]
+    r = sr.Recognizer()
+    r.pause_threshold = 1.0
+
+    # Capture audio
+    if context["useHSR"]:
+        rospy.loginfo("Waiting for the beep...")
         with context["lock"]:
             context["listening"] = True
-        with sr.AudioFile(audio) as source:
-            audio = r.record(source) 
+        audio = listen2Queue(context["queue"], r)
         with context["lock"]:
             context["listening"] = False
-    
+            context["data"] = np.array([], dtype=np.int16)
+            context["queue"] = Queue()
+    elif context["audio"] == "./":
+        with context["lock"]:
+            context["listening"] = True
+        with sr.Microphone() as source:
+            r.adjust_for_ambient_noise(source, duration=1)
+            rospy.loginfo("Speak now...")
+            audio = r.listen(source)
+        with context["lock"]:
+            context["listening"] = False
+    elif context["useAudio"]:
+        audio_path = context["audio"]
+        if isinstance(audio_path, str):
+            audio_path = Path(audio_path)
+        audio = audio_path  # Store path for nluInternal
+    else:
+        raise ValueError("Invalid audio source configuration")
 
-    # Use sr Whisper integration
-    rospy.loginfo("[Whisper]: processing...")
-    result = r.recognize_whisper(audio, language="english") # Process the audio using the english whisper model to convert speech to text
-    rospy.loginfo("[Whisper]: done")
+    # Transcribe using Whisper
+    rospy.loginfo("[Whisper]: Processing...")
+    if isinstance(audio, sr.AudioData):
+        # Convert live audio to waveform for Whisper
+        result = r.recognize_whisper(audio, language="english")
+    else:
+        # Read file and pass raw audio to Whisper
+        with sr.AudioFile(str(audio)) as source:
+            audio_data = r.record(source)
+        result = r.recognize_whisper(audio_data, language="english")
+    rospy.loginfo("[Whisper]: Done")
+    print(f"\nWhisper result: {result}")
 
-    print(f"\n The whisper result is: {result}")
-    context["stt"].publish(result) # Transcription result is published to a rostopic
-
-    pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, blacklist.keys())) + r')\b', re.IGNORECASE)
-    match = pattern.search(result)
-    if match:
-        replacement = blacklist[match.group().lower()]
-        result = pattern.sub(replacement, result)
-
-    nluInternal(result, context) # Call nluInternal to process transcription result
+    # Publish result and call nluInternal
+    context["stt"].publish(result)
+    nluInternal(result, audio, context)  # Pass either path or waveform
 
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
