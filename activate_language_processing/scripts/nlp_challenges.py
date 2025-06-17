@@ -1,36 +1,19 @@
 import json
 from word2number import w2n
-<<<<<<< Updated upstream
-import re
-
-=======
 from typing import List
 from pydantic import BaseModel
 import yaml
 import spacy
 from pathlib import Path
-import librosa
-#from transformers import Qwen2AudioForConditionalGeneration, AutoProcessor
-import torch
-import ast
+#import librosa
+#import torch
+#import ast
 import numpy as np
-#from metaphone import doublemetaphone
-#from Levenshtein import distance as lev_dist
+from metaphone import doublemetaphone
+from Levenshtein import distance as lev_dist
 import re
 
-
-# Load processor and model
-#processor = AutoProcessor.from_pretrained("Qwen/Qwen2-Audio-7B-Instruct")
-
-"""
-model = Qwen2AudioForConditionalGeneration.from_pretrained(
-    "Qwen/Qwen2-Audio-7B-Instruct",
-    device_map={"": "cpu"},
-    torch_dtype=torch.float32  # Safe for CPU
-)
-"""
-
-def replace_text(text, audio):
+def replace_text(text):
     """
     Takes the the whisper transcription and extracts the NOUNs and PROPNs (the relevant entities). And
     checks wheter they appear in the list of entities of the rasa model we use. If not, the given term is replaced 
@@ -44,7 +27,7 @@ def replace_text(text, audio):
     """    
     
     # Load the entities.yml file from our rasa model
-    with open('/home/suturo/ros_ws/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
+    with open('/home/siwall/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
         data = yaml.safe_load(file)
 
     # Create separate lists for our entities
@@ -85,33 +68,14 @@ def replace_text(text, audio):
             if token.text not in allowed_entities and token.text[:-1] not in allowed_entities:
                 terms_to_replace.add(token.text)
 
-    torch.cuda.empty_cache()
+    dictionary = []
 
-    replacement_results = {term: replace_term2(term, [w for w in allowed_entities if double_metaphone_similarity(term, w) >= 0.5],audio) for term in terms_to_replace}
-            
-    # Call replace_term2 once for all unique terms
-    #replacement_results = {term: replace_term2(term, allowed_entities, audio) for term in terms_to_replace}
+    for term in terms_to_replace:
+        for entity in allowed_entities:
+            if double_metaphone_similarity(term, entity+'s') >= 0.55:
+                dictionary.append(entity+'s')
 
-    # Build replacement map using precomputed replacements
-    replacement_map = {}
-    for text_entity, ent in named_ents.items():
-        if text_entity in replacement_results:
-            replacement_map[(ent.start_char, ent.end_char)] = replacement_results[text_entity]
-
-    for token in doc:
-        if token.pos_ in {"NOUN", "PROPN"} and token.text in replacement_results:
-            print(f"False Noun: {token}")
-            replacement_map[(token.idx, token.idx + len(token))] = replacement_results[token.text]
-
-    # Start from the end of the text to avoid offset issues while replacing
-    new_text = text
-    for (start_char, end_char), replacement in sorted(replacement_map.items(), key=lambda x: -x[0][0]):
-        # Replace the span from start_char to end_char with the replacement term
-        new_text = new_text[:start_char] + replacement + new_text[end_char:]
-
-    # Output the final modified text
-    print(f"New text: {new_text}")
-    return new_text
+    return dictionary
 
 
 def double_metaphone_similarity(word1, word2):
@@ -211,87 +175,6 @@ def double_metaphone_similarity(word1, word2):
     return min(1.0, max(0.0, combined_score))
 
 
-def replace_term2(flase_term, entities, audio):
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-    torch.cuda.empty_cache()
-
-    # Handle both path and waveform inputs
-    if isinstance(audio, (str, Path)):
-        # Case 1: Audio file path
-        audio_path = Path(audio) if isinstance(audio, str) else audio
-        sr = processor.feature_extractor.sampling_rate
-        audio_waveform, _ = librosa.load(audio_path, sr=sr)
-    elif isinstance(audio, np.ndarray):
-        # Case 2: Pre-loaded waveform
-        audio_waveform = audio
-        sr = processor.feature_extractor.sampling_rate
-    elif hasattr(audio, 'get_wav_data'):  # speech_recognition.AudioData
-        # Case 3: speech_recognition AudioData object
-        wav_bytes = audio.get_wav_data()
-        wav_array = np.frombuffer(wav_bytes, dtype=np.int16)
-        # Skip WAV header if present (first 44 bytes)
-        if len(wav_array) > 22:  # Rough check for header
-            wav_array = wav_array[22:]
-        audio_waveform = librosa.util.buf_to_float(wav_array, dtype=np.float32)
-        sr = 16000  # Default for speech_recognition
-    else:
-        raise ValueError("Unsupported audio input type")
-
-    # Construct prompt
-    prompt = (
-        "You will be given a term, list of entities and an audio file. "
-        "Please select an entity from the list that sounds closest to the given term when pronounced and return it in json format. You must not return anything that is not in the given list of entities."
-        "You may also not return the original given term. For example: the term 'wet boy' should be replaced with 'red bull'. "
-        f"Entities: {', '.join(entities)}. Term: " + flase_term
-    )
-
-    prompt2 = (
-        "Please transcribe the file I will give you"
-    )
-
-    # Build structured conversation
-    conversation = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": [
-            {"type": "audio", "audio_url": "local"},  # Placeholder
-            {"type": "text", "text": prompt}
-        ]}
-    ]
-
-    # Generate chat prompt with <|AUDIO|> token
-    text = processor.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)
-
-    # Process input (new correct usage)
-    inputs = processor(
-        text=text,
-        audio=audio_waveform,
-        sampling_rate=sr,
-        return_tensors="pt",
-        padding=True
-    )
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-
-    # Generate response
-    torch.cuda.empty_cache()
-    generate_ids = model.generate(**inputs, max_new_tokens=13)
-    generate_ids = generate_ids[:, inputs["input_ids"].size(1):]
-    response = processor.batch_decode(generate_ids, skip_special_tokens=True)[0]
-
-    del inputs, generate_ids
-    torch.cuda.empty_cache()
-
-    try:
-        result = ast.literal_eval(response)
-        entity_value = result.get("entity", "")
-        print("Extracted entity:", entity_value)
-        return entity_value
-    except (ValueError, SyntaxError) as e:
-        print("Failed to parse response:", response)
-        entity_value = ""
-        return entity_value
-
-
->>>>>>> Stashed changes
 def switch(case, response, context):
     '''
     Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
