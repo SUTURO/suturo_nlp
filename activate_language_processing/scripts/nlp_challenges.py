@@ -3,7 +3,6 @@ import json
 from word2number import w2n
 from typing import List
 from pydantic import BaseModel
-from ollama import chat # type: ignore
 import yaml
 import spacy
 from pathlib import Path
@@ -21,10 +20,10 @@ processor = AutoProcessor.from_pretrained("Qwen/Qwen2-Audio-7B-Instruct")
 
 model = Qwen2AudioForConditionalGeneration.from_pretrained(
     "Qwen/Qwen2-Audio-7B-Instruct",
-    device_map="auto",
-    torch_dtype=torch.float16,
-    max_memory={0: "8GiB"}  
+    device_map={"": "cpu"},
+    torch_dtype=torch.float32  # Safe for CPU
 )
+
 
 def replace_text(text, audio):
     """
@@ -120,63 +119,91 @@ def double_metaphone_similarity(word1, word2):
 
     Returns:
         The absolute similarity between word1 and word2 in terms of pronounciation.
-    """    
+    """
+    # 1. Normalize inputs and handle multi-word terms
+    def preprocess(word):
+        word = word.lower().strip()
+        # Remove non-alphabetic characters and split into words
+        words = re.findall(r'[a-z]+', word)
+        return words
     
-    # 1. Normalize inputs
-    word1 = word1.lower().strip()
-    word2 = word2.lower().strip()
+    words1 = preprocess(word1)
+    words2 = preprocess(word2)
     
     # Short-circuit for identical words
-    if word1 == word2:
+    if ' '.join(words1) == ' '.join(words2):
         return 1.0
     
-    # 2. Get Double Metaphone codes
+    # 2. Get Double Metaphone codes for all words
     def get_metaphone(word):
         primary, secondary = doublemetaphone(word)
         return (primary or "", secondary or "")
     
-    meta1 = get_metaphone(word1)
-    meta2 = get_metaphone(word2)
+    # Get codes for all words in each term
+    meta1 = [get_metaphone(w) for w in words1]
+    meta2 = [get_metaphone(w) for w in words2]
     
-    # 3. Calculate phonetic similarity
-    def phonetic_score(m1, m2):
-        scores = []
-        for code1 in m1:
-            for code2 in m2:
-                if not code1 or not code2:
-                    continue
-                max_len = max(len(code1), len(code2))
-                score = 1 - (lev_dist(code1, code2) / max_len)
-                scores.append(score)
-        return max(scores) if scores else 0.0
+    # 3. Calculate best phonetic similarity between word pairs
+    def phonetic_score(meta1, meta2):
+        best_score = 0.0
+        
+        # 1. Calculate word-count difference penalty
+        word_count_diff = abs(len(meta1) - len(meta2))
+        word_count_penalty = max(0.6, 1 - (word_count_diff / 3))  # Penalty scales with difference (cap at 40% penalty)
+        
+        # 2. Compare individual word pairs
+        for m1 in meta1:
+            for m2 in meta2:
+                # Primary code comparison
+                if m1[0] and m2[0]:
+                    max_len = max(len(m1[0]), len(m2[0]))
+                    raw_score = 1 - (lev_dist(m1[0], m2[0]) / max_len)
+                    best_score = max(best_score, raw_score)
+             
+                # Secondary code comparison
+                if m1[1] and m2[1]:
+                    max_len = max(len(m1[1]), len(m2[1]))
+                    raw_score = 1 - (lev_dist(m1[1], m2[1]) / max_len)
+                    best_score = max(best_score, raw_score)
+
+        
+        # 3. Apply word-count penalty
+        return best_score * word_count_penalty
     
     phonetic_sim = phonetic_score(meta1, meta2)
     
-    # 4. Calculate syllable similarity (approximate)
+    
+    # 4. Improved syllable counting
     def count_syllables(word):
         word = re.sub(r'[^a-z]', '', word.lower())
-        syllables = re.findall(r'[aeiouy]+', word)
-        return max(1, len(syllables))
+        # Count vowel groups, but don't count silent 'e' at end
+        if len(word) > 1 and word.endswith('e'):
+            word = word[:-1]
+        syllables = len(re.findall(r'[aeiouy]+', word))
+        return max(1, syllables)
     
-    syl1 = count_syllables(word1)
-    syl2 = count_syllables(word2)
+    # Calculate average syllables per word
+    syl1 = sum(count_syllables(w) for w in words1) / len(words1)
+    syl2 = sum(count_syllables(w) for w in words2) / len(words2)
     syllable_sim = 1 - (abs(syl1 - syl2) / max(syl1, syl2, 1))
     
-    # 5. Length difference penalty
-    len_diff_penalty = 1 - (abs(len(word1) - len(word2)) / max(len(word1), len(word2), 1))
+    # 5. Length difference penalty (now compares total lengths)
+    len1 = sum(len(w) for w in words1)
+    len2 = sum(len(w) for w in words2)
+    len_diff_penalty = 1 - (abs(len1 - len2) / (max(len1, len2) * 0.75))  # More lenient
     
-    # 6. Combined score with weights
+    # 6. Combined score with adjusted weights
     combined_score = (
-        0.6 * phonetic_sim +  # Primary weight to phonetic match
-        0.3 * syllable_sim +  # Secondary weight to syllable count
-        0.1 * len_diff_penalty  # Small weight to length similarity
+        0.75 * phonetic_sim +  # Increased weight to phonetic match
+        0.15 * syllable_sim +  # Reduced weight to syllable count
+        0.1 * len_diff_penalty
     )
     
-    # 7. Apply minimum threshold
-    if phonetic_sim < 0.7:  # If phonetic match isn't strong
-        combined_score *= 0.7  # Penalize the score
+    # 7. Additional penalty for multi-word mismatches
+    if len(words1) != len(words2):
+        combined_score *= 0.8  # Penalize if different number of words
     
-    return min(1.0, max(0.0, combined_score))  # Clamp between 0-1
+    return min(1.0, max(0.0, combined_score))
 
 
 def replace_term2(flase_term, entities, audio):
@@ -258,41 +285,6 @@ def replace_term2(flase_term, entities, audio):
         entity_value = ""
         return entity_value
     
-    
-
-
-def replace_term(false_term, entities):
-    """
-    Uses a LLM model to replace a wrong transcribed word with a different one from the list of enteties we have defined for our rasa model.
-
-    Args:
-        false_term: the false transcribed term
-        entities: the relevant list of entities that hold possible replacements
-
-    Returns:
-        The replacement for the false term, extracted from the entities list.
-    """
-    # Define the schema for the response
-    class Entity(BaseModel):
-        name: str
-
-    class ReplacementList(BaseModel):
-        replacements: List[Entity]
-
-    response = chat(
-        model='gemma3',
-        messages=[{
-            'role': 'user',
-            'content': "You will be given a term and a list of entities. Please select an entity that sounds closest to the given term when pronounced and return it in json format. For example: the term 'wet boy' should be replaced with 'red bull'. Entities:" + ", ".join(entities) + ". Term: " + false_term
-        }],
-        format=ReplacementList.model_json_schema(),
-        options={'temperature': 1}, # Temperature controls how 'random and creative' a model is. Testing has shown that a bit of creativity produces better reults.
-    )
-
-    # Validate response
-    response = ReplacementList.model_validate_json(response.message.content)
-    replacement_term = response.replacements[0].name 
-    return replacement_term
 
 def switch(case, response, context):
     '''

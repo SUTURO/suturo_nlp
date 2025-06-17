@@ -31,7 +31,6 @@ pip install \
   decorator==5.2.1 \
   distro==1.9.0 \
   docutils==0.20.1 \
-  en-core-web-sm==3.7.1 \
   exceptiongroup==1.3.0 \
   filelock==3.16.1 \
   fonttools==4.57.0 \
@@ -90,7 +89,6 @@ pip install \
   pooch==1.8.2 \
   preshed==3.0.9 \
   psutil==7.0.0 \
-  PyAudio==0.2.14 \
   pycparser==2.22 \
   pydantic==2.10.6 \
   pydantic_core==2.27.2 \
