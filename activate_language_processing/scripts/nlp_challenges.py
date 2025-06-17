@@ -12,6 +12,7 @@ import numpy as np
 from metaphone import doublemetaphone
 from Levenshtein import distance as lev_dist
 import re
+import inflect
 
 def replace_text(text):
     """
@@ -70,10 +71,19 @@ def replace_text(text):
 
     dictionary = []
 
+    p = inflect.engine()
+
+    def pluralize(word):
+        # Check if the word is already plural
+        if p.singular_noun(word):
+            return word  # It's already plural
+        else:
+            return p.plural(word)  # Convert to plural
+
     for term in terms_to_replace:
         for entity in allowed_entities:
-            if double_metaphone_similarity(term, entity+'s') >= 0.55:
-                dictionary.append(entity+'s')
+            if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
+                dictionary.append(pluralize(entity))
 
     return dictionary
 
