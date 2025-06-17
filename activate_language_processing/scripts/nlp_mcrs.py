@@ -165,18 +165,22 @@ def audio_data_to_numpy(audio_data, target_sr=16000):
         np.ndarray: Audio waveform in float32 format (normalized to [-1, 1]).
         int: Sample rate.
     """
-    # Get raw WAV bytes and convert to NumPy array (int16)
-    wav_bytes = audio_data.get_wav_data()
-    wav_array = np.frombuffer(wav_bytes, dtype=np.int16)
+    # Get raw audio data as bytes
+    raw_data = audio_data.get_raw_data()
     
-    # Skip WAV header (first 44 bytes for standard WAV files)
-    # Note: speech_recognition's WAV data may or may not include a header.
-    # If the array is unusually long, assume it has a header.
-    if len(wav_array) > audio_data.sample_rate:  # Rough check for header
-        wav_array = wav_array[22:]  # Skip header (adjust if needed)
+    # Convert to NumPy array (int16)
+    audio_array = np.frombuffer(raw_data, dtype=np.int16)
     
     # Convert to float32 and normalize to [-1, 1]
-    waveform = librosa.util.buf_to_float(wav_array, dtype=np.float32)
+    waveform = librosa.util.buf_to_float(audio_array, dtype=np.float32)
+    
+    # Resample if needed
+    if audio_data.sample_rate != target_sr:
+        waveform = librosa.resample(
+            waveform,
+            orig_sr=audio_data.sample_rate,
+            target_sr=target_sr
+        )
     
     return waveform, target_sr
 
@@ -238,7 +242,6 @@ def transcriberFn(context):
     print(f"\nWhisper result : {result}")
     context["stt"].publish(result)
     nluInternal(result, temp_fp, context)
-
 
 def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None) -> sr.AudioData:
     '''
