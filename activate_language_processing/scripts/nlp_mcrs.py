@@ -51,9 +51,10 @@ def nluInternal(text, temp_fp, context):
         #text = replace_text(text, audio)
         dictionary = replace_text(text)  
         print(dictionary)
+        dictionary = ['cereals', 'steaks', 'coffees']
 
-        prompt = context.get("transcription_hint", f"The user might want to order two of these: {', '.join(dictionary)}")
-        result = model.transcribe(temp_fp, initial_prompt=prompt)
+        prompt = context.get("transcription_hint", f"The user wants to order two of excatly one of these: {' , '.join(dictionary)}.")
+        result = model.transcribe(temp_fp, initial_prompt=prompt)  # Transcribe the audio file using Whisper with an initial prompt
         text = result["text"]
         rospy.loginfo("[Whisper]: Done")
         print(f"\nWhisper 2nd result : {text}")
@@ -235,8 +236,8 @@ def transcriberFn(context):
     else:
         temp_fp = str(audio)
 
-    prompt = context.get("transcription_hint", "The user might be talking about food, service or greetings.")
-    result = model.transcribe(temp_fp, initial_prompt=prompt)
+    #prompt = context.get("transcription_hint", "The user might be talking about food, service or greetings.")
+    result = model.transcribe(temp_fp, language="en")  # Transcribe the audio file using Whisper
     result = result["text"]
     rospy.loginfo("[Whisper]: Done")
     print(f"\nWhisper result : {result}")

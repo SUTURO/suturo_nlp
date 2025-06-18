@@ -83,7 +83,7 @@ def replace_text(text):
     for term in terms_to_replace:
         for entity in allowed_entities:
             if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
-                dictionary.append(pluralize(entity))
+                dictionary.append(entity)
 
     return dictionary
 
@@ -209,46 +209,7 @@ def replace_word_and_next(text, target_word, replacement):
     pattern = rf"\b{target_word}\s+\w+\b"
     return re.sub(pattern, replacement, text)
 
-"""
-def is_number(value):
-    
-    Check if a given string is a number (either numeral or word).
 
-    Args:
-        value: a string, that might be a digit or word representation of a number.
-    
-    Returns:
-        True if the string is a textual representation of a number (or a digit) else False.
-    
-    try:
-     
-        w2n.word_to_num(value)  
-        return True
-    except ValueError:
-        return value.isdigit() 
-"""
-
-"""        
-def to_number(value):
-    
-    Converts a number in words or numerals to an integer.
-
-    Args:
-        value: A string that contains a digit or word representation of a number.
-        
-    Returns:
-        The input number as an integer.
-    
-    return int(value) if value.isdigit() else w2n.word_to_num(value)
-"""
-
-blacklist = {"states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
-        "red boy": "red bull", "redbull": "red bull", "whetball": "red bull", "whet ball": "red bull",
-        "red bullseye": "red bull", "red balloon": "red bull", "red bullet": "red bull", "bed pull": "red bull",
-        "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
-        "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
-        "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
-        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull"}
 
 def getData(response):
         """
@@ -286,21 +247,8 @@ def getData(response):
                 value = ent.get("value")
                 value = value.strip()
 
-                if value == "boy":
-                    entity = "drink"
-
-                if value in blacklist:
-                    value = blacklist.get(value)
-
                 #print(value)
                 number = ent.get("numberAttribute")
-                
-                """
-                if is_number(value):
-                    cachedNumer = to_number(value)
-                    falseNumber = True
-                    continue
-                """
                     
                 if entity == "drink":
                     if not number:
