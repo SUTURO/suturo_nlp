@@ -20,10 +20,12 @@ from nlp_challenges import *
 import numpy as np
 import librosa
 from pathlib import Path
+import warnings
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 import whisper
 import soundfile as sf
 
-model = whisper.load_model("base")
+model = whisper.load_model("base")  # Load the Whisper model for transcription
 
 def _isTranscribing(context):
     """
@@ -49,15 +51,19 @@ def nluInternal(text, temp_fp, context):
     """
     with context["lock"]:  # Lock so only one thread may execute this code at a time
         #text = replace_text(text, audio)
-        dictionary = replace_text(text)  
-        print(dictionary)
-        dictionary = ['cereals', 'steaks', 'coffees']
+        names, nouns = nounDictionary(text)  # Ensure unpacking matches the corrected return values
+        
+        if not names:
+            prompt = context.get("transcription_hint", f"The user wants to order one or several of these food or drink items: {' , '.join(nouns)}.")
+        elif not nouns:
+            prompt = context.get("transcription_hint", f"The user says their name is one of these: {' , '.join(names)}.")
+        else:
+            prompt = context.get("transcription_hint", f"The user says their name is one of these: {' , '.join(names)}. And they like to drink one of these: {' , '.join(nouns)}.")
+        
+        print(f"Using prompt: {prompt}")
 
-        prompt = context.get("transcription_hint", f"The user wants to order two of excatly one of these: {' , '.join(dictionary)}.")
         result = model.transcribe(temp_fp, initial_prompt=prompt)  # Transcribe the audio file using Whisper with an initial prompt
         text = result["text"]
-        rospy.loginfo("[Whisper]: Done")
-        print(f"\nWhisper 2nd result : {text}")
 
         parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
         
