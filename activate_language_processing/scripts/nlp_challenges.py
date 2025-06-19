@@ -14,7 +14,32 @@ from Levenshtein import distance as lev_dist
 import re
 import inflect
 
-def replace_text(text):
+# Load the entities.yml file from our rasa model
+with open('/home/siwall/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
+    data = yaml.safe_load(file)
+
+# Create separate lists for our entities
+food = data.get('food', {}).get('entities', [])
+drink = data.get('drink', {}).get('entities', [])
+clothing = data.get('Clothing', {}).get('entities', [])
+furniture = data.get('DesignedFurniture', {}).get('entities', [])
+people = data.get('NaturalPerson', {}).get('entities', [])
+rooms = data.get('Room', {}).get('entities', [])
+transportable = data.get('Transportable', {}).get('entities', [])
+interests = data.get('Interest', {}).get('entities', [])
+
+
+# The entities that are in our rasa model and are thus valid
+allowed_entities = people
+allowed_entities.append('name')
+allowed_entities.append('drink')
+allowed_entities.append('food')
+allowed_entities.append('I')
+
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+def nounDictionary(text):
     """
     Takes the the whisper transcription and extracts the NOUNs and PROPNs (the relevant entities). And
     checks wheter they appear in the list of entities of the rasa model we use. If not, the given term is replaced 
@@ -24,51 +49,31 @@ def replace_text(text):
         text: The whisper result
 
     Returns:
-        The modified text.
+        A list of words that are likely the entities the user uttered.
     """    
     
-    # Load the entities.yml file from our rasa model
-    with open('/home/siwall/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
-        data = yaml.safe_load(file)
-
-    # Create separate lists for our entities
-    food = data.get('food', {}).get('entities', [])
-    drink = data.get('drink', {}).get('entities', [])
-    clothing = data.get('Clothing', {}).get('entities', [])
-    furniture = data.get('DesignedFurniture', {}).get('entities', [])
-    people = data.get('NaturalPerson', {}).get('entities', [])
-    rooms = data.get('Room', {}).get('entities', [])
-    transportable = data.get('Transportable', {}).get('entities', [])
-    interests = data.get('Interest', {}).get('entities', [])
-
-
-    # The entities that are in our rasa model and are thus valid
-    allowed_entities = food + drink
-    allowed_entities.append('name')
-    allowed_entities.append('drink')
-    allowed_entities.append('food')
-
-    # Load spaCy model
-    nlp = spacy.load("en_core_web_sm")
-
     # Process the text
     doc = nlp(text)
 
     # Collect all unique terms that need replacement
-    terms_to_replace = set()
+    names_to_replace = set()
+    nouns_to_replace = set()
 
     # Extract named entities (multi-word)
     named_ents = {ent.text: ent for ent in doc.ents if ent.label_ in {"PERSON", "ORG", "GPE", "LOC", "FAC"}}
     for text_entity in named_ents:
         if text_entity not in allowed_entities:
-            terms_to_replace.add(text_entity)
+            names_to_replace.add(text_entity)
+            print(names_to_replace)
 
     # Go through individual tokens (words) in the text
     for token in doc:
         if token.pos_ in {"NOUN", "PROPN"}:
             if token.text not in allowed_entities and token.text[:-1] not in allowed_entities:
-                terms_to_replace.add(token.text)
+                nouns_to_replace.add(token.text)
+                print(nouns_to_replace)
 
+    names = []
     dictionary = []
 
     p = inflect.engine()
@@ -80,12 +85,48 @@ def replace_text(text):
         else:
             return p.plural(word)  # Convert to plural
 
-    for term in terms_to_replace:
+    def fill_names(names_to_replace, allowed_entities, threshold, max_attempts=6):
+        if not names_to_replace:
+            return 
+        attempts = 0
+        while attempts < max_attempts:
+            for term in names_to_replace:
+                for entity in allowed_entities:
+                    if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
+                        names.append(entity)
+            if len(names) >= 3:  # Ensure we have at least 3 valid entities
+                break
+            threshold -= 0.01  # Reduce threshold for next attempt
+            attempts += 1
+
+    def fill_dictionary(nouns_to_replace, allowed_entities, threshold, max_attempts=6):
+        if not nouns_to_replace:
+            return
+        attempts = 0
+        while attempts < max_attempts:
+            for term in nouns_to_replace:
+                for entity in allowed_entities:
+                    if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
+                        dictionary.append(entity)
+            if len(dictionary) >= 3:  # Ensure we have at least 3 valid entities
+                break
+            threshold -= 0.01  # Reduce threshold for next attempt
+            attempts += 1
+
+    for term in names_to_replace:
+        for entity in allowed_entities:
+            if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
+                names.append(entity)
+
+    for term in nouns_to_replace:
         for entity in allowed_entities:
             if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
                 dictionary.append(entity)
 
-    return dictionary
+    fill_dictionary(nouns_to_replace, allowed_entities, threshold=0.9)
+    fill_names(names_to_replace, allowed_entities, threshold=0.9)
+
+    return names, dictionary
 
 
 def double_metaphone_similarity(word1, word2):
