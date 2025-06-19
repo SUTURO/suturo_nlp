@@ -30,7 +30,7 @@ interests = data.get('Interest', {}).get('entities', [])
 
 
 # The entities that are in our rasa model and are thus valid
-allowed_entities = people
+allowed_entities = people + food + drink
 allowed_entities.append('name')
 allowed_entities.append('drink')
 allowed_entities.append('food')
@@ -59,19 +59,23 @@ def nounDictionary(text):
     names_to_replace = set()
     nouns_to_replace = set()
 
+
     # Extract named entities (multi-word)
     named_ents = {ent.text: ent for ent in doc.ents if ent.label_ in {"PERSON", "ORG", "GPE", "LOC", "FAC"}}
     for text_entity in named_ents:
         if text_entity not in allowed_entities:
-            names_to_replace.add(text_entity)
-            print(names_to_replace)
+            if text_entity not in nouns_to_replace:
+                # If the entity is not in the allowed entities, add it to names_to_replace
+                names_to_replace.add(text_entity)
+                print(f"names to replace {names_to_replace}")
 
     # Go through individual tokens (words) in the text
     for token in doc:
         if token.pos_ in {"NOUN", "PROPN"}:
             if token.text not in allowed_entities and token.text[:-1] not in allowed_entities:
-                nouns_to_replace.add(token.text)
-                print(nouns_to_replace)
+                if token.text not in names_to_replace:
+                    nouns_to_replace.add(token.text)
+                    print(f"nouns to replace: {nouns_to_replace}")
 
     names = []
     dictionary = []
@@ -85,7 +89,10 @@ def nounDictionary(text):
         else:
             return p.plural(word)  # Convert to plural
 
-    def fill_names(names_to_replace, allowed_entities, threshold, max_attempts=6):
+    print(f"names to replace: {names_to_replace}")
+    print(f"nouns to replace: {nouns_to_replace}")
+
+    def fill_names(names_to_replace, allowed_entities, threshold, max_attempts=16):
         if not names_to_replace:
             return 
         attempts = 0
@@ -93,35 +100,27 @@ def nounDictionary(text):
             for term in names_to_replace:
                 for entity in allowed_entities:
                     if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
-                        names.append(entity)
-            if len(names) >= 3:  # Ensure we have at least 3 valid entities
+                        if pluralize(entity) not in names and pluralize(entity) not in dictionary:  # Avoid duplicates in names
+                            names.append(pluralize(entity))
+            if len(names) >= 5:  # Ensure we have at least 3 valid entities
                 break
-            threshold -= 0.01  # Reduce threshold for next attempt
+            threshold -= 0.05  # Reduce threshold for next attempt
             attempts += 1
 
-    def fill_dictionary(nouns_to_replace, allowed_entities, threshold, max_attempts=6):
+    def fill_dictionary(nouns_to_replace, allowed_entities, threshold, max_attempts=16):
         if not nouns_to_replace:
-            return
+            return 
         attempts = 0
         while attempts < max_attempts:
             for term in nouns_to_replace:
                 for entity in allowed_entities:
                     if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
-                        dictionary.append(entity)
-            if len(dictionary) >= 3:  # Ensure we have at least 3 valid entities
+                        if pluralize(entity) not in dictionary and pluralize(entity) not in names:  # Avoid duplicates in names
+                            dictionary.append(pluralize(entity))
+            if len(dictionary) >= 5:  # Ensure we have at least 3 valid entities
                 break
-            threshold -= 0.01  # Reduce threshold for next attempt
+            threshold -= 0.05  # Reduce threshold for next attempt
             attempts += 1
-
-    for term in names_to_replace:
-        for entity in allowed_entities:
-            if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
-                names.append(entity)
-
-    for term in nouns_to_replace:
-        for entity in allowed_entities:
-            if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= 0.55:
-                dictionary.append(entity)
 
     fill_dictionary(nouns_to_replace, allowed_entities, threshold=0.9)
     fill_names(names_to_replace, allowed_entities, threshold=0.9)
