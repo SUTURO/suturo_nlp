@@ -67,7 +67,7 @@ def nounDictionary(text):
             if text_entity not in nouns_to_replace:
                 # If the entity is not in the allowed entities, add it to names_to_replace
                 names_to_replace.add(text_entity)
-                print(f"names to replace {names_to_replace}")
+               
 
     # Go through individual tokens (words) in the text
     for token in doc:
@@ -75,7 +75,7 @@ def nounDictionary(text):
             if token.text not in allowed_entities and token.text[:-1] not in allowed_entities:
                 if token.text not in names_to_replace:
                     nouns_to_replace.add(token.text)
-                    print(f"nouns to replace: {nouns_to_replace}")
+            
 
     names = []
     dictionary = []
@@ -89,8 +89,6 @@ def nounDictionary(text):
         else:
             return p.plural(word)  # Convert to plural
 
-    print(f"names to replace: {names_to_replace}")
-    print(f"nouns to replace: {nouns_to_replace}")
 
     def fill_names(names_to_replace, allowed_entities, threshold, max_attempts=16):
         if not names_to_replace:
@@ -100,8 +98,8 @@ def nounDictionary(text):
             for term in names_to_replace:
                 for entity in allowed_entities:
                     if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
-                        if pluralize(entity) not in names and pluralize(entity) not in dictionary:  # Avoid duplicates in names
-                            names.append(pluralize(entity))
+                        if entity not in names and entity not in dictionary:  # Avoid duplicates in names
+                            names.append(entity)
             if len(names) >= 5:  # Ensure we have at least 3 valid entities
                 break
             threshold -= 0.05  # Reduce threshold for next attempt
@@ -115,8 +113,8 @@ def nounDictionary(text):
             for term in nouns_to_replace:
                 for entity in allowed_entities:
                     if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
-                        if pluralize(entity) not in dictionary and pluralize(entity) not in names:  # Avoid duplicates in names
-                            dictionary.append(pluralize(entity))
+                        if entity not in dictionary and entity not in names:  # Avoid duplicates in names
+                            dictionary.append(entity)
             if len(dictionary) >= 5:  # Ensure we have at least 3 valid entities
                 break
             threshold -= 0.05  # Reduce threshold for next attempt
