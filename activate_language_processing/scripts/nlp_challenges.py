@@ -1,6 +1,227 @@
 import json
 from word2number import w2n
+from typing import List
+from pydantic import BaseModel
+import yaml
+import spacy
+from pathlib import Path
+#import librosa
+#import torch
+#import ast
+import numpy as np
+from metaphone import doublemetaphone
+from Levenshtein import distance as lev_dist
 import re
+import inflect
+
+# Load the entities.yml file from our rasa model
+with open('/home/siwall/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
+    data = yaml.safe_load(file)
+
+# Create separate lists for our entities
+food = data.get('food', {}).get('entities', [])
+drink = data.get('drink', {}).get('entities', [])
+clothing = data.get('Clothing', {}).get('entities', [])
+furniture = data.get('DesignedFurniture', {}).get('entities', [])
+people = data.get('NaturalPerson', {}).get('entities', [])
+rooms = data.get('Room', {}).get('entities', [])
+transportable = data.get('Transportable', {}).get('entities', [])
+interests = data.get('Interest', {}).get('entities', [])
+
+
+# The entities that are in our rasa model and are thus valid
+allowed_entities = people + food + drink
+allowed_entities.append('name')
+allowed_entities.append('drink')
+allowed_entities.append('food')
+allowed_entities.append('I')
+
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+def nounDictionary(text):
+    """
+    Takes the the whisper transcription and extracts the NOUNs and PROPNs (the relevant entities). And
+    checks wheter they appear in the list of entities of the rasa model we use. If not, the given term is replaced 
+    in the text.
+
+    Args:
+        text: The whisper result
+
+    Returns:
+        A list of words that are likely the entities the user uttered.
+    """    
+    
+    # Process the text
+    doc = nlp(text)
+
+    # Collect all unique terms that need replacement
+    names_to_replace = set()
+    nouns_to_replace = set()
+
+
+    # Extract named entities (multi-word)
+    named_ents = {ent.text: ent for ent in doc.ents if ent.label_ in {"PERSON", "ORG", "GPE", "LOC", "FAC"}}
+    for text_entity in named_ents:
+        if text_entity not in allowed_entities:
+            if text_entity not in nouns_to_replace:
+                # If the entity is not in the allowed entities, add it to names_to_replace
+                names_to_replace.add(text_entity)
+               
+
+    # Go through individual tokens (words) in the text
+    for token in doc:
+        if token.pos_ in {"NOUN", "PROPN"}:
+            if token.text not in allowed_entities and token.text[:-1] not in allowed_entities:
+                if token.text not in names_to_replace:
+                    nouns_to_replace.add(token.text)
+            
+
+    names = []
+    dictionary = []
+
+    p = inflect.engine()
+
+    def pluralize(word):
+        # Check if the word is already plural
+        if p.singular_noun(word):
+            return word  # It's already plural
+        else:
+            return p.plural(word)  # Convert to plural
+
+
+    def fill_names(names_to_replace, allowed_entities, threshold, max_attempts=16):
+        if not names_to_replace:
+            return 
+        attempts = 0
+        while attempts < max_attempts:
+            for term in names_to_replace:
+                for entity in allowed_entities:
+                    if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
+                        if entity not in names and entity not in dictionary:  # Avoid duplicates in names
+                            names.append(entity)
+            if len(names) >= 5:  # Ensure we have at least 3 valid entities
+                break
+            threshold -= 0.05  # Reduce threshold for next attempt
+            attempts += 1
+
+    def fill_dictionary(nouns_to_replace, allowed_entities, threshold, max_attempts=16):
+        if not nouns_to_replace:
+            return 
+        attempts = 0
+        while attempts < max_attempts:
+            for term in nouns_to_replace:
+                for entity in allowed_entities:
+                    if double_metaphone_similarity(pluralize(term), pluralize(entity)) >= threshold:
+                        if entity not in dictionary and entity not in names:  # Avoid duplicates in names
+                            dictionary.append(entity)
+            if len(dictionary) >= 5:  # Ensure we have at least 3 valid entities
+                break
+            threshold -= 0.05  # Reduce threshold for next attempt
+            attempts += 1
+
+    fill_dictionary(nouns_to_replace, allowed_entities, threshold=0.9)
+    fill_names(names_to_replace, allowed_entities, threshold=0.9)
+
+    return names, dictionary
+
+
+def double_metaphone_similarity(word1, word2):
+    """
+    Takes two strings and returns the similarity in terms of pronounciations as a value between 0 (not at all similar)
+    and 1 (very similar).
+
+    Args:
+        word1/word2: A word (string) which similiarity in pronounciation is to be compared to a different word.
+
+    Returns:
+        The absolute similarity between word1 and word2 in terms of pronounciation.
+    """
+    # 1. Normalize inputs and handle multi-word terms
+    def preprocess(word):
+        word = word.lower().strip()
+        # Remove non-alphabetic characters and split into words
+        words = re.findall(r'[a-z]+', word)
+        return words
+    
+    words1 = preprocess(word1)
+    words2 = preprocess(word2)
+    
+    # Short-circuit for identical words
+    if ' '.join(words1) == ' '.join(words2):
+        return 1.0
+    
+    # 2. Get Double Metaphone codes for all words
+    def get_metaphone(word):
+        primary, secondary = doublemetaphone(word)
+        return (primary or "", secondary or "")
+    
+    # Get codes for all words in each term
+    meta1 = [get_metaphone(w) for w in words1]
+    meta2 = [get_metaphone(w) for w in words2]
+    
+    # 3. Calculate best phonetic similarity between word pairs
+    def phonetic_score(meta1, meta2):
+        best_score = 0.0
+        
+        # 1. Calculate word-count difference penalty
+        word_count_diff = abs(len(meta1) - len(meta2))
+        word_count_penalty = max(0.6, 1 - (word_count_diff / 3))  # Penalty scales with difference (cap at 40% penalty)
+        
+        # 2. Compare individual word pairs
+        for m1 in meta1:
+            for m2 in meta2:
+                # Primary code comparison
+                if m1[0] and m2[0]:
+                    max_len = max(len(m1[0]), len(m2[0]))
+                    raw_score = 1 - (lev_dist(m1[0], m2[0]) / max_len)
+                    best_score = max(best_score, raw_score)
+             
+                # Secondary code comparison
+                if m1[1] and m2[1]:
+                    max_len = max(len(m1[1]), len(m2[1]))
+                    raw_score = 1 - (lev_dist(m1[1], m2[1]) / max_len)
+                    best_score = max(best_score, raw_score)
+
+        
+        # 3. Apply word-count penalty
+        return best_score * word_count_penalty
+    
+    phonetic_sim = phonetic_score(meta1, meta2)
+    
+    
+    # 4. Improved syllable counting
+    def count_syllables(word):
+        word = re.sub(r'[^a-z]', '', word.lower())
+        # Count vowel groups, but don't count silent 'e' at end
+        if len(word) > 1 and word.endswith('e'):
+            word = word[:-1]
+        syllables = len(re.findall(r'[aeiouy]+', word))
+        return max(1, syllables)
+    
+    # Calculate average syllables per word
+    syl1 = sum(count_syllables(w) for w in words1) / len(words1)
+    syl2 = sum(count_syllables(w) for w in words2) / len(words2)
+    syllable_sim = 1 - (abs(syl1 - syl2) / max(syl1, syl2, 1))
+    
+    # 5. Length difference penalty (now compares total lengths)
+    len1 = sum(len(w) for w in words1)
+    len2 = sum(len(w) for w in words2)
+    len_diff_penalty = 1 - (abs(len1 - len2) / (max(len1, len2) * 0.75))  # More lenient
+    
+    # 6. Combined score with adjusted weights
+    combined_score = (
+        0.75 * phonetic_sim +  # Increased weight to phonetic match
+        0.15 * syllable_sim +  # Reduced weight to syllable count
+        0.1 * len_diff_penalty
+    )
+    
+    # 7. Additional penalty for multi-word mismatches
+    if len(words1) != len(words2):
+        combined_score *= 0.8  # Penalize if different number of words
+    
+    return min(1.0, max(0.0, combined_score))
+
 
 def switch(case, response, context):
     '''
@@ -26,137 +247,6 @@ def replace_word_and_next(text, target_word, replacement):
     pattern = rf"\b{target_word}\s+\w+\b"
     return re.sub(pattern, replacement, text)
 
-"""
-def is_number(value):
-    
-    Check if a given string is a number (either numeral or word).
-
-    Args:
-        value: a string, that might be a digit or word representation of a number.
-    
-    Returns:
-        True if the string is a textual representation of a number (or a digit) else False.
-    
-    try:
-     
-        w2n.word_to_num(value)  
-        return True
-    except ValueError:
-        return value.isdigit() 
-"""
-
-"""        
-def to_number(value):
-    
-    Converts a number in words or numerals to an integer.
-
-    Args:
-        value: A string that contains a digit or word representation of a number.
-        
-    Returns:
-        The input number as an integer.
-    
-    return int(value) if value.isdigit() else w2n.word_to_num(value)
-"""
-
-blacklist = {
-        "states": "steaks", "slates": "steaks", "slaves": "steaks", "stakes": "steaks", 
-        "stakes": "steaks", "stekes": "steaks", "steeks": "steaks", "staks": "steaks", "stayks": "steaks", 
-        "stex": "steaks", "steiks": "steaks", "steyks": "steaks", "steks": "steaks", "stakess": "steaks",
-        
-        "red boy": "red bull", "redbull": "red bull", "whetball": "red bull", "whet ball": "red bull",
-        "red bullseye": "red bull", "red balloon": "red bull", "red bullet": "red bull", "bed pull": "red bull",
-        "let bull": "red bull", "wet bull": "red bull","dead bull": "red bull","red boot": "red bull","red bell": "red bull",
-        "red pool": "red bull","red bowl": "red bull","read bull": "red bull","red pull": "red bull","red ball": "red bull",
-        "rad bull": "red bull","rat bull": "red bull","red full": "red bull","red wool": "red bull","rip bull": "red bull",
-        "wetball": "red bull", "wet ball": "red bull", "wet": "red bull", "boy": "red bull", 
-
-        "maxo mix": "mezzo mix", "mazzle mix": "mezzo mix", "mezzle mix": "mezzo mix", "maxelmix": "mezzo mix", "maxel mix": "mezzo mix",
-        "maxelmix": "mezzo mix", "meckso Mix": "mezzo mix", "mezzel mix": "mezzo mix", "mezzal mix": "mezzo mix",
-        "mezo mix": "mezzo mix", "metzo mix": "mezzo mix", "mezoh mix": "mezzo mix", "mezzow mix": "mezzo mix", "messo mix": "mezzo mix", 
-        "mezzo mex": "mezzo mix", "mezo mex": "mezzo mix", "metzo mex": "mezzo mix", "mezzo mitx": "mezzo mix", "mezzo micks": "mezzo mix",
-        
-        "emilia": "Amelia","emelia": "Amelia", "a. milya": "amelia", "amaliya": "Amelia", "amelya": "Amelia", "amellia": "Amelia", "amalia": "Amelia", 
-        "ameliah": "Amelia", "amelliya": "Amelia", "ameliaa": "Amelia", "amelija": "Amelia", "amilia": "Amelia", "ameelia": "Amelia",
-
-        "spide": "sprite", "spright": "sprite", "sprit": "sprite", "sprait": "sprite", "spryte": "sprite", "sproit": "sprite", "spriete": "sprite", 
-        "spreet": "sprite", "spriht": "sprite", "spriite": "sprite", "spraight": "sprite",
-        
-        "ashur": "Asher", "ashro": "Asher", "ashaw": "Asher", "ershuer": "Asher", "ershor": "Asher", "ashaur": "Asher",
-        "ashera": "Asher", "ashaw": "Asher", "aysher": "Asher", "ashar": "Asher", "ashor": "Asher", "asherd": "Asher", 
-        "ashair": "Asher", "ayshur": "Asher", "ashyer": "Asher",
-        
-        "eliya": "Elijah", "elia": "Elijah", "illia": "Elijah", "eliyar": "Elijah", "elija": "Elijah", "elisha": "Elijah", 
-        "elieja": "Elijah", "elijha": "Elijah", "elijiah": "Elijah", "elijahh": "Elijah", "alayja": "Elijah", 
-        "alijah": "Elijah", "elijae": "Elijah", "elijuh": "Elijah",
-        
-        "open milk": "oat milk", "oak milk": "oat milk", "ote milk": "oat milk", "oatmilc": "oat milk", "oht milk": "oat milk", "oatmulk": "oat milk", 
-        "oat meelk": "oat milk", "out milk": "oat milk", "ote meelk": "oat milk", "oatmilk": "oat milk", "ohtmilc": "oat milk", "oat melk": "oat milk",
-
-        "olevia": "Olivia", "olivya": "Olivia", "oliviah": "Olivia", "alivia": "Olivia", "oliviea": "Olivia", "olivva": "Olivia", "ollivia": "Olivia", 
-        "olivija": "Olivia", "oliviyya": "Olivia", "ulivia": "Olivia",
-
-        "charlot": "Charlotte", "sharlotte": "Charlotte", "charlott": "Charlotte", "charlote": "Charlotte", "charlett": "Charlotte", "charlottte": "Charlotte", 
-        "charloot": "Charlotte", "charlottah": "Charlotte", "charlotta": "Charlotte", "sharlot": "Charlotte",
-
-        "ezrah": "Ezra", "esra": "Ezra", "ezraah": "Ezra", "ezrahh": "Ezra", "ezraah": "Ezra", "ezrah": "Ezra", "ezraaa": "Ezra", 
-        "esrah": "Ezra", "ezrae": "Ezra", "ezraahh": "Ezra", "s-r": "Ezra", "s-r.": "Ezra", "s-w-a": "Ezra", "s.w.a": "Ezra",
-        "s.w.r": "Ezra", "ись War": "Ezra", "s-ware": "Ezra", "iswa": "Ezra", "ishwar": "Ezra", "Ishwa": "Ezra", "isreal": "Ezra",
-        "iswar": "Ezra",
-
-        "harpor": "Harper", "harrper": "Harper", "harperr": "Harper", "harpr": "Harper", "haprer": "Harper", "harrper": "Harper", 
-        "harpurr": "Harper", "harprr": "Harper", "harpyr": "Harper", "hapr": "Harper",
-
-        "jamesh": "James", "jaymes": "James", "jamz": "James", "jaimes": "James", "jaymesh": "James", "jamez": "James", "jams": "James", 
-        "jaems": "James", "jamies": "James", "jays": "James", 
-
-        "arora": "Aurora", "aurra": "Aurora", "auroraa": "Aurora", "aurorah": "Aurora", "aura": "Aurora", "orora": "Aurora", 
-        "aurorae": "Aurora", "arorra": "Aurora", "aurorra": "Aurora", "aurorra": "Aurora", "auroa": "Aurora", "awawa": "Aurora",
-
-        "luka": "Luca", "louca": "Luca", "lucah": "Luca", "lucaah": "Luca", "luhca": "Luca", 
-        "luka": "Luca", "lucca": "Luca", "louka": "Luca", "luce": "Luca", "lucas": "Luca",
-
-        "evlin": "Evelyn", "evelynne": "Evelyn", "evlyn": "Evelyn", "evlaine": "Evelyn", "evlinn": "Evelyn", 
-        "everlyn": "Evelyn", "evelin": "Evelyn", "evelynn": "Evelyn", "evlynne": "Evelyn", "evleh": "Evelyn",
-
-        "henree": "Henry", "henri": "Henry", "henryy": "Henry", "henrie": "Henry", "henrya": "Henry", "henrieh": "Henry", 
-        "herry": "Henry", "henray": "Henry", "henryx": "Henry", "hennry": "Henry",
-
-        "elianaah": "Eliana", "elliana": "Eliana", "elina": "Eliana", "ellianaah": "Eliana", "ellina": "Eliana", "elainah": 
-        "Eliana", "elianah": "Eliana", "eliahna": "Eliana", "elena": "Eliana", "ehliana": "Eliana",
-
-        "hudsonn": "Hudson", "hudsun": "Hudson", "hudsin": "Hudson", "huddson": "Hudson", "hudsen": "Hudson", "hudsone": "Hudson", 
-        "hudsonne": "Hudson", "hudsohn": "Hudson", "haddson": "Hudson", "hudsone": "Hudson",
-
-        "ariya": "Aria", "areeah": "Aria", "ariah": "Aria", "aryah": "Aria", "areea": "Aria", "arrah": "Aria", 
-        "arrea": "Aria", "areah": "Aria", "aryah": "Aria", "arayah": "Aria",
-
-        "ethanah": "Ethan", "eathan": "Ethan", "ethanx": "Ethan", "ethann": "Ethan", "eethan": "Ethan", "ethyn": "Ethan", 
-        "ehtan": "Ethan", "ethean": "Ethan", "ethen": "Ethan", "etahn": "Ethan",
-
-        "red cabage": "red cabbage", "redd cabbage": "red cabbage", "re cabbage": "red cabbage", "red cabbish": "red cabbage", 
-        "red cabage": "red cabbage", "redcabbage": "red cabbage", "red cabet": "red cabbage", "redcabbge": "red cabbage", "red cabagee": "red cabbage", 
-        "re cabage": "red cabbage",
-
-        "instan noodles": "instant noodles", "instent noodles": "instant noodles", "instat noodles": "instant noodles", "instin noodles": "instant noodles", 
-        "insta noodles": "instant noodles", "instan nooddles": "instant noodles", "instant noodels": "instant noodles", "instant noodels": "instant noodles", 
-        "insta noodes": "instant noodles", "instand noodles": "instant noodles",
-
-        "tomato soupl": "tomato soup", "tomato soub": "tomato soup", "tomato soupp": "tomato soup", "tomattosoup": "tomato soup", "tomato soum": "tomato soup", 
-        "tomato soop": "tomato soup", "tomato soupa": "tomato soup", "tomaato soup": "tomato soup", "tommato soup": "tomato soup", "tomato sup": "tomato soup",
-
-        "creme": "creamer", "creammer": "creamer", "creamerh": "creamer", "cremmer": "creamer", "cremar": "creamer", "cremmer": "creamer", "cremeur": "creamer", 
-        "crehmer": "creamer", "cremer": "creamer", "cremra": "creamer",
-
-        "sweetner": "sweetener", "sweeterner": "sweetener", "sweetennar": "sweetener", "sweethner": "sweetener", "sweeterner": "sweetener", "sweatern": "sweetener", 
-        "sweenter": "sweetener", "sweetenr": "sweetener", "sweetnr": "sweetener", "sweener": "sweetener",
-
-        "cornflaks": "cornflakes", "cornfleks": "cornflakes", "cornflayes": "cornflakes", "cornflak": "cornflakes", "cornflikes": "cornflakes", "cornfakes": "cornflakes", 
-        "cornflakesh": "cornflakes", "cornflaiks": "cornflakes", "cornflakses": "cornflakes", "cornflaakes": "cornflakes",
-
-        "pastae": "pasta", "pastaa": "pasta", "passta": "pasta", "paasta": "pasta", "pastaah": "pasta", "pastae": "pasta", "pahsta": "pasta", "pastar": "pasta", 
-        "pastah": "pasta", "pastae": "pasta"
-}
 
 
 def getData(response):
@@ -195,21 +285,8 @@ def getData(response):
                 value = ent.get("value")
                 value = value.strip()
 
-                if value == "boy":
-                    entity = "drink"
-
-                if value in blacklist:
-                    value = blacklist.get(value)
-
                 #print(value)
                 number = ent.get("numberAttribute")
-                
-                """
-                if is_number(value):
-                    cachedNumer = to_number(value)
-                    falseNumber = True
-                    continue
-                """
                     
                 if entity == "drink":
                     if not number:
