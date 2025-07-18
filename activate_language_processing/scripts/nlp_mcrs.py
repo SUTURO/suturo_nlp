@@ -74,8 +74,9 @@ def nluInternal(text, temp_fp, context):
                     rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                     continue  
 
-            print("The sentence is: " + p["sentence"])
+            #print("The sentence is: " + p["sentence"])
 
+            """
             pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
             
             # Process entities and define "entities" list in pAdj
@@ -87,9 +88,17 @@ def nluInternal(text, temp_fp, context):
                 pAdj["entities"].append(entity_data)  # Add processed entity to the list
 
             switch(pAdj["intent"], json.dumps(pAdj), context)
-    
-    rospy.loginfo("[ALP]: Done. Waiting for next command.")
-
+            """
+            
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"]} # create a dictionary and store the sentence and intent extracted from a parse p 
+            for k, v in p["entities"].items(): 
+                role=v["role"] # Extract the value of a "role" in an entity
+                pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
+                pAdj[role].pop("role") # Remove the "role" since its already used as key
+                pAdj[role].pop("group") # Remove metadata that is not needed
+                pAdj[role].pop("idx") # Remove metadate that is not needed
+            context["pub"].publish(json.dumps(pAdj)) # Convert pAdj to JSON string and publish to a rostopic
+            rospy.loginfo("[ALP]: Done. Waiting for next command.")
 
 """
 def switch(case, response, context):
