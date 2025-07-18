@@ -90,14 +90,14 @@ def nluInternal(text, temp_fp, context):
             switch(pAdj["intent"], json.dumps(pAdj), context)
             """
             
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"]} # create a dictionary and store the sentence and intent extracted from a parse p 
-            for k, v in p["entities"].items(): 
-                role=v["role"] # Extract the value of a "role" in an entity
-                pAdj[role] = v.copy() # Copy entity’s data dictionary to pAdj under the key corresponding to the role 
-                pAdj[role].pop("role") # Remove the "role" since its already used as key
-                pAdj[role].pop("group") # Remove metadata that is not needed
-                pAdj[role].pop("idx") # Remove metadate that is not needed
-            context["pub"].publish(json.dumps(pAdj)) # Convert pAdj to JSON string and publish to a rostopic
+            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}  # Create a dictionary and initialize an "entities" list
+            print(f"Entity items: {p['entities'].items()}")
+            for k, v in p["entities"].items():
+                entity_data = v.copy()  # Copy entity’s data dictionary
+                entity_data.pop("group")  # Remove metadata that is not needed
+                entity_data.pop("idx")  # Remove metadata that is not needed
+                pAdj["entities"].append(entity_data)  # Append the processed entity to the "entities" list
+            context["pub"].publish(json.dumps(pAdj))  # Convert pAdj to JSON string and publish to a rostopic
             rospy.loginfo("[ALP]: Done. Waiting for next command.")
 
 """
