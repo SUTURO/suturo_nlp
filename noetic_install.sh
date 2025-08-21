@@ -54,4 +54,5 @@ sudo apt install python3-rosinstall python3-rosinstall-generator python3-wstool 
 echo ""
 echo "ROS Noetic Desktop Full installation complete!"
 echo "To test your installation, try running:"
-echo "  roscore"
+echo "roscore"
+echo "Note: You may need to run 'source ~/.bashrc' before running 'roscore' for it to work"
