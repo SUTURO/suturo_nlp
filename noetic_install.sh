@@ -12,12 +12,6 @@ if [[ $(lsb_release -sc) != "focal" ]]; then
     exit 1
 fi
 
-# Check if running as root
-if [[ $EUID -eq 0 ]]; then
-    echo "This script should not be run as root" 
-    exit 1
-fi
-
 echo "Starting ROS Noetic Desktop Full installation..."
 
 # 1. Configure repositories
@@ -45,14 +39,12 @@ rosdep update
 # 6. Add ROS to bashrc
 echo "Sourcing ROS in .bashrc..."
 echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-
 # 7. Install additional dependencies
 echo "Installing build tools and dependencies..."
 sudo apt install python3-rosinstall python3-rosinstall-generator python3-wstool build-essential -y
 
 echo ""
 echo "ROS Noetic Desktop Full installation complete!"
+echo "Now source 'source ~/.bashrc' and everything should be working"
 echo "To test your installation, try running:"
 echo "roscore"
-echo "Note: You may need to run 'source ~/.bashrc' before running 'roscore' for it to work"
