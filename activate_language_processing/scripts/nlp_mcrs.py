@@ -73,22 +73,6 @@ def nluInternal(text, temp_fp, context):
                 if (p["intent"] != 'affirm' and p["intent"] != "deny" and p["intent"] != "Callout" and p["intent"] != "Hobbies") or not p["sentence"].strip():
                     rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                     continue  
-
-            #print("The sentence is: " + p["sentence"])
-
-            """
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}
-            
-            # Process entities and define "entities" list in pAdj
-            for k, v in p["entities"].items():
-                entity_data = v.copy()  # Copy entity’s data dictionary
-                entity_data["role"] = v["role"]  # Copy entity’s data dictionary to pAdj under the key corresponding to the role
-                entity_data.pop("group")  # Remove metadata that is not needed
-                entity_data.pop("idx")  # Remove metadata that is not needed
-                pAdj["entities"].append(entity_data)  # Add processed entity to the list
-
-            switch(pAdj["intent"], json.dumps(pAdj), context)
-            """
             
             pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}  # Create a dictionary and initialize an "entities" list
             print(f"Entity items: {p['entities'].items()}")
@@ -100,26 +84,6 @@ def nluInternal(text, temp_fp, context):
             context["pub"].publish(json.dumps(pAdj))  # Convert pAdj to JSON string and publish to a rostopic
             rospy.loginfo("[ALP]: Done. Waiting for next command.")
 
-"""
-def switch(case, response, context):
-    '''
-    Manual Implementation of switch(match)-case because python3.10 first implemented one, this uses 3.8.
-    
-    Args:
-        case: The intent parsed from the response
-        response: The formatted .json from the record function
-
-    Returns:
-        The function corresponding to the intent
-    '''
-    return {
-        "Receptionist": lambda: Receptionist.receptionist(response,context),
-        "Order": lambda: Restaurant.order(response,context),
-        "Hobbies": lambda: Receptionist.hobbies(response,context),
-        "affirm": lambda: context["pub"].publish(f"<CONFIRM>, True"),
-        "deny": lambda: context["pub"].publish(f"<CONFIRM>, False")
-    }.get(case, lambda: context["pub"].publish(f"<NONE>"))()
-"""
 
 def record_hsr(data, context):
     '''
