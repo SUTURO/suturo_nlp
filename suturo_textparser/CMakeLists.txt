@@ -1,18 +1,10 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(suturo_textparser)
 
-find_package(catkin REQUIRED COMPONENTS
-  rospy
-  std_msgs
-  nlp_msgs
-)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
 
+ament_python_install_package(${PROJECT_NAME})
 
-catkin_package(
-
-)
-
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
+ament_package()

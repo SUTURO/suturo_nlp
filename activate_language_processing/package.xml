@@ -1,28 +1,22 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>activate_language_processing</name>
   <version>0.0.0</version>
   <description>The activate_language_processing package</description>
   <license>unpublished</license>
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="anbe@uni-bremen.de">Andreas Benischke</maintainer>
   <maintainer email="ch_lu@uni-bremen.de">Christian Lukanowski</maintainer>
- 
-  <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>message_generation</build_depend>
-  <depend>requests</depend>
-  <depend>whisper</depend>
-  <depend>speech_recognition</depend>
-  <depend>json</depend>
-  <depend>rospy</depend>
-  <depend>std_msgs</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_python</buildtool_depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <!-- Other tools can request additional information be placed here -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>requests</exec_depend>
+  <exec_depend>whisper</exec_depend>
+  <exec_depend>speech_recognition</exec_depend>
+  <exec_depend>json</exec_depend>
 
-  </export>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 </package>

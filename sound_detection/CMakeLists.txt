@@ -1,22 +1,11 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(sound_detection)
 
-find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  std_msgs
-  rospy
-)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
 
-# catkin_python_setup()
+ament_python_install_package(${PROJECT_NAME})
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs)
-
-catkin_package()
-
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
+ament_package()
 
