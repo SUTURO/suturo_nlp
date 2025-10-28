@@ -9,6 +9,10 @@ ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/nlp_gpsr.py
+  scripts/nlp_mcrs.py
+  scripts/nlp_receptionist.py
+  scripts/nlp_challenges.py
+  scripts/transcription_tests.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
