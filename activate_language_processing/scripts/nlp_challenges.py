@@ -15,7 +15,7 @@ import re
 import inflect
 
 # Load the entities.yml file from our rasa model
-with open('/home/simon/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
+with open('/home/jan/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
     data = yaml.safe_load(file)
 
 # Create separate lists for our entities
@@ -27,7 +27,6 @@ people = data.get('NaturalPerson', {}).get('entities', [])
 rooms = data.get('Room', {}).get('entities', [])
 transportable = data.get('Transportable', {}).get('entities', [])
 interests = data.get('Interest', {}).get('entities', [])
-
 
 # The entities that are in our rasa model and are thus valid
 allowed_entities = people + food + drink
