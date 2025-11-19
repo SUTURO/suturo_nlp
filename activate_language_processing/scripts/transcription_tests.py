@@ -5,7 +5,7 @@ import nlp_challenges  # Custom NLP utilities
 from activate_language_processing.nlp import semanticLabelling  # Semantic labeling for intent/entity extraction
 import spacy  # NLP library for processing text
 from argparse import ArgumentParser  # Argument parsing for CLI
-import rospy  # ROS Python client library
+# import rospy  # ROS Python client library
 from pathlib import Path  # Path utilities for file handling
 
 model = whisper.load_model("base")  # Load the Whisper model for transcription
@@ -122,7 +122,7 @@ def get_intent_and_entities(original_text, enhanced_text, context):
         # Skip invalid parses
         if not p["sentence"].strip() or not p["entities"]:
             if (p["intent"] != 'affirm' and p["intent"] != "deny") or not p["sentence"].strip():
-                rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
+                # rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                 continue
 
         # Process entities for the original transcription
@@ -141,7 +141,7 @@ def get_intent_and_entities(original_text, enhanced_text, context):
         # Skip invalid parses
         if not p["sentence"].strip() or not p["entities"]:
             if (p["intent"] != 'affirm' and p["intent"] != "deny") or not p["sentence"].strip():
-                rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
+                # rospy.loginfo(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
                 continue
 
         # Process entities for the enhanced transcription
