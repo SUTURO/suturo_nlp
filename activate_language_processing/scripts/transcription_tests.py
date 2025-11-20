@@ -544,7 +544,7 @@ def main():
     # Parse command-line arguments
     parser = ArgumentParser(prog='activate_language_processing')
     parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
-    args, unknown = parser.parse_known_args(rospy.myargv()[1:])
+    args = parser.parse_args()
 
     # Initialize context for semantic labeling
     rasaURI = args.nluURI
