@@ -1,0 +1,61 @@
+ground_truth:
+
+  # ======================================
+  #             Hobbies
+  # ======================================
+  Hobby1:
+    text: "i like to play video games."
+    intent: "Hobbies"
+    entities:
+      - role: "Concept"
+        value: "video games"
+        entity: "Interest"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+
+  # =======================================
+  #             NameAndDrink
+  # =======================================
+  NameAndDrink1:
+    text: "my name is sarah and my favorite drink is coffee."
+    intent: "Receptionist"
+    entities:
+      - role: "BeneficiaryRole"
+        value: "Sarah"
+        entity: "NaturalPerson"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "Item"
+        value: "coffee"
+        entity: "drink"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+
+  # =======================================
+  #             Order
+  # =======================================
+  Order1:
+    text: "i would like to have two stakes, fries and cola."
+    intent: "Order"
+    entities:
+      - role: "Item"
+        value: "steaks"
+        entity: "food"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "Item"
+        value: "fries"
+        entity: "food"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "Item"
+        value: "cola"
+        entity: "drink"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []

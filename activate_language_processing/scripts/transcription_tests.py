@@ -11,22 +11,22 @@ from pathlib import Path  # Path utilities for file handling
 model = whisper.load_model("base")  # Load the Whisper model for transcription
 
 # Load audio files from different conditions into separate lists
-directory1 = Path("./AudioFiles2/Condition1/")
+directory1 = Path("./AudioFiles/Condition1/")
 audios1 = [str(file) for file in directory1.glob("*") if file.is_file()]
 
-directory2 = Path("./AudioFiles2/Condition2/")
+directory2 = Path("./AudioFiles/Condition2/")
 audios2 = [str(file) for file in directory2.glob("*") if file.is_file()]
 
-directory3 = Path("./AudioFiles2/Condition3/")
+directory3 = Path("./AudioFiles/Condition3/")
 audios3 = [str(file) for file in directory3.glob("*") if file.is_file()]
 
-directory4 = Path("./AudioFiles2/Condition4/")
+directory4 = Path("./AudioFiles/Condition4/")
 audios4 = [str(file) for file in directory4.glob("*") if file.is_file()]
 
-directory5 = Path("./AudioFiles2/Condition5/")
+directory5 = Path("./AudioFiles/Condition5/")
 audios5 = [str(file) for file in directory5.glob("*") if file.is_file()]
 
-directory6 = Path("./AudioFiles2/Condition6/")
+directory6 = Path("./AudioFiles/Condition6/")
 audios6 = [str(file) for file in directory6.glob("*") if file.is_file()]
 
 # Combine all audio file lists into a single list of folders
