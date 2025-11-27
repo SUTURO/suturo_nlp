@@ -38,7 +38,7 @@ ground_truth:
   #             Order
   # =======================================
   Order1:
-    text: "i would like to have two stakes, fries and cola."
+    text: "i would like to have two steaks, fries and cola."
     intent: "Order"
     entities:
       - role: "Item"

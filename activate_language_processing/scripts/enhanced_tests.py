@@ -44,8 +44,10 @@ def check_rasa(uri):
             logger.info("Rasa is available.")
             return True
     except requests.exceptions.ConnectionError:
-        logger.error("RASA is not available. Maybe you forgot to start Rasa!")
         raise ConnectionError
+    finally:
+        logger.error("RASA is not available. Maybe you forgot to start Rasa!")
+        return False
 
 
 def load_whisper():
