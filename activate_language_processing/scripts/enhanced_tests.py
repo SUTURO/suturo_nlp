@@ -1,29 +1,29 @@
 # TODO:
-#       1. Able to test single Intents
-#       2. Some sentences are classified false, even tough they are correct
+#       1. Some sentences are classified false, even tough they are correct
 #          Example:
 #               My name is Sarah (Correct)
 #               My name is sara (incorrect)
 #           In our case this is not completely false.
-#       3. Metrics for each category and intent / entities.
-#       4. Something like F1-Score for entities.
+#       2. Metrics for each category and intent / entities.
+#       3. Something like F1-Score for entities.
 #               Right now if one entity is false, the entire list is false.
-#       5. Documentation
 
 import warnings
 from argparse import ArgumentParser
 from pathlib import Path
 import jiwer
-import nlp_challenges
 import spacy
 import whisper
 import yaml
-from activate_language_processing.nlp import semanticLabelling
-from rclpy.logging import get_logger
 import pandas as pd
+from rclpy.logging import get_logger
 import requests
 from tabulate import tabulate
-import numpy as np
+# import numpy as np
+
+from activate_language_processing.nlp import semanticLabelling
+import nlp_challenges
+
 
 WHISPER_MODEL = "base"
 AUDIO_FILES_DIRECTORY = "./AudioFiles"
@@ -35,6 +35,18 @@ logger = get_logger("TEST")
 
 
 def check_rasa(uri):
+    """
+    Check if rasa is available, before we start testing.
+
+    Args:
+        uri: The rasa URI we use if we start rasa.
+
+    Returns:
+        None
+
+    Raises:
+        ConnectionError if rasa is not available.
+    """
     try:
         payload = {"text": "Hello World!"}
         logger.info(f"Checking Rasa URI: {uri}")
@@ -42,17 +54,15 @@ def check_rasa(uri):
 
         if response.status_code == 200:
             logger.info("Rasa is available.")
-            return True
+            return
     except requests.exceptions.ConnectionError:
-        raise ConnectionError
-    finally:
-        logger.error("RASA is not available. Maybe you forgot to start Rasa!")
-        return False
+        raise ConnectionError("Rasa is not available. Maybe you forgot to start Rasa!")
 
 
 def load_whisper():
     """
-    Loads the whisper model
+    Loads the whisper model.
+
     Returns:
         Whisper model
     """
@@ -65,6 +75,7 @@ def load_whisper():
 def load_reference():
     """
     Load all references (Ground Truth) from the `references.yml` file.
+
     Returns:
         Dictionary of ground truth references
     """
@@ -81,6 +92,10 @@ def load_reference():
 def load_audio_files():
     """
     List all .wav audio files from the given directory.
+
+    Example:
+        {"Condition1": ["Hobby1.1.wav", "Hobby1.2.wav", ..."]}.
+
     Returns:
         Dictionary with a list of .wav audio files of every condition.
     """
@@ -93,7 +108,6 @@ def load_audio_files():
     file_sum = 0
     for directory in path.glob("*"):
         if directory.is_dir():
-            # TODO: Sorting the list?
             # Get a list of all .wav files from every condition
             audio_files = [
                 str(file) for file in directory.glob("*.wav") if file.is_file()
@@ -108,12 +122,43 @@ def load_audio_files():
     return conditions
 
 
+def get_specific_intent(audio_files, intent):
+    """
+    Filter audio files to only include categories matching a given intent prefix.
+
+    Args:
+        audio_files: Dictionary of condition and list of audio files.
+        intent: The intent prefix to filter or None if not given.
+
+    Example:
+        {"Condition1": ["Hobby1.1.wav", "Hobby1.2.wav", ..."]}.
+
+    Returns:
+        A dictionary containing only the intent and the files whose intent start with the given prefix.
+        If no intent prefix is given, the dictionary with all files will be returned.
+    """
+    if not intent:
+        return audio_files
+
+    matching_files = {}
+
+    for condition, files in audio_files.items():
+        f_list = [file for file in files if get_audio_category(file).startswith(intent)]
+        if f_list:
+            matching_files[condition] = f_list
+    total = sum(len(files) for files in matching_files.values())
+    logger.info(f"OVERALL {total} FILES FOUND WITH MATCHING INTENT.")
+    return matching_files
+
+
 def transcribe_normal(model, path):
     """
     Transcribe the given wav audio file.
+
     Args:
         model: Whisper model
         path: Path to .wav file
+
     Returns:
         Audio transcription as string
     """
@@ -128,10 +173,12 @@ def transcribe_normal(model, path):
 def transcribe_enhanced(model, path, orig_transcription):
     """
     Transcribe audio using Whisper. Here we're using a prompt providing context.
+
     Args:
         model: Whisper model
         path: Path to .wav file
         orig_transcription: Original transcription
+
     Returns:
         Enhanced audio transcription as string
     """
@@ -153,10 +200,12 @@ def transcribe_enhanced(model, path, orig_transcription):
 def get_intent_and_entities(original_transcription, enhanced_transcription, context):
     """
     Extract intent and entities from the given transcription.
+
     Args:
         original_transcription: Original transcription
         enhanced_transcription: Enhanced transcription
         context: Context for semantic labeling
+
     Returns:
         Tuple with intent and list of entities
     """
@@ -192,8 +241,10 @@ def get_intent_and_entities(original_transcription, enhanced_transcription, cont
 def get_audio_category(filename):
     """
     Extract the category from the audio file.
+
     Example:
         Hobby1.1.wav --> Hobby1
+
     Returns:
         Category name from an audio file.
     """
@@ -210,12 +261,12 @@ def compare_entities(ground_truth, transcription):
         return False
 
     def _normalize(items):
-        l = []
+        entities = []
         for item in items:
-            l.append(
+            entities.append(
                 (item.get("role", ""), item.get("value", ""), item.get("entity", ""))
             )
-        return sorted(l)
+        return sorted(entities)
 
     return _normalize(ground_truth) == _normalize(transcription)
 
@@ -223,9 +274,11 @@ def compare_entities(ground_truth, transcription):
 def calculate_wer(reference, hypothesis):
     """
     Calculate Word Error Ratio (WER).
+
     Args:
         reference: Reference transcription
         hypothesis: Hypothesis transcription
+
     Returns:
         WER
     """
@@ -233,6 +286,18 @@ def calculate_wer(reference, hypothesis):
 
 
 def test_file(model, ground_truth, file, context):
+    """
+    Test an audio file and compare with ground truth.
+
+    Args:
+        model: Whisper model
+        ground_truth: The ground truth from ``references.yml``
+        file: The audio file
+        context: Rasa context
+
+    Returns:
+        Dictionary with all relevant test results.
+    """
     condition = Path(file).parent.name
     filename = Path(file).name
     category = get_audio_category(file)
@@ -285,11 +350,25 @@ def test_file(model, ground_truth, file, context):
     }
 
 
-def print_results(df):
+def print_results(df, intent):
+    """
+    Print all relevant test results in terminal.
+
+    Args:
+        intent: Intent prefix
+        df: Dataframe with test results.
+
+    Returns:
+        None
+    """
     print("\n" + "=" * 80)
     print("SUMMARY")
     print("=" * 80 + "\n")
-    print(f"FILES TESTED: {len(df)}\n")
+    print(f"FILES TESTED: {len(df)}")
+    if not intent:
+        print("INTENT TESTED: All\n")
+    else:
+        print(f"INTENT TESTED: {intent}\n")
 
     # Metrics
     intent_acc_normal = df["Correct_Intent_Normal"].mean()
@@ -324,22 +403,43 @@ def print_results(df):
 
 
 def save_results(dataframe):
+    """
+    Save test results to as json file.
+
+    Args:
+        dataframe: Dataframe with test results.
+
+    Returns:
+        None
+    """
     dataframe.to_json(RESULT_FILE, indent=2, orient="index")
 
 
-def test_all_files(model, refs, audio_files, context):
+def test_all_files(model, refs, audio_files, context, intent):
+    """
+    Test alle audio files using ``test_file()``.
+
+    Args:
+        model: Whisper model
+        refs: Ground truth from ``references.yml``
+        audio_files: Dictionary of audio files
+        context: Rasa context
+
+    Returns:
+        None
+    """
     results = []
 
     for _, files in audio_files.items():
         for file in files:
-            row = test_file(model, refs, file, context)
-            if row is not None:
-                results.append(row)
+            result = test_file(model, refs, file, context)
+            if result is not None:
+                results.append(result)
 
     df = pd.DataFrame(results)
 
     save_results(df)
-    print_results(df)
+    print_results(df, intent)
 
 
 def main():
@@ -350,18 +450,27 @@ def main():
         default="http://localhost:5005/model/parse",
         help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse",
     )
+    parser.add_argument(
+        "-i",
+        "--intent",
+        default=None,
+        help="Only test a specific intent (e.g. 'Order')",
+    )
     args = parser.parse_args()
+
     context = {
         "rasaURI": args.nluURI,
         "nlp": spacy.load("en_core_web_sm"),
         "intent2Roles": {},
         "role2Roles": {},
     }
+
     check_rasa(context["rasaURI"])
     model = load_whisper()
     refs = load_reference()
     audio_files = load_audio_files()
-    test_all_files(model, refs, audio_files, context)
+    audio_files = get_specific_intent(audio_files, args.intent)
+    test_all_files(model, refs, audio_files, context, args.intent)
 
 
 if __name__ == "__main__":
