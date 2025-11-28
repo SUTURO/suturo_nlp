@@ -3,10 +3,12 @@
 #          Example:
 #               My name is Sarah (Correct)
 #               My name is sara (incorrect)
-#           In our case this is not completely false.
+#           In our case this is not completely wrong.
 #       2. Metrics for each category and intent / entities.
 #       3. Something like F1-Score for entities.
-#               Right now if one entity is false, the entire list is false.
+#               Right now if one entity is wrong, the entire list is wrong.
+#       4. Add result summary to json file
+#       5. Collect all wrong sentences and store them somewhere
 
 import warnings
 from argparse import ArgumentParser
@@ -74,7 +76,7 @@ def load_whisper():
 
 def load_reference():
     """
-    Load all references (Ground Truth) from the `references.yml` file.
+    Load all references (Ground Truth) from the ``references.yml`` file.
 
     Returns:
         Dictionary of ground truth references
