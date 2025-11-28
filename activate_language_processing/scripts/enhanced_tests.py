@@ -352,7 +352,7 @@ def test_file(model, ground_truth, file, context):
     }
 
 
-def print_results(df, intent):
+def print_results(df, intent, intent_gpr_table=None):
     """
     Print all relevant test results in terminal.
 
@@ -363,22 +363,17 @@ def print_results(df, intent):
     Returns:
         None
     """
-    print("\n" + "=" * 80)
-    print("SUMMARY")
-    print("=" * 80 + "\n")
-    print(f"FILES TESTED: {len(df)}")
-    if not intent:
-        print("INTENT TESTED: All\n")
-    else:
-        print(f"INTENT TESTED: {intent}\n")
-
     # Metrics
+
+    # Intents
     intent_acc_normal = df["Correct_Intent_Normal"].mean()
     intent_acc_enhanced = df["Correct_Intent_Enhanced"].mean()
 
+    # Entities
     entities_acc_normal = df["Correct_Entities_Normal"].mean()
     entities_acc_enhanced = df["Correct_Entities_Enhanced"].mean()
 
+    # WER
     wer_normal_avg = df["WER_Normal"].mean()
     wer_enhanced_avg = df["WER_Enhanced"].mean()
 
@@ -398,7 +393,82 @@ def print_results(df, intent):
         }
     )
 
+    # Intent Table
+
+    intent_grp_table = (
+        df.groupby("Ground_Truth_Intent")
+        .agg(
+            Correct_Normal=("Correct_Intent_Normal", "sum"),
+            Correct_Enhanced=("Correct_Intent_Enhanced", "sum"),
+            Total=("Ground_Truth_Intent", "count"),
+        )
+        .reset_index()
+    )
+
+    intent_grp_table["Normal"] = intent_grp_table.apply(
+        lambda row: f"{row['Correct_Normal'] / row['Total']:.1%} ({row['Correct_Normal']}/{row['Total']})",
+        axis=1,
+    )
+    intent_grp_table["Enhanced"] = intent_grp_table.apply(
+        lambda row: f"{row['Correct_Enhanced'] / row['Total']:.1%} ({row['Correct_Enhanced']}/{row['Total']})",
+        axis=1,
+    )
+    intent_grp_table = intent_grp_table[["Ground_Truth_Intent", "Normal", "Enhanced"]]
+
+    # Entities Table
+
+    expl_df = df.explode("Ground_Truth_Entities")
+    # Convert dicts to tuples so they can be grouped
+    expl_df["Ground_Truth_Entities"] = expl_df["Ground_Truth_Entities"].apply(
+        lambda x: (x.get("role", ""), x.get("value", ""), x.get("entity", ""))
+    )
+
+    entities_grp_table = (
+        expl_df.groupby("Ground_Truth_Entities")
+        .agg(
+            Correct_Normal=("Correct_Entities_Normal", "sum"),
+            Correct_Enhanced=("Correct_Entities_Enhanced", "sum"),
+            Total=("Ground_Truth_Entities", "count"),
+        )
+        .reset_index()
+    )
+
+    entities_grp_table["Normal"] = entities_grp_table.apply(
+        lambda row: f"{row['Correct_Normal'] / row['Total']:.1%} ({row['Correct_Normal']}/{row['Total']})",
+        axis=1,
+    )
+    entities_grp_table["Enhanced"] = entities_grp_table.apply(
+        lambda row: f"{row['Correct_Enhanced'] / row['Total']:.1%} ({row['Correct_Enhanced']}/{row['Total']})",
+        axis=1,
+    )
+    entities_grp_table = entities_grp_table[
+        ["Ground_Truth_Entities", "Normal", "Enhanced"]
+    ]
+
+    print("\n" + "=" * 80)
+    print("SUMMARY")
+    print("=" * 80 + "\n")
+    print(f"FILES TESTED: {len(df)}")
+    if not intent:
+        print("INTENT TESTED: All\n")
+    else:
+        print(f"INTENT TESTED: {intent}\n")
     print(tabulate(summary, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "-" * 80)
+    print("INTENTS:\n")
+    print(
+        tabulate(intent_grp_table, headers="keys", tablefmt="outline", showindex=False)
+    )
+
+    print("\n" + "-" * 80)
+    print("ENTITIES:\n")
+    print(
+        tabulate(
+            entities_grp_table, headers="keys", tablefmt="outline", showindex=False
+        )
+    )
+
     print("\n" + "=" * 80)
     print(f"MORE DETAILS IN: {RESULT_FILE}")
     print("=" * 80 + "\n")
