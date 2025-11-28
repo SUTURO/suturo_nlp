@@ -8,9 +8,12 @@ import scipy.io.wavfile
 import scipy as sp
 import time
 
+# Every time new data arrives form our microphone execute this function
 def callback_fft(context, data):
 
+    # Convert data into int16 np array
     new_data = np.frombuffer(bytes(data.data), dtype=np.int16)
+    # Remove old samples and append newest
     context["data"] = np.concatenate([context["data"][len(new_data):], new_data])
     
     context["divider"] += 1
@@ -19,6 +22,9 @@ def callback_fft(context, data):
         context["divider"] = 0
         compare(acc_data["data"], context["threshold"], context["pub"])
 
+# Compare the audio with the reference sound from the .wav file using FFT
+# Convolve audio sample with the reference
+# If we found a peak that is bigger than the threshold we found most likely our bell
 def compare(mic_data, threshold, pub):
     # s = time.perf_counter() # for performance measurement
     comp = sp.signal.fftconvolve(mic_data, reference, mode="valid")
@@ -39,15 +45,19 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--threshold', default='10.0', help='Threshold to declare the input sound similar enough to the reference doorbell. Default: 10.0')
     args, unknown = parser.parse_known_args(rospy.myargv()[1:])
 
+    # The reference audio file
     referenceWAVFile = str(args.referenceWAV)
     threshold = float(args.threshold)
+    # Topic to publish
     topic = args.outputTopic
 
+    # Publish String messages to topic
     pub = rospy.Publisher(topic, String, queue_size=1)
 
     _, reference = scipy.io.wavfile.read(referenceWAVFile)
     context = {"data": np.zeros(len(reference), dtype=np.int16), "reference": reference, "threshold": threshold, "divider": 0, "pub": pub}
 
+    # Subscriber for microphone data
     rospy.Subscriber("/audio/audio", AudioData, lambda data: callback_fft(context, data))
     rospy.loginfo("[ALP]: Doorbell detection node started")
 
