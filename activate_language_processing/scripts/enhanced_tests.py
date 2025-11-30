@@ -4,11 +4,8 @@
 #               My name is Sarah (Correct)
 #               My name is sara (incorrect)
 #           In our case this is not completely wrong.
-#       2. Metrics for each category and intent / entities.
-#       3. Something like F1-Score for entities.
-#               Right now if one entity is wrong, the entire list is wrong.
-#       4. Add result summary to json file
-#       5. Collect all wrong sentences and store them somewhere
+#       2. Add result summary to json file
+#       3. Collect all wrong sentences and store them somewhere
 
 import warnings
 from argparse import ArgumentParser
@@ -255,22 +252,54 @@ def get_audio_category(filename):
 
 
 def compare_intent(ground_truth, transcription):
+    """
+    Compare ground truth and transcription intents.
+
+    Args:
+        ground_truth: Ground Truth intent from ``references.yml``
+        transcription: Recognized intent from transcription
+
+    Returns:
+        Bool: True if matched, else False.
+    """
     return ground_truth == transcription
 
 
+def extract_entities(items):
+    """
+    Extract entities from a given list.
+
+    Args:
+        items: List of entities
+
+    Returns:
+        Sorted list of tuples with entities (role, value, entity)
+    """
+    entities = []
+    for item in items:
+        entities.append(
+            (item.get("role", ""), item.get("value", ""), item.get("entity", ""))
+        )
+    # Sort for comparison
+    return sorted(entities)
+
+
 def compare_entities(ground_truth, transcription):
+    """
+    Compare ground truth and transcription entities.
+    This function compares entities exactly.
+
+    Args:
+        ground_truth: Ground Truth entities from ``references.yml``
+        transcription: Recognized entities from transcription
+
+    Returns:
+        True if matched, else False.
+    """
     if len(ground_truth) != len(transcription):
         return False
 
-    def _normalize(items):
-        entities = []
-        for item in items:
-            entities.append(
-                (item.get("role", ""), item.get("value", ""), item.get("entity", ""))
-            )
-        return sorted(entities)
-
-    return _normalize(ground_truth) == _normalize(transcription)
+    return extract_entities(ground_truth) == extract_entities(transcription)
 
 
 def calculate_wer(reference, hypothesis):
@@ -285,6 +314,38 @@ def calculate_wer(reference, hypothesis):
         WER
     """
     return jiwer.wer(reference, hypothesis)
+
+
+def calculate_f1(reference, hypothesis):
+    # Ground Truth set
+    gt = set(extract_entities(reference))
+    # Hypothesis set
+    H = set(extract_entities(hypothesis))
+
+    # Entities that got identified correctly
+    tp = len(gt & H)
+    # Identified entities that are not in GT
+    fp = len(H - gt)
+    # Entities that are in GT but got not identified
+    fn = len(gt - H)
+
+    # Avoid zero float division
+    if (tp + fp) > 0:
+        precision = tp / (tp + fp)
+    else:
+        precision = 0.0
+
+    if (tp + fn) > 0:
+        recall = tp / (tp + fn)
+    else:
+        recall = 0.0
+
+    if (precision + recall) > 0:
+        f1 = 2 * (precision * recall) / (precision + recall)
+    else:
+        f1 = 0.0
+
+    return precision, recall, f1
 
 
 def test_file(model, ground_truth, file, context):
@@ -308,27 +369,25 @@ def test_file(model, ground_truth, file, context):
         logger.error(f"Category {category} not found!")
         return None
 
+    # Transcriptions
     ground_truth_text = ground_truth[category].get("text", "")
-    ground_truth_intent = ground_truth[category].get("intent", "")
-    ground_truth_entities = ground_truth[category].get("entities", [])
-
     normal_transcription = transcribe_normal(model, file)
     enhanced_transcription = transcribe_enhanced(model, file, normal_transcription)
 
+    # Intent & Entities
+    ground_truth_intent = ground_truth[category].get("intent", "")
+    ground_truth_entities = ground_truth[category].get("entities", [])
     normal_intent, normal_entities, enhanced_intent, enhanced_entities = (
         get_intent_and_entities(normal_transcription, enhanced_transcription, context)
     )
 
-    wer_normal = calculate_wer(ground_truth_text, normal_transcription)
-    wer_enh = calculate_wer(ground_truth_text, enhanced_transcription)
-
-    is_correct_entities_normal = compare_entities(
+    # Precision, Recall and F1-Score
+    normal_precision, normal_recall, normal_f1 = calculate_f1(
         ground_truth_entities, normal_entities
     )
-    is_correct_entities_enh = compare_entities(ground_truth_entities, enhanced_entities)
-
-    is_correct_intent_normal = compare_intent(ground_truth_intent, normal_intent)
-    is_correct_intent_enhanced = compare_intent(ground_truth_intent, enhanced_intent)
+    enhanced_precision, enhanced_recall, enhanced_f1 = calculate_f1(
+        ground_truth_entities, enhanced_entities
+    )
 
     return {
         "Condition": condition,
@@ -337,22 +396,32 @@ def test_file(model, ground_truth, file, context):
         "Ground_Truth": ground_truth_text,
         "Normal_Transcription": normal_transcription,
         "Enhanced_Transcription": enhanced_transcription,
-        "WER_Normal": wer_normal,
-        "WER_Enhanced": wer_enh,
+        "WER_Normal": calculate_wer(ground_truth_text, normal_transcription),
+        "WER_Enhanced": calculate_wer(ground_truth_text, enhanced_transcription),
+        "Precision_Normal": normal_precision,
+        "Precision_Enhanced": enhanced_precision,
+        "Recall_Normal": normal_recall,
+        "Recall_Enhanced": enhanced_recall,
+        "F1_Normal": normal_f1,
+        "F1_Enhanced": enhanced_f1,
         "Ground_Truth_Intent": ground_truth_intent,
         "Normal_Transcription_Intent": normal_intent,
         "Enhanced_Transcription_Intent": enhanced_intent,
-        "Correct_Intent_Normal": is_correct_intent_normal,
-        "Correct_Intent_Enhanced": is_correct_intent_enhanced,
+        "Correct_Intent_Normal": compare_intent(ground_truth_intent, normal_intent),
+        "Correct_Intent_Enhanced": compare_intent(ground_truth_intent, enhanced_intent),
         "Ground_Truth_Entities": ground_truth_entities,
         "Normal_Transcription_Entities": normal_entities,
         "Enhanced_Transcription_Entities": enhanced_entities,
-        "Correct_Entities_Normal": is_correct_entities_normal,
-        "Correct_Entities_Enhanced": is_correct_entities_enh,
+        "Correct_Entities_Normal": compare_entities(
+            ground_truth_entities, normal_entities
+        ),
+        "Correct_Entities_Enhanced": compare_entities(
+            ground_truth_entities, enhanced_entities
+        ),
     }
 
 
-def print_results(df, intent, intent_gpr_table=None):
+def print_results(df, intent):
     """
     Print all relevant test results in terminal.
 
@@ -377,18 +446,31 @@ def print_results(df, intent, intent_gpr_table=None):
     wer_normal_avg = df["WER_Normal"].mean()
     wer_enhanced_avg = df["WER_Enhanced"].mean()
 
+    # F1
+    f1_normal = df["F1_Normal"].mean()
+    f1_enhanced = df["F1_Enhanced"].mean()
+
+    # Summary Table
+
     summary = pd.DataFrame(
         {
-            "Metric": ["Intent Match", "Entities Match", "WER (avg)"],
+            "Metric": [
+                "Intent Match",
+                "Entities Match",
+                "Entities-F1-Score (avg)",
+                "WER (avg)",
+            ],
             "Normal": [
                 f"{intent_acc_normal:.1%} ({df['Correct_Intent_Normal'].sum()}/{len(df)})",
                 f"{entities_acc_normal:.1%} ({df['Correct_Entities_Normal'].sum()}/{len(df)})",
-                f"{wer_normal_avg:.3f}",
+                f"{f1_normal:.2f}",
+                f"{wer_normal_avg:.1%}",
             ],
             "Enhanced": [
                 f"{intent_acc_enhanced:.1%} ({df['Correct_Intent_Enhanced'].sum()}/{len(df)})",
                 f"{entities_acc_enhanced:.1%} ({df['Correct_Entities_Enhanced'].sum()}/{len(df)})",
-                f"{wer_enhanced_avg:.3f}",
+                f"{f1_enhanced:.2f}",
+                f"{wer_enhanced_avg:.1%}",
             ],
         }
     )
