@@ -4,7 +4,7 @@ ground_truth:
   #             Hobbies
   # ======================================
   Hobby1:
-    text: "i like to play video games."
+    text: "I like to play video games."
     intent: "Hobbies"
     entities:
       - role: "Concept"
@@ -18,7 +18,7 @@ ground_truth:
   #             NameAndDrink
   # =======================================
   NameAndDrink1:
-    text: "my name is sarah and my favorite drink is coffee."
+    text: "My name is sarah and my favorite drink is coffee."
     intent: "Receptionist"
     entities:
       - role: "BeneficiaryRole"
@@ -38,7 +38,7 @@ ground_truth:
   #             Order
   # =======================================
   Order1:
-    text: "i would like to have two steaks, fries and cola."
+    text: "I would like to have two steaks, fries and cola."
     intent: "Order"
     entities:
       - role: "Item"
