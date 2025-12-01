@@ -18,6 +18,7 @@ import pandas as pd
 from rclpy.logging import get_logger
 import requests
 from tabulate import tabulate
+
 # import numpy as np
 
 from activate_language_processing.nlp import semanticLabelling
@@ -317,6 +318,16 @@ def calculate_wer(reference, hypothesis):
 
 
 def calculate_f1(reference, hypothesis):
+    """
+    Calculate F1-Score, Precision and Recall for entities.
+
+    Args:
+        reference: The Ground Truth
+        hypothesis: List of entitíes
+
+    Returns:
+        Tuple of Precision, Recall and F1
+    """
     # Ground Truth set
     gt = set(extract_entities(reference))
     # Hypothesis set
@@ -421,6 +432,127 @@ def test_file(model, ground_truth, file, context):
     }
 
 
+def _create_summary_table(df):
+    total = len(df)
+    summary = {
+        "Metric": ["Intent Match", "Entities Match", "Entities F1-Score", "WER"],
+        "Normal": [
+            f"{df['Correct_Intent_Normal'].mean():.1%} ({df['Correct_Intent_Normal'].sum()}/{total})",
+            f"{df['Correct_Entities_Normal'].mean():.1%} ({df['Correct_Entities_Normal'].sum()}/{total})",
+            f"{df['F1_Normal'].mean():.2f}",
+            f"{df['WER_Normal'].mean():.2f}",
+        ],
+        "Enhanced": [
+            f"{df['Correct_Intent_Enhanced'].mean():.1%} ({df['Correct_Intent_Enhanced'].sum()}/{total})",
+            f"{df['Correct_Entities_Enhanced'].mean():.1%} ({df['Correct_Entities_Enhanced'].sum()}/{total})",
+            f"{df['F1_Enhanced'].mean():.2f}",
+            f"{df['WER_Enhanced'].mean():.2f}",
+        ],
+    }
+
+    return pd.DataFrame(summary)
+
+
+def _create_intent_table(df):
+    # Give us all stats per intent
+    intents = df.groupby("Ground_Truth_Intent").agg(
+            total=("Ground_Truth_Intent", "count"),
+            correct_normal=("Correct_Intent_Normal", "sum"),
+            correct_enhanced=("Correct_Intent_Enhanced", "sum"),
+        ).reset_index().sort_values(by="total", ascending=False)
+
+
+    # Collect all stats for every intent
+    rows = []
+    for _, row in intents.iterrows():
+        intent = row["Ground_Truth_Intent"]
+        total = row["total"]
+        correct_normal = row["correct_normal"]
+        correct_enhanced = row["correct_enhanced"]
+
+        rows.append(
+            {
+                "Intent": intent,
+                "Normal": f"{correct_normal / total:.1%} ({correct_normal}/{total})",
+                "Enhanced": f"{correct_enhanced / total:.1%} ({correct_enhanced}/{total})",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _create_entities_table(df):
+    # We become a list of dictionary's, but we want tuples
+    entities_rows = []
+    for _, row in df.iterrows():
+        # list of tuples
+        entities_tuples = extract_entities(row["Ground_Truth_Entities"])
+        for ent_tuple in entities_tuples:
+            entities_rows.append(
+                {
+                    "Entity": str(ent_tuple),
+                    "Correct Normal": row["Correct_Entities_Normal"],
+                    "Correct Enhanced": row["Correct_Entities_Enhanced"],
+                    "F1 Normal": row["F1_Normal"],
+                    "F1 Enhanced": row["F1_Enhanced"],
+                }
+            )
+    flat_ent = pd.DataFrame(entities_rows)
+
+    entities_table = flat_ent.groupby("Entity").agg(
+            total=("Entity", "count"),
+            correct_normal=("Correct Normal", "sum"),
+            correct_enhanced=("Correct Enhanced", "sum"),
+            f1_normal=("F1 Normal", "mean"),
+            f1_enhanced=("F1 Enhanced", "mean"),
+        ).reset_index().sort_values(by="total", ascending=False)
+
+    rows = []
+    for _, row in entities_table.iterrows():
+        entity = row["Entity"]
+        total = row["total"]
+        correct_normal = row["correct_normal"]
+        correct_enhanced = row["correct_enhanced"]
+        rows.append(
+            {
+                "Entities": entity,
+                "Normal": f"{correct_normal / total:.1%} ({correct_normal}/{total})",
+                "Enhanced": f"{correct_enhanced / total:.1%} ({correct_enhanced}/{total})",
+                "F1-Normal": f"{row["f1_normal"]:.2f}",
+                "F1-Enhanced": f"{row["f1_enhanced"]:.2f}",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _create_condition_table(df):
+    conditions = df.groupby("Condition").agg(
+        total = ("Condition", "count"),
+        correct_intent_normal = ("Correct_Intent_Normal", "sum"),
+        correct_intent_enhanced = ("Correct_Intent_Enhanced", "sum"),
+        correct_entities_normal = ("Correct_Entities_Normal", "sum"),
+        correct_entities_enhanced = ("Correct_Entities_Enhanced", "sum"),
+    ).reset_index().sort_values(by="total", ascending=False)
+
+    rows = []
+    for _, row in conditions.iterrows():
+        condition = row["Condition"]
+        total = row["total"]
+        correct_intent_normal = row["correct_intent_normal"]
+        correct_intent_enhanced = row["correct_intent_enhanced"]
+        correct_entities_normal = row["correct_entities_normal"]
+        correct_entities_enhanced = row["correct_entities_enhanced"]
+        rows.append({
+            "Condition": condition,
+            "Intents Normal": f"{correct_intent_normal / total:.1%} ({correct_intent_normal}/{total})",
+            "Intents Enhanced": f"{correct_intent_enhanced / total:.1%} ({correct_intent_enhanced}/{total})",
+            "Entities Normal": f"{correct_entities_normal / total:.1%} ({correct_entities_normal}/{total})",
+            "Entities Enhanced": f"{correct_entities_enhanced / total:.1%} ({correct_entities_enhanced}/{total})",
+        })
+
+    return pd.DataFrame(rows)
+
 def print_results(df, intent):
     """
     Print all relevant test results in terminal.
@@ -432,100 +564,11 @@ def print_results(df, intent):
     Returns:
         None
     """
-    # Metrics
-
-    # Intents
-    intent_acc_normal = df["Correct_Intent_Normal"].mean()
-    intent_acc_enhanced = df["Correct_Intent_Enhanced"].mean()
-
-    # Entities
-    entities_acc_normal = df["Correct_Entities_Normal"].mean()
-    entities_acc_enhanced = df["Correct_Entities_Enhanced"].mean()
-
-    # WER
-    wer_normal_avg = df["WER_Normal"].mean()
-    wer_enhanced_avg = df["WER_Enhanced"].mean()
-
-    # F1
-    f1_normal = df["F1_Normal"].mean()
-    f1_enhanced = df["F1_Enhanced"].mean()
-
-    # Summary Table
-
-    summary = pd.DataFrame(
-        {
-            "Metric": [
-                "Intent Match",
-                "Entities Match",
-                "Entities-F1-Score (avg)",
-                "WER (avg)",
-            ],
-            "Normal": [
-                f"{intent_acc_normal:.1%} ({df['Correct_Intent_Normal'].sum()}/{len(df)})",
-                f"{entities_acc_normal:.1%} ({df['Correct_Entities_Normal'].sum()}/{len(df)})",
-                f"{f1_normal:.2f}",
-                f"{wer_normal_avg:.1%}",
-            ],
-            "Enhanced": [
-                f"{intent_acc_enhanced:.1%} ({df['Correct_Intent_Enhanced'].sum()}/{len(df)})",
-                f"{entities_acc_enhanced:.1%} ({df['Correct_Entities_Enhanced'].sum()}/{len(df)})",
-                f"{f1_enhanced:.2f}",
-                f"{wer_enhanced_avg:.1%}",
-            ],
-        }
-    )
-
-    # Intent Table
-
-    intent_grp_table = (
-        df.groupby("Ground_Truth_Intent")
-        .agg(
-            Correct_Normal=("Correct_Intent_Normal", "sum"),
-            Correct_Enhanced=("Correct_Intent_Enhanced", "sum"),
-            Total=("Ground_Truth_Intent", "count"),
-        )
-        .reset_index()
-    )
-
-    intent_grp_table["Normal"] = intent_grp_table.apply(
-        lambda row: f"{row['Correct_Normal'] / row['Total']:.1%} ({row['Correct_Normal']}/{row['Total']})",
-        axis=1,
-    )
-    intent_grp_table["Enhanced"] = intent_grp_table.apply(
-        lambda row: f"{row['Correct_Enhanced'] / row['Total']:.1%} ({row['Correct_Enhanced']}/{row['Total']})",
-        axis=1,
-    )
-    intent_grp_table = intent_grp_table[["Ground_Truth_Intent", "Normal", "Enhanced"]]
-
-    # Entities Table
-
-    expl_df = df.explode("Ground_Truth_Entities")
-    # Convert dicts to tuples so they can be grouped
-    expl_df["Ground_Truth_Entities"] = expl_df["Ground_Truth_Entities"].apply(
-        lambda x: (x.get("role", ""), x.get("value", ""), x.get("entity", ""))
-    )
-
-    entities_grp_table = (
-        expl_df.groupby("Ground_Truth_Entities")
-        .agg(
-            Correct_Normal=("Correct_Entities_Normal", "sum"),
-            Correct_Enhanced=("Correct_Entities_Enhanced", "sum"),
-            Total=("Ground_Truth_Entities", "count"),
-        )
-        .reset_index()
-    )
-
-    entities_grp_table["Normal"] = entities_grp_table.apply(
-        lambda row: f"{row['Correct_Normal'] / row['Total']:.1%} ({row['Correct_Normal']}/{row['Total']})",
-        axis=1,
-    )
-    entities_grp_table["Enhanced"] = entities_grp_table.apply(
-        lambda row: f"{row['Correct_Enhanced'] / row['Total']:.1%} ({row['Correct_Enhanced']}/{row['Total']})",
-        axis=1,
-    )
-    entities_grp_table = entities_grp_table[
-        ["Ground_Truth_Entities", "Normal", "Enhanced"]
-    ]
+    # Get result tables
+    summary_table = _create_summary_table(df)
+    intents_table = _create_intent_table(df)
+    entities_table = _create_entities_table(df)
+    condition_table = _create_condition_table(df)
 
     print("\n" + "=" * 80)
     print("SUMMARY")
@@ -535,21 +578,20 @@ def print_results(df, intent):
         print("INTENT TESTED: All\n")
     else:
         print(f"INTENT TESTED: {intent}\n")
-    print(tabulate(summary, headers="keys", tablefmt="outline", showindex=False))
+
+    print(tabulate(summary_table, headers="keys", tablefmt="outline", showindex=False))
 
     print("\n" + "-" * 80)
     print("INTENTS:\n")
-    print(
-        tabulate(intent_grp_table, headers="keys", tablefmt="outline", showindex=False)
-    )
+    print(tabulate(intents_table, headers="keys", tablefmt="outline", showindex=False))
 
     print("\n" + "-" * 80)
     print("ENTITIES:\n")
-    print(
-        tabulate(
-            entities_grp_table, headers="keys", tablefmt="outline", showindex=False
-        )
-    )
+    print(tabulate(entities_table, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "-" * 80)
+    print("CONDITIONS:\n")
+    print(tabulate(condition_table, headers="keys", tablefmt="outline", showindex=False))
 
     print("\n" + "=" * 80)
     print(f"MORE DETAILS IN: {RESULT_FILE}")
