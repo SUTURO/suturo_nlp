@@ -1,0 +1,196 @@
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two straight, price and quarter.
+ENHANCED: I would like to have two straight fries and cola.
+WER-N: 0.300 | WER-E: 0.100
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks for ice and cola.
+ENHANCED: I would like to have two steaks for ice and cola.
+WER-N: 0.300 | WER-E: 0.300
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two states, prize and cola.
+ENHANCED: I would like to have two steaks, fries and cola.
+WER-N: 0.200 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steps, files and code up.
+ENHANCED: I would like to have two steaks, fries and cola.
+WER-N: 0.400 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like play video games.
+WER-N: 0.000 | WER-E: 0.167
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two states, fries and cola.
+ENHANCED: I would like to have two states, fries and cola.
+WER-N: 0.100 | WER-E: 0.100
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to stack pies and cola.
+ENHANCED: I would like to stack pies and cola.
+WER-N: 0.400 | WER-E: 0.400
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I don't like to have two steaks, fries and pull up.
+ENHANCED: I don't like to have two steaks, fries and pull up.
+WER-N: 0.300 | WER-E: 0.300
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have true slaves, fries and cola.
+ENHANCED: I would like to have true slaves, fries and cola.
+WER-N: 0.200 | WER-E: 0.200
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games
+ENHANCED: I like to play video games.
+WER-N: 0.167 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.1.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steps, fighting Cola.
+ENHANCED: I would like to have two steaks, fries and cola.
+WER-N: 0.400 | WER-E: 0.000
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cold coffee.
+ENHANCED: I would like to have two steaks, fries and cold coffee.
+WER-N: 0.200 | WER-E: 0.200
+----------------------------------------
+
+FILE: Hobby1.3.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------
+
+FILE: Hobby1.2.wav
+GT: I like to play video games.
+NORMAL: I like to play video games.
+ENHANCED: I like to play video games.
+WER-N: 0.000 | WER-E: 0.000
+----------------------------------------

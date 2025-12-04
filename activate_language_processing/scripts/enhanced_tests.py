@@ -610,6 +610,21 @@ def save_results(dataframe):
     """
     dataframe.to_json(RESULT_FILE, indent=2, orient="records")
 
+def save_wrong_sentences(df, file="wrong_sentences.txt"):
+        wrong = df[(df["Correct_Intent_Normal"] == False) |
+        (df["Correct_Entities_Normal"] == False) |
+        (df["Correct_Intent_Enhanced"] == False) |
+        (df["Correct_Entities_Enhanced"] == False)
+    ]
+        with open(file,"w", encoding= "utf-8") as f:
+            for index, r in wrong.iterrows():
+                f.write(f"\nFILE: {r['Filename']}\n"
+                f"GT: {r['Ground_Truth']}\n"
+                f"NORMAL: {r['Normal_Transcription']}\n"
+                f"ENHANCED: {r['Enhanced_Transcription']}\n"
+                "----------------------------------------\n")
+                print(f"wrong sentences in {file}")
+
 
 def test_all_files(model, refs, audio_files, context, intent):
     """
@@ -636,7 +651,7 @@ def test_all_files(model, refs, audio_files, context, intent):
 
     save_results(df)
     print_results(df, intent)
-
+    save_wrong_sentences(df)
 
 def main():
     parser = ArgumentParser(prog="activate_language_processing")
