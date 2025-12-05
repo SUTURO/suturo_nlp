@@ -27,9 +27,9 @@ import whisper
 import soundfile as sf
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
-from std_msgs.msg import String, UInt8MultiArray
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
+from std_msgs.msg import UInt8MultiArray  # Import UInt8MultiArray for ROS2 compatibility
 AudioMsg = UInt8MultiArray # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
 model = whisper.load_model("base")  # Load the Whisper model for transcription
 
@@ -209,9 +209,9 @@ def transcriberFn(context):
 
     if context["useHSR"]:
         if "node" in context and isinstance(context["node"], Node):
-            context["node"].get_logger().info("Waiting for the beep...")
+            context["node"].get_logger().info("Waiting for the beep...1")
         else:
-            print("Waiting for the beep...")
+            print("Waiting for the beep...2")
         with context["lock"]:
             context["listening"] = True
         audio = listen2Queue(context["queue"], r)
@@ -387,10 +387,17 @@ def main():
     rasaURI = args.nluURI
     stt = node.create_publisher(String, args.speechToTextTopic, qos)
     intent2Roles = {}
+
+    # Use best-effort QoS for audio subscription (common for sensor data streams)
+    audio_qos = QoSProfile(
+        depth=10,
+        reliability=QoSReliabilityPolicy.BEST_EFFORT,
+        history=QoSHistoryPolicy.KEEP_LAST
+    )
  
-    queue_data = Queue() # Queue to store the audio data.
-    lock = threading.Lock() # Lock to ensure that the record_hsr callback does not interfere with the record callback.
- 
+    queue_data = Queue()  # Initialize queue_data as a new Queue instance
+    lock = threading.Lock()  # Define the lock variable
+
     context = {
         "data": numpy.array([], dtype=numpy.int16),
         "useHSR": args.useHSR,
@@ -408,11 +415,12 @@ def main():
         "nlp": spacy.load("en_core_web_sm"),
         "intent2Roles": intent2Roles,
         "role2Roles": {},
+        "queue_data": queue_data,  # Use the initialized queue_data
     }
  
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
-        node.create_subscription(AudioMsg, '/audio/audio', lambda msg: record_hsr(msg, context), qos)
+        node.create_subscription(AudioMsg, '/audio', lambda msg: record_hsr(msg, context), audio_qos)
  
     # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
     node.create_subscription(String, "/nlp_test", lambda msg: nluInternal(msg.data, "./", context), qos)
