@@ -608,7 +608,7 @@ def save_results(dataframe):
     Returns:
         None
     """
-    dataframe.to_json(RESULT_FILE, indent=2, orient="records")
+    dataframe.to_json(RESULT_FILE, indent=4, orient="records")
 
 
 def test_all_files(model, refs, audio_files, context, intent):
