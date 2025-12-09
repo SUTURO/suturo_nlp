@@ -19,6 +19,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -150,9 +152,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition1",
@@ -174,6 +174,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -305,9 +307,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -329,6 +329,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -376,9 +378,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -400,6 +400,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -489,9 +491,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -513,6 +513,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -560,9 +562,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -584,6 +584,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -715,9 +717,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -739,6 +739,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -828,9 +830,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -852,6 +852,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -899,9 +901,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition1",
@@ -923,6 +923,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -1012,9 +1014,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1036,6 +1036,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -1167,9 +1169,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1191,6 +1191,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -1322,9 +1324,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1346,6 +1346,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -1393,9 +1395,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1417,6 +1417,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -1506,9 +1508,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1530,6 +1530,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -1577,9 +1579,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1601,6 +1601,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -1732,9 +1734,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1756,6 +1756,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -1845,9 +1847,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1869,6 +1869,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -1916,9 +1918,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition5",
@@ -1940,6 +1940,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -2029,9 +2031,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2053,6 +2053,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -2184,9 +2186,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2208,6 +2208,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -2339,9 +2341,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2363,6 +2363,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -2410,9 +2412,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2434,6 +2434,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -2523,9 +2525,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2547,6 +2547,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -2594,9 +2596,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2618,6 +2618,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -2749,9 +2751,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2773,6 +2773,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -2862,9 +2864,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2886,6 +2886,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -2933,9 +2935,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition4",
@@ -2957,6 +2957,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -3046,9 +3048,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3070,6 +3070,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -3201,9 +3203,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3225,6 +3225,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -3356,9 +3358,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3380,6 +3380,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -3427,9 +3429,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3451,6 +3451,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -3540,9 +3542,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3564,6 +3564,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -3611,9 +3613,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3635,6 +3635,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -3738,9 +3740,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3762,6 +3762,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -3851,9 +3853,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3875,6 +3875,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -3922,9 +3924,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition3",
@@ -3946,6 +3946,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -4035,9 +4037,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4059,6 +4059,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -4190,9 +4192,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4214,6 +4214,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -4345,9 +4347,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4369,6 +4369,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -4416,9 +4418,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4440,6 +4440,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -4529,9 +4531,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4553,6 +4553,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -4600,9 +4602,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4624,6 +4624,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -4755,9 +4757,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4779,6 +4779,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -4868,9 +4870,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4892,6 +4892,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -4939,9 +4941,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition2",
@@ -4963,6 +4963,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -5052,9 +5054,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5076,6 +5076,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -5207,9 +5209,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5231,6 +5231,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -5362,9 +5364,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":false
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5386,6 +5386,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -5433,9 +5435,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5457,6 +5457,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -5546,9 +5548,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5570,6 +5570,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -5617,9 +5619,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5641,6 +5641,8 @@
         "Enhanced_Transcription_Intent":"Order",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Item",
@@ -5758,9 +5760,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":false,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5782,6 +5782,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -5871,9 +5873,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5895,6 +5895,8 @@
         "Enhanced_Transcription_Intent":"Hobbies",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"Concept",
@@ -5942,9 +5944,7 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     },
     {
         "Condition":"Condition6",
@@ -5966,6 +5966,8 @@
         "Enhanced_Transcription_Intent":"Receptionist",
         "Correct_Intent_Normal":true,
         "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
         "Ground_Truth_Entities":[
             {
                 "role":"BeneficiaryRole",
@@ -6055,8 +6057,6 @@
 
                 ]
             }
-        ],
-        "Correct_Entities_Normal":true,
-        "Correct_Entities_Enhanced":true
+        ]
     }
 ]

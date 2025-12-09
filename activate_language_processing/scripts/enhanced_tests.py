@@ -401,12 +401,15 @@ def test_file(model, ground_truth, file, context):
     )
 
     return {
+        # File data
         "Condition": condition,
         "Filename": filename,
         "Category": category,
+        # Sentences
         "Ground_Truth": ground_truth_text,
         "Normal_Transcription": normal_transcription,
         "Enhanced_Transcription": enhanced_transcription,
+        # Metrics
         "WER_Normal": calculate_wer(ground_truth_text, normal_transcription),
         "WER_Enhanced": calculate_wer(ground_truth_text, enhanced_transcription),
         "Precision_Normal": normal_precision,
@@ -415,20 +418,22 @@ def test_file(model, ground_truth, file, context):
         "Recall_Enhanced": enhanced_recall,
         "F1_Normal": normal_f1,
         "F1_Enhanced": enhanced_f1,
+        # Intents
         "Ground_Truth_Intent": ground_truth_intent,
         "Normal_Transcription_Intent": normal_intent,
         "Enhanced_Transcription_Intent": enhanced_intent,
         "Correct_Intent_Normal": compare_intent(ground_truth_intent, normal_intent),
         "Correct_Intent_Enhanced": compare_intent(ground_truth_intent, enhanced_intent),
-        "Ground_Truth_Entities": ground_truth_entities,
-        "Normal_Transcription_Entities": normal_entities,
-        "Enhanced_Transcription_Entities": enhanced_entities,
+       # Entities
         "Correct_Entities_Normal": compare_entities(
             ground_truth_entities, normal_entities
         ),
         "Correct_Entities_Enhanced": compare_entities(
             ground_truth_entities, enhanced_entities
         ),
+        "Ground_Truth_Entities": ground_truth_entities,
+        "Normal_Transcription_Entities": normal_entities,
+        "Enhanced_Transcription_Entities": enhanced_entities,
     }
 
 
