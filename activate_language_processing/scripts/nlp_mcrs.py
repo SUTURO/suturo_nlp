@@ -214,7 +214,7 @@ def transcriberFn(context):
             print("Waiting for the beep...2")
         with context["lock"]:
             context["listening"] = True
-        audio = listen2Queue(context["queue"], r)
+        audio = listen2Queue(context["queue"], r, startSilence=0.2)
         with context["lock"]:
             context["listening"] = False
             context["data"] = np.array([], dtype=np.int16)
@@ -261,7 +261,7 @@ def transcriberFn(context):
     context["stt"].publish(String(data=result))
     nluInternal(result, temp_fp, context)
 
-def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None, context=None) -> sr.AudioData:
+def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=0.2, sampleRate=16000, phraseTimeLimit=None, context=None) -> sr.AudioData:
     '''
     Dirty hack to implement some nice functionality of speech_recognition on a data stream
     obtained via a ros topic. 
@@ -420,7 +420,7 @@ def main():
  
     if args.useHSR:
         # Subscribe to the audio topic to get the audio data from HSR's microphone
-        node.create_subscription(AudioMsg, '/audio', lambda msg: record_hsr(msg, context), audio_qos)
+        node.create_subscription(AudioMsg, '/audio/audio', lambda msg: record_hsr(msg, context), audio_qos)
  
     # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
     node.create_subscription(String, "/nlp_test", lambda msg: nluInternal(msg.data, "./", context), qos)
