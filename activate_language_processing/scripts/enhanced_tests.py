@@ -614,14 +614,18 @@ def save_wrong_sentences(df, file="wrong_sentences.txt"):
         wrong = df[(df["Correct_Intent_Normal"] == False) |
         (df["Correct_Entities_Normal"] == False) |
         (df["Correct_Intent_Enhanced"] == False) |
-        (df["Correct_Entities_Enhanced"] == False)
+        (df["Correct_Entities_Enhanced"] == False) |
+        (df["Normal_Transcription"] != df["Ground_Truth"]) |
+        (df["Enhanced_Transcription"] != df["Ground_Truth"])
     ]
         with open(file,"w", encoding= "utf-8") as f:
             for index, r in wrong.iterrows():
                 f.write(f"\nFILE: {r['Filename']}\n"
                 f"GT: {r['Ground_Truth']}\n"
                 f"NORMAL: {r['Normal_Transcription']}\n"
+                f"{'Wrong' if r['Normal_Transcription'] != r['Ground_Truth'] else 'Right'}\n"
                 f"ENHANCED: {r['Enhanced_Transcription']}\n"
+                f"{'Wrong' if r['Enhanced_Transcription'] != r['Ground_Truth'] else 'Right'}\n"
                 "----------------------------------------\n")
                 print(f"wrong sentences in {file}")
 

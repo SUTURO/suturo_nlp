@@ -2,195 +2,431 @@
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
 ----------------------------------------
 
 FILE: Order1.1.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two straight, price and quarter.
+Wrong
 ENHANCED: I would like to have two straight fries and cola.
-WER-N: 0.300 | WER-E: 0.100
+Wrong
 ----------------------------------------
 
 FILE: Order1.3.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two steaks for ice and cola.
+Wrong
 ENHANCED: I would like to have two steaks for ice and cola.
-WER-N: 0.300 | WER-E: 0.300
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favourite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Order1.2.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two states, prize and cola.
+Wrong
 ENHANCED: I would like to have two steaks, fries and cola.
-WER-N: 0.200 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Order1.1.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two steps, files and code up.
+Wrong
 ENHANCED: I would like to have two steaks, fries and cola.
-WER-N: 0.400 | WER-E: 0.000
+Right
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah, to my favorite drinker's coffee.
+Wrong
+ENHANCED: My name is Sarah, my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite thing is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite thing is coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like play video games.
-WER-N: 0.000 | WER-E: 0.167
+Wrong
 ----------------------------------------
 
 FILE: Order1.2.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two states, fries and cola.
+Wrong
 ENHANCED: I would like to have two states, fries and cola.
-WER-N: 0.100 | WER-E: 0.100
+Wrong
 ----------------------------------------
 
 FILE: Order1.1.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to stack pies and cola.
+Wrong
 ENHANCED: I would like to stack pies and cola.
-WER-N: 0.400 | WER-E: 0.400
+Wrong
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite is Coffee.
+Wrong
+ENHANCED: My name is Sarah and my favourite drink is coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Order1.2.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I don't like to have two steaks, fries and pull up.
+Wrong
 ENHANCED: I don't like to have two steaks, fries and pull up.
-WER-N: 0.300 | WER-E: 0.300
+Wrong
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my pr drink is Coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Order1.2.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have true slaves, fries and cola.
+Wrong
 ENHANCED: I would like to have true slaves, fries and cola.
-WER-N: 0.200 | WER-E: 0.200
+Wrong
+----------------------------------------
+
+FILE: Order1.1.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: Order1.3.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favourite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite Greek is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games
+Wrong
 ENHANCED: I like to play video games.
-WER-N: 0.167 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.1.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
+----------------------------------------
+
+FILE: Order1.2.wav
+GT: I would like to have two steaks, fries and cola.
+NORMAL: I would like to have two steaks, fries and cola.
+Right
+ENHANCED: I would like to have two steaks, fries and cola.
+Right
 ----------------------------------------
 
 FILE: Order1.1.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two steps, fighting Cola.
+Wrong
 ENHANCED: I would like to have two steaks, fries and cola.
-WER-N: 0.400 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Order1.3.wav
 GT: I would like to have two steaks, fries and cola.
 NORMAL: I would like to have two steaks, fries and cold coffee.
+Wrong
 ENHANCED: I would like to have two steaks, fries and cold coffee.
-WER-N: 0.200 | WER-E: 0.200
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.2.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.3.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favorite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
+----------------------------------------
+
+FILE: NameAndDrink1.1.wav
+GT: My name is sarah and my favorite drink is coffee.
+NORMAL: My name is Sarah and my favourite drink is coffee.
+Wrong
+ENHANCED: My name is Sarah and my favorite drink is coffee.
+Wrong
 ----------------------------------------
 
 FILE: Hobby1.3.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
 
 FILE: Hobby1.2.wav
 GT: I like to play video games.
 NORMAL: I like to play video games.
+Right
 ENHANCED: I like to play video games.
-WER-N: 0.000 | WER-E: 0.000
+Right
 ----------------------------------------
