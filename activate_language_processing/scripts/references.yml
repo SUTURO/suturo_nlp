@@ -59,3 +59,63 @@ ground_truth:
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
+
+  # ======================================
+  #             GPSR
+  # ======================================
+  gpsr1:
+    text: "Drive to the living room."
+    intent: "Navigation"
+    entities:
+      - role: "Location"
+        value: "living room"
+        entity: "Room"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+
+  gpsr2:
+    text: "Get a cup from the kitchen an bring it to me "
+    intent: "Transporting"
+    entities:
+      - role: "Item"
+        value: "cup"
+        entity: "Transportable"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "SourceRoom"
+        value: "kitchen"
+        entity: "Room"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+
+#  gpsr3:
+#    text: "Go to the living room and get the milk. Then, take it to the kitchen and put it on the table."
+#    intent: "Navigation"
+#    entities:
+#      - role: "Location"
+#        value: "living room"
+#        entity: "Room"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "drink"
+#        value: "milk"
+#        entity: "Item"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "Location"
+#        value: "kitchen"
+#        entity: "Room"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "Furniture"
+#        value: "table"
+#        entity: "DesignedFurniture"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
