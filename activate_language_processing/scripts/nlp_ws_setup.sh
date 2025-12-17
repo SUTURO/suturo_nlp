@@ -103,8 +103,6 @@ sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt install -y \
     python3.10 \
     python3.10-dev \
-    python3.12 \
-    python3.12-dev \
     virtualenvwrapper \
     portaudio19-dev \
     python3-pyaudio \
