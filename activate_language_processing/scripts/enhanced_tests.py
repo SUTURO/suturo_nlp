@@ -1,11 +1,5 @@
 # TODO:
-#       1. Some sentences are classified false, even tough they are correct
-#          Example:
-#               My name is Sarah (Correct)
-#               My name is sara (incorrect)
-#           In our case this is not completely wrong.
-#       2. Add result summary to json file
-#       3. Collect all wrong sentences and store them somewhere
+#       1. Fix: F1-Score
 
 import warnings
 from argparse import ArgumentParser
@@ -209,26 +203,33 @@ def get_intent_and_entities(original_transcription, enhanced_transcription, cont
     Returns:
         Tuple with intent and list of entities
     """
-
     def _handle_parses(parses):
         for p in parses:
-            if not p["sentence"].strip() or (
-                not p["entities"] and p["intent"] not in ["affirm", "deny"]
-            ):
+            if not p["sentence"].strip():
                 continue
+
             pAdj = {
                 "sentence": p["sentence"],
                 "intent": p["intent"],
                 "entities": [],
             }
-            for _, v in p["entities"].items():
+
+            for _, v in p.get("entities", {}).items():
                 entity_data = v.copy()
                 entity_data["role"] = v["role"]
-                entity_data.pop("group")
-                entity_data.pop("idx")
+                entity_data.pop("group", None)
+                entity_data.pop("idx", None)
                 pAdj["entities"].append(entity_data)
+
             return pAdj
-        return logger.error(f"Empty parse: {parses}")
+
+        logger.error(f"Empty parse: {parses}")
+
+        return {
+            "sentence": "",
+            "intent": "unknown",
+            "entities": [],
+        }
 
     original_parses = semanticLabelling(original_transcription, context)
     enhanced_parses = semanticLabelling(enhanced_transcription, context)
