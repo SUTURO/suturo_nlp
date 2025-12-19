@@ -1,11 +1,5 @@
 # TODO:
-#       1. Some sentences are classified false, even tough they are correct
-#          Example:
-#               My name is Sarah (Correct)
-#               My name is sara (incorrect)
-#           In our case this is not completely wrong.
-#       2. Add result summary to json file
-#       3. Collect all wrong sentences and store them somewhere
+#       1. Fix: F1-Score
 
 import warnings
 from argparse import ArgumentParser
@@ -209,26 +203,33 @@ def get_intent_and_entities(original_transcription, enhanced_transcription, cont
     Returns:
         Tuple with intent and list of entities
     """
-
     def _handle_parses(parses):
         for p in parses:
-            if not p["sentence"].strip() or (
-                not p["entities"] and p["intent"] not in ["affirm", "deny"]
-            ):
+            if not p["sentence"].strip():
                 continue
+
             pAdj = {
                 "sentence": p["sentence"],
                 "intent": p["intent"],
                 "entities": [],
             }
-            for _, v in p["entities"].items():
+
+            for _, v in p.get("entities", {}).items():
                 entity_data = v.copy()
                 entity_data["role"] = v["role"]
-                entity_data.pop("group")
-                entity_data.pop("idx")
+                entity_data.pop("group", None)
+                entity_data.pop("idx", None)
                 pAdj["entities"].append(entity_data)
+
             return pAdj
-        return logger.error(f"Empty parse: {parses}")
+
+        logger.error(f"Empty parse: {parses}")
+
+        return {
+            "sentence": "",
+            "intent": "unknown",
+            "entities": [],
+        }
 
     original_parses = semanticLabelling(original_transcription, context)
     enhanced_parses = semanticLabelling(enhanced_transcription, context)
@@ -401,12 +402,15 @@ def test_file(model, ground_truth, file, context):
     )
 
     return {
+        # File data
         "Condition": condition,
         "Filename": filename,
         "Category": category,
+        # Sentences
         "Ground_Truth": ground_truth_text,
         "Normal_Transcription": normal_transcription,
         "Enhanced_Transcription": enhanced_transcription,
+        # Metrics
         "WER_Normal": calculate_wer(ground_truth_text, normal_transcription),
         "WER_Enhanced": calculate_wer(ground_truth_text, enhanced_transcription),
         "Precision_Normal": normal_precision,
@@ -415,20 +419,22 @@ def test_file(model, ground_truth, file, context):
         "Recall_Enhanced": enhanced_recall,
         "F1_Normal": normal_f1,
         "F1_Enhanced": enhanced_f1,
+        # Intents
         "Ground_Truth_Intent": ground_truth_intent,
         "Normal_Transcription_Intent": normal_intent,
         "Enhanced_Transcription_Intent": enhanced_intent,
         "Correct_Intent_Normal": compare_intent(ground_truth_intent, normal_intent),
         "Correct_Intent_Enhanced": compare_intent(ground_truth_intent, enhanced_intent),
-        "Ground_Truth_Entities": ground_truth_entities,
-        "Normal_Transcription_Entities": normal_entities,
-        "Enhanced_Transcription_Entities": enhanced_entities,
+       # Entities
         "Correct_Entities_Normal": compare_entities(
             ground_truth_entities, normal_entities
         ),
         "Correct_Entities_Enhanced": compare_entities(
             ground_truth_entities, enhanced_entities
         ),
+        "Ground_Truth_Entities": ground_truth_entities,
+        "Normal_Transcription_Entities": normal_entities,
+        "Enhanced_Transcription_Entities": enhanced_entities,
     }
 
 
@@ -608,7 +614,7 @@ def save_results(dataframe):
     Returns:
         None
     """
-    dataframe.to_json(RESULT_FILE, indent=2, orient="records")
+    dataframe.to_json(RESULT_FILE, indent=4, orient="records")
 
 def save_wrong_sentences(df, file="wrong_sentences.txt"):
         wrong = df[(df["Correct_Intent_Normal"] == False) |

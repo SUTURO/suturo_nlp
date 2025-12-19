@@ -59,7 +59,7 @@ ground_truth:
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-        
+
   # ======================================
   #             gpsr
   # ======================================
@@ -86,10 +86,10 @@ ground_truth:
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-        
+
   # ======================================
   #             gpsr3
-  # ======================================       
+  # ======================================
   gpsr3:
     text: "Go to the living room and get the milk. Then, take it to the kitchen and put it on the table."
     intent: "Navigation"
@@ -118,70 +118,3 @@ ground_truth:
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-
-  # ======================================
-  #             receptionist2
-  # ======================================       
-  receptionist2:
-    text: "Hey my name is Ben, I like to watch youtube and my favorite drink is cola"
-    intent: "Receptionist"
-    entities:
-      - role: "Person"
-        value: "Ben"
-        entity: "NaturalPerson"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-      - role: "hobby"
-        value: "youtube"
-        entity: "Interest"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-      - role: "Item"
-        value: "cola"
-        entity: "drink"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-        
-  # ======================================
-  #             receptionist1
-  # ======================================
-  receptionist1:
-    text: "I like to play basketball."
-    intent: "Receptionist"
-    entities:
-      - role: "hobby"
-        value: "basketball"
-        entity: "Interest"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-
-  # ======================================
-  #             restaurant 
-  # ======================================       
-  restaurant1:
-    text: "I would like to have 2 burger, a bowl of chilli con carne and a wine bottle"
-    intent: "Order"
-    entities:
-      - role: "Item"
-        value: "burger"
-        entity: "food"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-      - role: "Item"
-        value: "chili con carne"
-        entity: "food"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-      - role: "Item"
-        value: "wine bottle"
-        entity: "drink"
-        propertyAttribute: []
-        actionAttribute: []
-        numberAttribute: []
-        
