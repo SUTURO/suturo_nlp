@@ -6,27 +6,37 @@ import numpy as np
 import rclpy
 import scipy as sp
 import scipy.io.wavfile
+from audio_common_msgs.msg import AudioStamped  # Not more in use?
 from rclpy.node import Node
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from std_msgs.msg import String, UInt8MultiArray
 
-AudioMsg = UInt8MultiArray
-# from audio_common_msgs.msg import AudioData
+AudioMsg = AudioStamped
 
 
 class DoorbellDetectionNode(Node):
     """
-     A node that detects a doorbell ring to start the challenges.
-     When a doorbell is detected, we publish a string via topic.
+    A node that detects a doorbell ring to start the challenges.
+    When a doorbell is detected, we publish a string via topic.
     """
 
     def __init__(self, args):
+        qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
         # Publisher
         super().__init__("doorbell_detection")
         self.publisher = self.create_publisher(String, args.outputTopic, 1)
 
         # Subscriber for microphone data (/audio/audio is HSR?)
         self.subscription = self.create_subscription(
-            AudioMsg, "/audio/audio", self.callback_fft, 10
+            # topic: "/audio" not yet finalized.
+            AudioMsg,
+            "/audio",
+            self.callback_fft,
+            qos,
         )
         self.get_logger().info("Doorbell detection started")
 
@@ -47,9 +57,13 @@ class DoorbellDetectionNode(Node):
         Arguments:
             data: New audio data from the microphone.
         """
-        new_data = np.frombuffer(bytes(data.data), dtype=np.int16)
+        # audio.audio_data for AudioStamped
+        audio_data = data.audio.audio_data
+        new_data = np.array(audio_data.int16_data, dtype=np.int16)
+        # remove the len(new_data) old data and append the new data -> keep the same buffer size
         self.buffer = np.concatenate([self.buffer[len(new_data) :], new_data])
-        self.get_logger().debug(f"New data received: {self.buffer}")
+        # FIXME: for debug; maybe remove later
+        self.get_logger().info(f"New data received: {self.buffer}")
 
         self.divider += 1
         if self.divider >= 100:
@@ -69,8 +83,10 @@ class DoorbellDetectionNode(Node):
             self.publisher.publish(msg)
             self.get_logger().info("Doorbell detected!")
 
+            # TODO: Maybe stop Node if detected?
 
-def main():
+
+def main() -> None:
     rclpy.init()
 
     parser = ArgumentParser()
@@ -96,7 +112,13 @@ def main():
     parsed_args = parser.parse_args()
 
     node = DoorbellDetectionNode(parsed_args)
-    rclpy.spin(node)
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
 
 
 if __name__ == "__main__":
