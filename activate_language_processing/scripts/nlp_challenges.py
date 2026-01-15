@@ -14,8 +14,10 @@ from Levenshtein import distance as lev_dist
 import re
 import inflect
 
+home = Path.home()
+
 # Load the entities.yml file from our rasa model
-with open('/home/simon/ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
+with open(home / 'ros/nlp_ws/src/suturo_rasa/entities.yml', 'r') as file:
     data = yaml.safe_load(file)
 
 # Create separate lists for our entities
