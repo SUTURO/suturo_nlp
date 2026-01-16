@@ -174,12 +174,20 @@ class NLU:
         """
         names, nouns = nounDictionary(text)
 
-        if not names:
-            return f"The user wants to order one or several of these food or drink items: {' , '.join(nouns)}."
-        elif not nouns:
+        if not names and not nouns:
+            return "The user is ordering food or drinks, or introducing itself."
+
+        if names and nouns:
+            return (
+                f"The user says their name is one of these: {' , '.join(names)}."
+                f"They might like to drink one of these: {' , '.join(nouns)}."
+            )
+
+        # Nouns must be empty here
+        if names:
             return f"The user says their name is one of these: {' , '.join(names)}."
         else:
-            return f"The user says their name is one of these: {' , '.join(names)}. And they like to drink one of these: {' , '.join(nouns)}."
+            return f"The user wants to order one or several of these food or drink items: {' , '.join(nouns)}."
 
     def _process_parses(self, parses: list) -> None:
         """
@@ -257,6 +265,7 @@ class Audio:
 
         with self.context.lock:
             if not is_transcribing(self.context):
+                # Create a new Thread
                 self.context.transcriber = Thread(target=self.transcriber_fn)
                 self.context.transcriber.start()
 
@@ -332,27 +341,21 @@ class Audio:
         self,
         rec: sr.Recognizer,
         start_silence: float = START_SILENCE,
-        # FIXME: phrase_time_limit maybe not necessary?
         phrase_time_limit: float = None,
-    ) -> sr.AudioData:
+    ) -> AudioData:
         """
-        Dirty hack to implement some nice functionality of speech_recognition on a data stream
-        obtained via a ros topic.
-        (TODO: this would more elegantly be implemented via subclassing speech_recognition.AudioSource)
+        Speech recognition on a data stream using queue.
+        Queue contains binary buffers where each buffer has raw audio data.
 
         Args:
-            soundQueue: a queue where elements are binary buffers where each buffer has raw audio data
-                        in little endian 16bit/sample format. Blocking read attempts will be done to
-                        this queue, so it is expected that some other source, e.g. a subscriber
-                        callback, will feed data into it
-            rec: speech_recognition.Recognizer used to call various sound processing functionality
-            startSilence: in seconds, the minimum time before speech starts
-            sampleRate: in hertz, how many samples in a second
-            phraseTimeLimit: None or a maximum duration, in seconds, for a phrase recording
-
-        Returns:
-            a speech_recognition.AudioData which contains a recording of speech.
+            rec: Speech recognizer
+            start_silence: Duration of ambient noise calibration
+            phrase_time_limit: Maximum recording duration
         """
+        # Step 1: adjust to noise level
+        # Assumes speech is preceded by at least <startSilence> seconds silence. Loops through this interval
+        # to adjust an energy threshold that will subsequently be used to detect speech start.
+
         # Total time of adjusting noise level
         elapsed_time = 0.0
 
@@ -365,28 +368,30 @@ class Audio:
         try_node_logger("Say something (using HSR microphone)!", self.context)
 
         frames = collections.deque()
-        frame_time = 0.0
 
-        # TODO: Speech recording as separate function
+        # Step 2: wait for speech to begin
+        # beep.SoundRequestPublisher().publish_sound_request()
+        # If the energy level exceeds the threshold, consider speech started
+
         # Wait to speech to begin
-        while True:
-            buffer, sound_duration, energy = self._get_next_buffer()
-            frames.append((sound_duration, buffer))
-            frame_time += sound_duration
+        frame_time = self._speech_beginning(rec, frames)
 
-            # Wait until energy exceeds threshold, indicating speech
-            if energy > rec.energy_threshold:
-                break
-
-            while frame_time > rec.non_speaking_duration:
-                d, _ = frames.popleft()
-                # remove old frames
-                frame_time -= d
-
-            if rec.dynamic_energy_threshold:
-                self._adjust_energy_level(rec, sound_duration, energy)
+        # At this step, frames contains a list of buffers, and the length of time these buffers recorded is given in
+        # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
+        # Step 3: keep adding to the recorded speech until a long enough pause is detected.
 
         # Record until pause detected
+        self._detect_pause(rec, frames, frame_time, phrase_time_limit)
+
+        return self._convert_to_bytestring(frames)
+
+    def _detect_pause(
+        self,
+        rec: sr.Recognizer,
+        frames: collections.deque,
+        frame_time: float,
+        phrase_time_limit: float,
+    ) -> None:
         pause_time = 0.0
 
         while True:
@@ -406,19 +411,38 @@ class Audio:
             if pause_time > rec.pause_threshold:
                 break
 
-        # TODO: Convert frames in Bytes as function
+    def _speech_beginning(self, rec: sr.Recognizer, frames: collections.deque) -> float:
+        frame_time = 0.0
+
+        while True:
+            buffer, sound_duration, energy = self._get_next_buffer()
+            frames.append((sound_duration, buffer))
+            frame_time += sound_duration
+
+            # Wait until energy exceeds threshold, indicating speech
+            if energy > rec.energy_threshold:
+                break
+
+            while frame_time > rec.non_speaking_duration:
+                d, _ = frames.popleft()
+                # remove old frames
+                frame_time -= d
+
+            if rec.dynamic_energy_threshold:
+                self._adjust_energy_level(rec, sound_duration, energy)
+
+        return frame_time
+
+    @staticmethod
+    def _convert_to_bytestring(frames) -> AudioData:
         # Concatenate all the audio frames in frames into a single byte string called frame_data.
         frame_data = b"".join([x[1] for x in frames])
-
         # Convert the now byte string "frame_data" into a NumPy array called frame_data_array.
         frame_data_array = np.frombuffer(frame_data, dtype=np.int16)
-
         # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
         noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=SAMPLE_RATE)
-
         # Convert the cleaned audio data in noise_reduced_data back into a byte string format, frame_data_clean.
         frame_data_clean = noise_reduced_data.tobytes()
-
         # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
         return sr.AudioData(frame_data_clean, SAMPLE_RATE, SAMPLE_WIDTH)
 
