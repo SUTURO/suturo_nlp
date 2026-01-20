@@ -198,7 +198,7 @@ class NLU:
             parses: The parses from semanticLabelling.
         """
         # Special case intents
-        special = {"affirm", "deny", "Callout", "Hobbies"}
+        special = {"affirm", "deny", "Callout", "Hobbies", "talk"}
 
         for p in parses:
             # skipping if sentence or entities list is empty
