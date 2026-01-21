@@ -41,7 +41,9 @@ from std_msgs.msg import (
 AudioMsg = UInt8MultiArray  # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
 
 # Load the Whisper model for transcription
-model = whisper.load_model("base", device="cpu")
+# base.en english (only) model with 74 M parameters.
+# small.en english (only) model with 244 M parameters.
+model = whisper.load_model("small.en")
 
 
 # ----- Constants -----
@@ -92,8 +94,8 @@ class Context:
     # speaking: bool = False
 
     # Currently not is use. nlp.py maybe needs an update
-    # intent2Roles: dict = field(default_factory=dict)
-    # role2Roles: dict = field(default_factory=dict)
+    intent2Roles: dict = field(default_factory=dict)
+    role2Roles: dict = field(default_factory=dict)
 
 
 def try_node_logger(msg: str, context: Context):
@@ -161,6 +163,9 @@ class NLU:
                 {
                     "nlp": self.context.nlp,
                     "rasaURI": self.context.nluURI,
+                    # to avoid errors in nlp.py even if they are empty
+                    "role2Roles": self.context.role2Roles,
+                    "intent2Roles": self.context.intent2Roles,
                 },
             )
 
