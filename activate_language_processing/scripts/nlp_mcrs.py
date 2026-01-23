@@ -1,434 +1,668 @@
-#!/home/simon/venvs/rasa_venv/bin/python3
-
-
-from argparse import ArgumentParser
-import speech_recognition as sr
+import audioop
+import collections
 import json
 import sys
 import threading
-import audioop
-import collections
-import numpy
-import threading
-from queue import Queue
-from std_msgs.msg import String
-#from audio_common_msgs.msg import AudioData
-import spacy
-#import activate_language_processing.beep as beep # type: ignore
-from activate_language_processing.nlp import semanticLabelling # type: ignore
-import noisereduce as nr
-from nlp_challenges import *
-import numpy as np
-import librosa
-from pathlib import Path
 import warnings
-warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
-import whisper
-import soundfile as sf
+from argparse import ArgumentParser
+from dataclasses import dataclass, field
+from pathlib import Path
+from queue import Queue
+from threading import Thread
+from typing import Optional
+
+import librosa
+import noisereduce as nr
+import numpy as np
+import spacy
+
+# from audio_common_msgs.msg import AudioData
+import speech_recognition as sr
+from activate_language_processing.nlp import semanticLabelling  # type: ignore
+from rclpy.publisher import Publisher
+from speech_recognition import AudioData, Recognizer
+from std_msgs.msg import String
+
+from nlp_challenges import *
+
+warnings.filterwarnings(
+    "ignore", message="FP16 is not supported on CPU; using FP32 instead"
+)
+
 import rclpy
+import soundfile as sf
+import whisper
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
+from std_msgs.msg import (
+    UInt8MultiArray,
+)  # Import UInt8MultiArray for ROS2 compatibility
 
-from std_msgs.msg import UInt8MultiArray  # Import UInt8MultiArray for ROS2 compatibility
-AudioMsg = UInt8MultiArray # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
-model = whisper.load_model("small.en")  # Load the Whisper model for transcription
+AudioMsg = UInt8MultiArray  # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
 
-def _isTranscribing(context):
+# Load the Whisper model for transcription
+# base.en english (only) model with 74 M parameters.
+# small.en english (only) model with 244 M parameters.
+model = whisper.load_model("small.en")
+
+
+# ----- Constants -----
+SAMPLE_RATE = 16000
+CHUNK_SIZE = 32000  # 16kHz = 2 Sec
+SAMPLE_WIDTH = 2  # 2 bytes
+START_SILENCE = 0.2
+
+
+@dataclass
+class Context:
     """
-    Checks whether a transcription process is currently active and running. 
+    Configurations about the node, audio and other data.
+
+    Attributes:
+        node (Node): ROS2 node instance
+        pub (Publisher): ROS2 publisher. Default from args: 'nlp_out'
+        stt (Publisher): ROS2 publisher for Speech-to-text. Default from args: 'whisper_out'
+        nluURI (str): URI for the Rasa model. Default from args: http://localhost:5005/model/parse
+        useHSR (bool): Whether to use the HSR mic
+        useAudio (bool): Whether to use an audio file
+        audio (str): Audio path or './' for microphone
+        lock (threading.Lock): Lock to avoid race conditions
+        nlp (spacy.language.Language): Language model
+        data (np.ndarray): Audio data
+        queue (Queue): Queue of audio data
+        transcriber (threading.Thread): Thread for transcription
+        listening (bool): Boolean if audio input is currently captured
+    """
+
+    node: Node
+    pub: Publisher
+    stt: Publisher
+
+    nluURI: str
+    useHSR: bool = False
+    useAudio: bool = False
+    audio: str = "./"
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+    nlp: spacy.language.Language = spacy.load("en_core_web_sm")
+
+    data: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int16))
+    queue: Queue = field(default_factory=Queue)
+    transcriber: Optional[Thread] = None
+    listening: bool = False
+
+    # speaking: bool = False
+
+    # Currently not is use. nlp.py maybe needs an update
+    intent2Roles: dict = field(default_factory=dict)
+    role2Roles: dict = field(default_factory=dict)
+
+
+def try_node_logger(msg: str, context: Context):
+    """
+    Log message with ROS2 node logger. Otherwise, use print
+
+    Args:
+        msg: Message to log
+        context: Shared context
+    """
+    if isinstance(context.node, Node):
+        context.node.get_logger().info(msg)
+    else:
+        print(msg)
+
+
+def is_transcribing(context: Context) -> bool:
+    """
+    Checks whether a transcription process is currently active and running.
     Returns True if a transcriber object exists and is actively running (i.e., the transcription process is ongoing), and False otherwise.
 
     Args:
-        context: a dictionary containing several flags and useful variables
-            transcriber: The transcriber object, which is expected to be either a thread or process responsible for transcription.
+        context: Shared context
     """
-    return (context["transcriber"] is not None) and (context["transcriber"].is_alive())
+    return (context.transcriber is not None) and (context.transcriber.is_alive())
 
-def nluInternal(text, temp_fp, context):
-    """
-    Process a text input to extract semantic information like intent and entities, 
-    formats the extracted data, and publishes it as JSON to a ROS topic.
 
-    Args:
-        text: The input text to be analyzed.
-        context: a dictionary containing several flags and useful variables:
-            lock: a threading lock to ensure thread-safe access to shared resources.
-            pub: a ROS publisher object to publish processed results to a specified topic.
+class NLU:
     """
-    with context["lock"]:  # Lock so only one thread may execute this code at a time
-        #text = replace_text(text, audio)
-        names, nouns = nounDictionary(text)  # Ensure unpacking matches the corrected return values
-        
-        if not names:
-            prompt = context.get("transcription_hint", f"The user wants to order one or several of these food or drink items: {' , '.join(nouns)}.")
-        elif not nouns:
-            prompt = context.get("transcription_hint", f"The user says their name is one of these: {' , '.join(names)}.")
+    Natural Language Understanding (NLU).
+
+    Handles semantic parsing of text.
+    """
+
+    def __init__(self, context: Context):
+        self.context = context
+
+    def nlu_internal(self, text: str, temp_fp: str | Path) -> None:
+        """
+        Process a text input to extract semantic information like intent and entities,
+        formats the extracted data, and publishes it as JSON to a ROS topic.
+
+        Args:
+            text: The input text to be analyzed.
+            temp_fp: Path to the audio file.
+        """
+        # Lock so only one thread may execute this code at a time
+        with self.context.lock:
+            # Check for names and noun and get the fitting prompt
+            prompt = self._get_prompts(text)
+
+            try_node_logger(
+                f"Using Prompt: '{prompt}'",
+                self.context,
+            )
+
+            # Transcribe the audio file using Whisper with an initial prompt
+            result = model.transcribe(temp_fp, initial_prompt=prompt)
+            text = result["text"]
+
+            # Analyze text and return parses (a structured object like a dictionary)
+            parses = semanticLabelling(
+                text,
+                # nlp.py wants a dict
+                {
+                    "nlp": self.context.nlp,
+                    "rasaURI": self.context.nluURI,
+                    # to avoid errors in nlp.py even if they are empty
+                    "role2Roles": self.context.role2Roles,
+                    "intent2Roles": self.context.intent2Roles,
+                },
+            )
+
+            # Check and publish
+            self._process_parses(parses)
+
+    @staticmethod
+    def _get_prompts(text: str) -> str:
+        """
+        Returns the prompt for whisper based on the found names and nouns from `nounDictionary()`.
+        """
+        names, nouns = nounDictionary(text)
+
+        if not names and not nouns:
+            return "The user is ordering food or drinks, or introducing itself."
+
+        if names and nouns:
+            return (
+                f"The user says their name is one of these: {' , '.join(names)}."
+                f"They might like to drink one of these: {' , '.join(nouns)}."
+            )
+
+        # Nouns must be empty here
+        if names:
+            return f"The user says their name is one of these: {' , '.join(names)}."
         else:
-            prompt = context.get("transcription_hint", f"The user says their name is one of these: {' , '.join(names)}. And they like to drink one of these: {' , '.join(nouns)}.")
-        
-        # use node logger if available
-        if "node" in context and isinstance(context["node"], Node):
-            context["node"].get_logger().info(f"Using prompt: {prompt}")
-        else:
-            print(f"Using prompt: {prompt}")
+            return f"The user wants to order one or several of these food or drink items: {' , '.join(nouns)}."
 
-        result = model.transcribe(temp_fp, initial_prompt=prompt)  # Transcribe the audio file using Whisper with an initial prompt
-        text = result["text"]
+    def _process_parses(self, parses: list) -> None:
+        """
+        Processes the parses list to extract semantic information. It checks if the String is emtpy and if special intents are available.
+        Afterward publish the result as JSON with the publisher.
 
-        parses = semanticLabelling(text, context)  # Analyze text and return parses (a structured object like a dictionary)
-        
+        Args:
+            parses: The parses from semanticLabelling.
+        """
+        # Special case intents
+        special = {"affirm", "deny", "Callout", "Hobbies", "talk"}
+
         for p in parses:
-            
-            # Skip processing if sentence is empty or entities list is empty                
+            # skipping if sentence or entities list is empty
             if not p["sentence"].strip() or not p["entities"]:
-                if (p["intent"] != 'affirm' and p["intent"] != "deny" and p["intent"] != "Callout" and p["intent"] != "Hobbies") or not p["sentence"].strip():
-                    if "node" in context and isinstance(context["node"], Node):
-                        context["node"].get_logger().info(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
-                    else:
-                        print(f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'")
-                    continue  
-            
-            pAdj = {"sentence": p["sentence"], "intent": p["intent"], "entities": []}  # Create a dictionary and initialize an "entities" list
-            print(f"Entity items: {p['entities'].items()}")
-            for k, v in p["entities"].items():
-                entity_data = v.copy()  # Copy entity’s data dictionary
-                entity_data.pop("group")  # Remove metadata that is not needed
-                entity_data.pop("idx")  # Remove metadata that is not needed
-                pAdj["entities"].append(entity_data)  # Append the processed entity to the "entities" list
-            # publish as std_msgs.msg.String in ROS2
-            context["pub"].publish(String(data=json.dumps(pAdj)))
-            if "node" in context and isinstance(context["node"], Node):
-                context["node"].get_logger().info("[ALP]: Done. Waiting for next command.")
-            else:
-                print("[ALP]: Done. Waiting for next command.")
+                if p["intent"] not in special:
+                    try_node_logger(
+                        f"[ALP]: Skipping empty or invalid parse. Sentence: '{p['sentence']}', Intent: '{p['intent']}'",
+                        self.context,
+                    )
+                    continue
+
+            fmt_parse = self._format_parses(p)
+            self.context.pub.publish(String(data=json.dumps(fmt_parse)))
+            try_node_logger("[ALP]: Done. Waiting for next command.", self.context)
+
+    @staticmethod
+    def _format_parses(p: dict) -> dict:
+        """
+        Formats the parses. We only care about the Sentence, Intent and Entities.
+
+        Args:
+            p: The parse to be formatted.
+
+        Returns:
+            The formatted parses as a dictionary.
+        """
+        pAdj = {
+            "sentence": p["sentence"],
+            "intent": p["intent"],
+            "entities": [],  # new empty entities list
+        }
+        # try_node_logger(f"Entity items: {p['entities'].items()}", self.context)
+        print(f"Entity items: {p['entities'].items()}")
+
+        for k, v in p["entities"].items():
+            entity_data = v.copy()  # Copy entity’s data dictionary
+            entity_data.pop("group")  # Remove metadata that is not needed
+            entity_data.pop("idx")  # Remove metadata that is not needed
+            pAdj["entities"].append(entity_data)
+
+        return pAdj
 
 
-def record_hsr(data, context):
-    '''
-    Callback function for the /audio/audio subscriber to use HSR's microphone for recording. 
-    Accumulates a numpy array with the recieved AudioData and puts it into a queue which 
-    gets processed by whisper an rasa.
-
-    Args:
-        data: AudioData recieved from ros topic /audio/audio
-        context: a dictionary containing several flags and useful variables
-            queue: queue to store the audio data.
-            data: accumulated audio data from HSR's microphone.
-            lock: lock to ensure that the record_hsr callback does not interfere with the record callback.
-            transcriber: thread to perform sound to text
-    '''
-    with context["lock"]:
-        if context["listening"]:
-            # Normalize incoming message payloads to raw bytes first (works for bytes, lists of ints, memoryviews, etc.)
-            try:
-                raw = bytes(data.data)
-            except Exception:
-                # fallback: try converting elements to ints then to bytes
-                raw = bytes([int(x) & 0xFF for x in data.data])
-            # accumulating raw data in numpy array (16-bit little-endian signed samples expected)
-            context["data"] = numpy.concatenate([context["data"], numpy.frombuffer(raw, dtype=numpy.int16)])
-            
-            """
-            Checks if the length of context["data"] has at least 32,000 samples. Why do we do this?
-            Assuming a sample rate of 16,000 Hz, 32,000 samples would represent 2 seconds of audio. By waiting until the 
-            data array has 2 seconds' worth of audio, the we accumulate enough data to process.     
-            """
-            if len(context["data"]) >= 32000:
-                noise_sample = context["data"][:16000] # We extract the first 16.000 points of data to use as reference for noisereduction.
-                reduced_noise_data = nr.reduce_noise(y=context["data"], sr=16000, y_noise=noise_sample) # Uses the noise sample to remove backround noise from the entire data.
-
-                context["queue"].put(reduced_noise_data)  # Adds the reduced_noise_data in the context["queue"].
-                context["data"] = numpy.array([], dtype=numpy.int16) # Reset the array to be empty.
-
-
-def startListener(msg, context):
+class Audio:
     """
-    In case transcription is not already in process: creates a new thread that executes the transcribeFn function when stared
+    Handling the Audio input.
 
-    msg: the message that triggers the start of the listener.
-    context: a dictionary containing several flags and useful variables
-        lock: a threading lock to ensure thread-safe access to shared resources.
-        transcriber: the transcriber thread object, which will be created and started if transcription is not currently active.
+    To capture audio we can use audio files, a microphone or the HSR microphone.
+    Additionally, we handle the silence detection and noise reduction.
     """
-    if "node" in context and isinstance(context["node"], Node):
-        context["node"].get_logger().info("[ALP] got start signal")
-    else:
-        print("[ALP] got start signal")
-    with context["lock"]:  # Lock so only one thread may execute this code at a time.
-        if not _isTranscribing(context):  # Check if transciption is not already in process.
-            context["transcriber"] = threading.Thread(target=transcriberFn, args=(context,))  # Create a new thread that executes the transcriberFn function when started
-            context["transcriber"].start()  # Start the transcription.
 
-def audio_data_to_numpy(audio_data, target_sr=16000):
-    """
-    Convert speech_recognition.AudioData to a NumPy float32 waveform.
-    
-    Args:
-        audio_data (speech_recognition.AudioData): Audio from `r.listen()`.
-        target_sr (int): Target sample rate (default: 16000, common in speech recognition).
-    
-    Returns:
-        np.ndarray: Audio waveform in float32 format (normalized to [-1, 1]).
-        int: Sample rate.
-    """
-    # Get raw audio data as bytes
-    raw_data = audio_data.get_raw_data()
-    
-    # Convert to NumPy array (int16)
-    audio_array = np.frombuffer(raw_data, dtype=np.int16)
-    
-    # Convert to float32 and normalize to [-1, 1]
-    waveform = librosa.util.buf_to_float(audio_array, dtype=np.float32)
-    
-    # Resample if needed
-    if audio_data.sample_rate != target_sr:
-        waveform = librosa.resample(
-            waveform,
-            orig_sr=audio_data.sample_rate,
-            target_sr=target_sr
-        )
-    
-    return waveform, target_sr
+    def __init__(self, context: Context):
+        self.context = context
+        self.nlu = NLU(context)
 
-def transcriberFn(context):
-    """
-    Responsible for handling the transcription process.
-    Captures audio input, transcribes it using the whisper speech recognition model, and then publishes the result.
+    def start_listener(self, _msg) -> None:
+        """
+        Starts a transcription thread if none is currently active.
 
-    Args:
-    context: a dictionary containing shared resources and state information required for transcription. It should include:
-        lock: a threading lock to ensure thread-safe access to shared resources.
-        useHSR: a flag indicating whether to use the HSR microphone (`True`) or the Backpack microphone (`False`).
-        queue: a queue used for handling audio data when using the HSR microphone.
-        data: an array for storing audio data when using the HSR microphone.
-        listening: a flag indicating whether transcription is currently in progress.
-        stt: a ROS publisher object used to publish the transcription result to other ROS nodes.
-    """
-    r = sr.Recognizer()
-    r.pause_threshold = 1.0
+        Args:
+            _msg: The message that triggers the start of the listener.
+        """
+        try_node_logger("[ALP] got start signal", self.context)
 
-    if context["useHSR"]:
-        if "node" in context and isinstance(context["node"], Node):
-            context["node"].get_logger().info("Waiting for the beep...1")
+        with self.context.lock:
+            if not is_transcribing(self.context):
+                # Create a new Thread
+                self.context.transcriber = Thread(target=self.transcriber_fn)
+                self.context.transcriber.start()
+
+    def transcriber_fn(self) -> None:
+        """
+        Capture audio from different sources, depending on the giving flag.
+        Afterward, use the audio input with the NLU pipeline.
+        """
+        r = sr.Recognizer()
+        r.pause_threshold = 1.0
+
+        if self.context.useHSR:
+            audio = self.listen_hsr(r)
+        elif self.context.audio == "./":
+            audio = self.listen_microphone(r)
+        elif self.context.useAudio:
+            audio = self.listen_audio()
         else:
-            print("Waiting for the beep...2")
-        with context["lock"]:
-            context["listening"] = True
-        audio = listen2Queue(context["queue"], r)
-        with context["lock"]:
-            context["listening"] = False
-            context["data"] = np.array([], dtype=np.int16)
-            context["queue"] = Queue()
-    elif context["audio"] == "./":
-        with context["lock"]:
-            context["listening"] = True
+            raise ValueError("Invalid audio source configuration.")
+
+        try_node_logger("[Whisper]: Processing...", self.context)
+
+        if isinstance(audio, sr.AudioData):
+            waveform, sample_rate = self._audio_data_to_numpy(audio)
+            temp_fp = "/tmp/audio.wav"
+            sf.write(temp_fp, waveform, sample_rate)
+        else:
+            temp_fp = str(audio)
+
+        self._transcribe_audio(temp_fp)
+
+    def listen_hsr(self, r: Recognizer) -> AudioData:
+        try_node_logger("Waiting for the beep...", self.context)
+        with self.context.lock:
+            self.context.listening = True
+        audio = self.listen_to_queue(r)
+        with self.context.lock:
+            self.context.listening = False
+            self.context.data = np.array([], dtype=np.int16)
+            self.context.queue = Queue()
+
+        return audio
+
+    def listen_microphone(self, r: Recognizer) -> AudioData:
+        with self.context.lock:
+            self.context.listening = True
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, duration=1)
-            if "node" in context and isinstance(context["node"], Node):
-                context["node"].get_logger().info("Speak now...")
-            else:
-                print("Speak now...")
+            try_node_logger("Speak now...", self.context)
             audio = r.listen(source)
-        with context["lock"]:
-            context["listening"] = False
-    elif context["useAudio"]:
-        audio_path = context["audio"]
+        with self.context.lock:
+            self.context.listening = False
+
+        return audio
+
+    def listen_audio(self) -> Path:
+        audio_path = self.context.audio
         if isinstance(audio_path, str):
             audio_path = Path(audio_path)
         audio = audio_path
-    else:
-        raise ValueError("Invalid audio source configuration")
 
-    if "node" in context and isinstance(context["node"], Node):
-        context["node"].get_logger().info("[Whisper]: Processing...")
-    else:
-        print("[Whisper]: Processing...")
-    if isinstance(audio, sr.AudioData):
-        waveform, sr_val = audio_data_to_numpy(audio)
-        temp_fp = "/tmp/audio.wav"
-        sf.write(temp_fp, waveform, sr_val)
-    else:
-        temp_fp = str(audio)
+        return audio
 
-    #prompt = context.get("transcription_hint", "The user might be talking about food, service or greetings.")
-    result = model.transcribe(temp_fp, language="en")  # Transcribe the audio file using Whisper
-    result = result["text"]
-    if "node" in context and isinstance(context["node"], Node):
-        context["node"].get_logger().info("[Whisper]: Done")
-    else:
-        print("[Whisper]: Done")
-    print(f"\nWhisper result : {result}")
-    context["stt"].publish(String(data=result))
-    nluInternal(result, temp_fp, context)
+    def _transcribe_audio(self, temp_fp: Path | str) -> None:
+        result = model.transcribe(temp_fp, language="en")
+        result = result["text"]
+        try_node_logger("[Whisper]: Done", self.context)
+        print(f"\nWhisper result: {result}")
+        self.context.stt.publish(String(data=result))
+        self.nlu.nlu_internal(result, temp_fp)
 
-def listen2Queue(soundQueue: Queue, rec: sr.Recognizer, startSilence=2, sampleRate=16000, phraseTimeLimit=None, context=None) -> sr.AudioData:
-    '''
-    Dirty hack to implement some nice functionality of speech_recognition on a data stream
-    obtained via a ros topic. 
-    (TODO: this would more elegantly be implemented via subclassing speech_recognition.AudioSource)
+    def listen_to_queue(
+        self,
+        rec: sr.Recognizer,
+        start_silence: float = START_SILENCE,
+        phrase_time_limit: float = None,
+    ) -> AudioData:
+        """
+        Speech recognition on a data stream using queue.
+        Queue contains binary buffers where each buffer has raw audio data.
 
-    Args:
-        soundQueue: a queue where elements are binary buffers where each buffer has raw audio data
-                    in little endian 16bit/sample format. Blocking read attempts will be done to 
-                    this queue, so it is expected that some other source, e.g. a subscriber
-                    callback, will feed data into it
-        rec: speech_recognition.Recognizer used to call various sound processing functionality
-        startSilence: in seconds, the minimum time before speech starts
-        sampleRate: in hertz, how many samples in a second
-        phraseTimeLimit: None or a maximum duration, in seconds, for a phrase recording
+        Args:
+            rec: Speech recognizer
+            start_silence: Duration of ambient noise calibration
+            phrase_time_limit: Maximum recording duration
+        """
+        # Step 1: adjust to noise level
+        # Assumes speech is preceded by at least <startSilence> seconds silence. Loops through this interval
+        # to adjust an energy threshold that will subsequently be used to detect speech start.
 
-    Returns:
-        a speech_recognition.AudioData which contains a recording of speech.
-    '''
-    def soundLen(buffer, sampleRate):
-        return (len(buffer) + 0.0) / sampleRate # Computes the duration of the audio buffer in seconds based on its length and sample rate.
+        # Total time of adjusting noise level
+        elapsed_time = 0.0
 
-    def getNextBuffer(soundQueue, sampleRate, sampleWidth):
-        buffer = soundQueue.get() # Retrieves the next buffer from the queue
-        soundQueue.task_done()
-        soundDuration = soundLen(buffer, sampleRate) # Calculate buffer duration
-        energy = audioop.rms(buffer, sampleWidth) # Calculate buffer energy level for detecting speech
-        return buffer, soundDuration, energy
+        # Adjust ambient noise level
+        while elapsed_time < start_silence:
+            buffer, sound_duration, energy = self._get_next_buffer()
+            self._adjust_energy_level(rec, sound_duration, energy)
+            elapsed_time += sound_duration
 
-    def adjustEnergyLevel(rec, soundDuration, energy):
-        # dynamically adjust the energy threshold using asymmetric weighted average.
-        damping = rec.dynamic_energy_adjustment_damping ** soundDuration
+        try_node_logger("Say something (using HSR microphone)!", self.context)
+
+        frames = collections.deque()
+
+        # Step 2: wait for speech to begin
+        # beep.SoundRequestPublisher().publish_sound_request()
+        # If the energy level exceeds the threshold, consider speech started
+
+        # Wait to speech to begin
+        frame_time = self._speech_beginning(rec, frames)
+
+        # At this step, frames contains a list of buffers, and the length of time these buffers recorded is given in
+        # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
+        # Step 3: keep adding to the recorded speech until a long enough pause is detected.
+
+        # Record until pause detected
+        self._detect_pause(rec, frames, frame_time, phrase_time_limit)
+
+        return self._convert_to_bytestring(frames)
+
+    def _detect_pause(
+        self,
+        rec: sr.Recognizer,
+        frames: collections.deque,
+        frame_time: float,
+        phrase_time_limit: float,
+    ) -> None:
+        pause_time = 0.0
+
+        while True:
+            buffer, sound_duration, energy = self._get_next_buffer()
+            frames.append((sound_duration, buffer))
+            frame_time += sound_duration
+
+            # handle phrase being too long by cutting off the audio
+            if phrase_time_limit and frame_time > phrase_time_limit:
+                break
+            # check if speaking has stopped for longer than the pause threshold on the audio input
+            if energy > rec.energy_threshold:
+                pause_time = 0.0
+            else:
+                pause_time += sound_duration
+
+            if pause_time > rec.pause_threshold:
+                break
+
+    def _speech_beginning(self, rec: sr.Recognizer, frames: collections.deque) -> float:
+        frame_time = 0.0
+
+        while True:
+            buffer, sound_duration, energy = self._get_next_buffer()
+            frames.append((sound_duration, buffer))
+            frame_time += sound_duration
+
+            # Wait until energy exceeds threshold, indicating speech
+            if energy > rec.energy_threshold:
+                break
+
+            while frame_time > rec.non_speaking_duration:
+                d, _ = frames.popleft()
+                # remove old frames
+                frame_time -= d
+
+            if rec.dynamic_energy_threshold:
+                self._adjust_energy_level(rec, sound_duration, energy)
+
+        return frame_time
+
+    @staticmethod
+    def _convert_to_bytestring(frames) -> AudioData:
+        # Concatenate all the audio frames in frames into a single byte string called frame_data.
+        frame_data = b"".join([x[1] for x in frames])
+        # Convert the now byte string "frame_data" into a NumPy array called frame_data_array.
+        frame_data_array = np.frombuffer(frame_data, dtype=np.int16)
+        # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
+        noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=SAMPLE_RATE)
+        # Convert the cleaned audio data in noise_reduced_data back into a byte string format, frame_data_clean.
+        frame_data_clean = noise_reduced_data.tobytes()
+        # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
+        return sr.AudioData(frame_data_clean, SAMPLE_RATE, SAMPLE_WIDTH)
+
+    def record_hsr(self, msg: AudioMsg) -> None:
+        """
+        Callback function for the /audio/audio subscriber to use HSR's microphone for recording.
+        Accumulates a numpy array with the recieved AudioData and puts it into a queue which
+        gets processed by whisper an rasa.
+
+        Args:
+            msg: AudioData recieved from ros topic /audio/audio
+            context: a dictionary containing several flags and useful variables
+                queue: queue to store the audio data.
+                data: accumulated audio data from HSR's microphone.
+                lock: lock to ensure that the record_hsr callback does not interfere with the record callback.
+                transcriber: thread to perform sound to text
+        """
+        with self.context.lock:
+            if self.context.listening:
+                # Normalize incoming message payloads to raw bytes first (works for bytes, lists of ints, memoryviews, etc.)
+                try:
+                    raw = bytes(msg.data)
+                except Exception:
+                    # fallback: try converting elements to ints then to bytes
+                    raw = bytes([int(x) & 0xFF for x in msg.data])
+                # accumulating raw data in numpy array (16-bit little-endian signed samples expected)
+                self.context.data = np.concatenate(
+                    [self.context.data, np.frombuffer(raw, dtype=np.int16)]
+                )
+
+                """
+                Checks if the length of context["data"] has at least 32,000 samples. Why do we do this?
+                Assuming a sample rate of 16,000 Hz, 32,000 samples would represent 2 seconds of audio. By waiting until the 
+                data array has 2 seconds' worth of audio, the we accumulate enough data to process.     
+                """
+                if len(self.context.data) >= CHUNK_SIZE:
+                    # We extract the first 16.000 points of data to use as reference for noisereduction.
+                    noise_sample = self.context.data[:SAMPLE_RATE]
+                    # Uses the noise sample to remove backround noise from the entire data.
+                    reduced_noise_data = nr.reduce_noise(
+                        y=self.context.data, sr=SAMPLE_RATE, y_noise=noise_sample
+                    )
+
+                    # Adds the reduced_noise_data in the context["queue"].
+                    self.context.queue.put(reduced_noise_data)
+                    # Reset the array to be empty.
+                    self.context.data = np.array([], dtype=np.int16)
+
+    @staticmethod
+    def _audio_data_to_numpy(
+        audio_data: AudioData, target_sr: int = SAMPLE_RATE
+    ) -> tuple[np.ndarray, int]:
+        """
+        Convert speech_recognition.AudioData to a NumPy float32 waveform.
+
+        Args:
+            audio_data (speech_recognition.AudioData): Audio from `r.listen()`.
+            target_sr (int): Target sample rate (default: 16000, common in speech recognition).
+
+        Returns:
+            np.ndarray: Audio waveform in float32 format (normalized to [-1, 1]).
+            int: Sample rate.
+        """
+        # Get raw audio data as bytes
+        raw_data = audio_data.get_raw_data()
+
+        # Convert to NumPy array (int16)
+        audio_array = np.frombuffer(raw_data, dtype=np.int16)
+
+        # Convert to float32 and normalize to [-1, 1]
+        waveform = librosa.util.buf_to_float(audio_array, dtype=np.float32)
+
+        # Resample if needed
+        if audio_data.sample_rate != target_sr:
+            waveform = librosa.resample(
+                waveform, orig_sr=audio_data.sample_rate, target_sr=target_sr
+            )
+
+        return waveform, target_sr
+
+    def _get_next_buffer(self) -> tuple[bytes, float, int]:
+        buffer = self.context.queue.get()
+        self.context.queue.task_done()
+        # Duration of audio buffer in sec
+        sound_duration = float(len(buffer) / SAMPLE_RATE)
+        energy = audioop.rms(buffer, SAMPLE_WIDTH)
+
+        return buffer, sound_duration, energy
+
+    @staticmethod
+    def _adjust_energy_level(
+        rec: sr.Recognizer, sound_duration: float, energy: int
+    ) -> None:
+        damping = rec.dynamic_energy_adjustment_damping**sound_duration
         target_energy = energy * rec.dynamic_energy_ratio
-        rec.energy_threshold = rec.energy_threshold * damping + target_energy * (1 - damping)
-    
-    sampleWidth = 2 # Audio samples are 16-bit (2 bytes/sample)
-    
-    # Step 1: adjust to noise level
-    # Assumes speech is preceded by at least <startSilence> seconds silence. Loops through this interval
-    # to adjust an energy threshold that will subsequently be used to detect speech start.
-    elapsed_time = 0 #  Tracks total time for adjusting noise levels.
-    seconds_per_buffer = 0
+        rec.energy_threshold = rec.energy_threshold * damping + target_energy * (
+            1 - damping
+        )
 
-    
-    while elapsed_time < startSilence:  # Reads audio buffers for a duration of startSilence seconds.
-        buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
-        adjustEnergyLevel(rec, soundDuration, energy) # Adjusts the recognizer's energy threshold to the ambient noise level using adjustEnergyLevel
-        elapsed_time += soundDuration
 
-    # Use node logger if provided, otherwise fallback to print
-    if context and "node" in context and isinstance(context["node"], Node):
-        context["node"].get_logger().info("Say something (using hsr microphone)!")
-    else:
-        print("Say something (using hsr microphone)!")
-    
-    # Step 2: wait for speech to begin
-    #beep.SoundRequestPublisher().publish_sound_request()
-    # If the energy level exceeds the threshold, consider speech started
-    frames = collections.deque()
-    frameTime = 0
-    while True:
-        buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
-        frames.append((soundDuration, buffer))
-        frameTime += soundDuration
-        if energy > rec.energy_threshold: break # Wait until the energy of an audio buffer exceeds the threshold, indicating speech has started.
-        while frameTime > rec.non_speaking_duration: 
-            d, _ = frames.popleft() 
-            frameTime -= d # Remove old frames to keep memory small
-        if rec.dynamic_energy_threshold:
-            adjustEnergyLevel(rec, soundDuration, energy) # dynamically adjust the energy threshold using asymmetric weighted average
+class MCRSNode(Node):
+    """
+    Multi Challenge Robot Script (MCRS) ROS2 node that handles the NLP-Pipeline for all challenges.
+    """
 
-    # At this step, frames contains a list of buffers, and the length of time these buffers recorded is given in
-    # frameTime. At this moment, speech should just begun, nonetheless some initial silence is good to keep.
-    # Step 3: keep adding to the recorded speech until a long enough pause is detected.
-    pauseTime = 0
-    
-    while True:
-        buffer, soundDuration, energy = getNextBuffer(soundQueue, sampleRate, sampleWidth)
-        frames.append((soundDuration, buffer))
-        frameTime += soundDuration
-        # handle phrase being too long by cutting off the audio
-        if phraseTimeLimit and frameTime > phraseTimeLimit:
-            break
-        # check if speaking has stopped for longer than the pause threshold on the audio input
-        if energy > rec.energy_threshold:
-            pauseTime = 0
-        else:
-            pauseTime += soundDuration
-        if pauseTime > rec.pause_threshold:  # end of the phrase
-            break
+    def __init__(self, args):
+        super().__init__("MCRS")
 
-    frame_data = b"".join([x[1] for x in frames]) # Concatenate all the audio frames in frames into a single byte string called frame_data.
-    
-    frame_data_array = numpy.frombuffer(frame_data, dtype=numpy.int16) # Convert the now byte string "frame_data" into a NumPy array called frame_data_array.
+        self.get_logger().info("[ALP]: NLP node initialized")
 
-    noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=sampleRate) # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
-    
-    frame_data_clean = noise_reduced_data.tobytes()  # Convert the cleaned audio data in noise_reduced_data back into a byte string format, frame_data_clean.
+        self._setup_qos()
+        self._setup_publisher(args)
+        self._setup_subscriber(args)
 
-    return sr.AudioData(frame_data_clean, sampleRate, sampleWidth) # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
+        self.ctx = Context(
+            node=self,
+            pub=self.nlp_publisher,
+            stt=self.stt_publisher,
+            useHSR=args.useHSR,
+            useAudio=(args.useAudio != "./"),
+            audio=args.useAudio,
+            nluURI=args.nluURI,
+        )
+
+        self.nlu = NLU(context=self.ctx)
+        self.listener = Audio(context=self.ctx)
+
+        self.get_logger().info("[ALP]: NLP node started")
+
+    def _setup_qos(self):
+        self.qos = QoSProfile(depth=10)
+        self.audio_qos = QoSProfile(
+            depth=10,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+        )
+
+    def _setup_publisher(self, args):
+        self.nlp_publisher = self.create_publisher(String, args.outputTopic, self.qos)
+        self.stt_publisher = self.create_publisher(
+            String, args.speechToTextTopic, self.qos
+        )
+
+    def _setup_subscriber(self, args):
+        if args.useHSR:
+            self.create_subscription(
+                AudioMsg, "/audio/audio", self.callback_record_hsr, self.audio_qos
+            )
+        self.create_subscription(String, "/nlp_test", self.callback_nlp_test, self.qos)
+        self.create_subscription(
+            String, "/startListener", self.callback_start_listener, self.qos
+        )
+
+    def callback_record_hsr(self, msg):
+        self.listener.record_hsr(msg)
+
+    def callback_nlp_test(self, msg):
+        self.nlu.nlu_internal(msg.data, "./")
+
+    def callback_start_listener(self, msg):
+        self.listener.start_listener(msg)
 
 
 def main():
     # Initialize ROS2 and create a node
     rclpy.init(args=sys.argv)
-    node = Node('nlp_out')
-    node.get_logger().info("[ALP]: NLP node initialized")
- 
+
     # Parse command line arguments
-    parser = ArgumentParser(prog='activate_language_processing')
-    parser.add_argument('-hsr', '--useHSR', action='store_true', help='Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.')
-    parser.add_argument('-a', '--useAudio', default="./", help="Use an audio file instead of a microphone.Takes the path to an audio file as argument.")
-    parser.add_argument('-nlu', '--nluURI', default='http://localhost:5005/model/parse', help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse")
-    parser.add_argument('-i', '--inputTopic', default='/nlp_test', help='Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test')
-    parser.add_argument('-o', '--outputTopic', default='/nlp_out', help="Topic to send semantic parsing results on. Default: /nlp_out")
-    parser.add_argument('-stt', '--speechToTextTopic', default='whisper_out', help="Topic to output whisper speech-to-text results on. Default: /whisper_out")
-    parser.add_argument('-t', '--terminal', action='store_true', help='Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.')
-    args, unknown = parser.parse_known_args(sys.argv[1:])
- 
-    audio = args.useAudio
- 
-    qos = QoSProfile(depth=10)
-    nlpOut = node.create_publisher(String, args.outputTopic, qos)
-    rasaURI = args.nluURI
-    stt = node.create_publisher(String, args.speechToTextTopic, qos)
-    intent2Roles = {}
-
-    # Use best-effort QoS for audio subscription (common for sensor data streams)
-    audio_qos = QoSProfile(
-        depth=10,
-        reliability=QoSReliabilityPolicy.BEST_EFFORT,
-        history=QoSHistoryPolicy.KEEP_LAST
+    parser = ArgumentParser(prog="activate_language_processing")
+    parser.add_argument(
+        "-hsr",
+        "--useHSR",
+        action="store_true",
+        help="Flag to record from HSR microphone via the audio capture topic. If you prefer to use the laptop microphone, or directly connect to the microphone instead, do not set this flag.",
     )
- 
-    queue_data = Queue()  # Initialize queue_data as a new Queue instance
-    lock = threading.Lock()  # Define the lock variable
+    parser.add_argument(
+        "-a",
+        "--useAudio",
+        default="./",
+        help="Use an audio file instead of a microphone.Takes the path to an audio file as argument.",
+    )
+    parser.add_argument(
+        "-nlu",
+        "--nluURI",
+        default="http://localhost:5005/model/parse",
+        help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse",
+    )
+    parser.add_argument(
+        "-i",
+        "--inputTopic",
+        default="/nlp_test",
+        help="Topic to send texts for the semantic parser, useful for debugging that part of the pipeline. Default: /nlp_test",
+    )
+    parser.add_argument(
+        "-o",
+        "--outputTopic",
+        default="/nlp_out",
+        help="Topic to send semantic parsing results on. Default: /nlp_out",
+    )
+    parser.add_argument(
+        "-stt",
+        "--speechToTextTopic",
+        default="whisper_out",
+        help="Topic to output whisper speech-to-text results on. Default: /whisper_out",
+    )
+    parser.add_argument(
+        "-t",
+        "--terminal",
+        action="store_true",
+        help="Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.",
+    )
+    args, unknown = parser.parse_known_args(sys.argv[1:])
 
-    context = {
-        "data": numpy.array([], dtype=numpy.int16),
-        "useHSR": args.useHSR,
-        "useAudio": args.useAudio,
-        "audio": args.useAudio,     
-        "transcriber": None,
-        "listening": False,
-        "speaking": False,
-        "queue": queue_data,
-        "lock": lock,
-        "pub": nlpOut,
-        "stt": stt,
-        "node": node,
-        "rasaURI": rasaURI,
-        "nlp": spacy.load("en_core_web_sm"),
-        "intent2Roles": intent2Roles,
-        "role2Roles": {},
-        "queue_data": queue_data,  # Use the initialized queue_data
-    }
- 
-    if args.useHSR:
-        # Subscribe to the audio topic to get the audio data from HSR's microphone
-        node.create_subscription(AudioMsg, '/audio', lambda msg: record_hsr(msg, context), audio_qos)
- 
-    # Subscribe to the nlp_test topic, which allows sending text directly to this node e.g. from the command line. 
-    node.create_subscription(String, "/nlp_test", lambda msg: nluInternal(msg.data, "./", context), qos)
- 
-    # Execute record() callback function on receiving a message on /startListener
-    node.create_subscription(String, '/startListener', lambda msg: startListener(msg, context), qos)
- 
-    node.get_logger().info("[ALP]: NLP node started")
+    node = MCRSNode(args)
+
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
@@ -436,6 +670,7 @@ def main():
     finally:
         node.destroy_node()
         rclpy.shutdown()
- 
+
+
 if "__main__" == __name__:
     main()
