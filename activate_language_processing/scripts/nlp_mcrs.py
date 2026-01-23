@@ -31,7 +31,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 from std_msgs.msg import UInt8MultiArray  # Import UInt8MultiArray for ROS2 compatibility
 AudioMsg = UInt8MultiArray # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
-model = whisper.load_model("base", device="cpu")  # Load the Whisper model for transcription
+model = whisper.load_model("small.en")  # Load the Whisper model for transcription
 
 def _isTranscribing(context):
     """
