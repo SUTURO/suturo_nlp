@@ -75,6 +75,7 @@ Use RASA to parse a simple sentence (one intent).
     for k,e in enumerate(response["entities"]):
         #print("Entity", e, sStart)
         eStart = e.get("start", 0)+sStart
+
         eEnd = e.get("end", 0)+sStart
         if subtreeDep(eStart, eEnd, idx2Tok) in roleForbiddenDeps:
             continue

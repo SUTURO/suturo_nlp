@@ -1,0 +1,2530 @@
+[
+    {
+        "Condition":"condition5",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.0,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition5",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get the cup from the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get the cup from the kitchen and bring it to you.",
+        "WER_Normal":0.2727272727,
+        "WER_Enhanced":0.2727272727,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition5",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition5",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a top hole in the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get a top-level kitchen and bring it to me.",
+        "WER_Normal":0.4545454545,
+        "WER_Enhanced":0.4545454545,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":0.5,
+        "Recall_Enhanced":0.3333333333,
+        "F1_Normal":0.6666666667,
+        "F1_Enhanced":0.5,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition5",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Try to keep it normal.",
+        "Enhanced_Transcription":"Try to keep it normal.",
+        "WER_Normal":0.8,
+        "WER_Enhanced":0.8,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Follow",
+        "Enhanced_Transcription_Intent":"Follow",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+
+        ],
+        "Enhanced_Transcription_Entities":[
+
+        ]
+    },
+    {
+        "Condition":"condition3",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition3",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get the cup for the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get the cup for the kitchen and bring it to me.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":0.3636363636,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Discover",
+        "Enhanced_Transcription_Intent":"Discover",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition3",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.0,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition3",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cap for the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get a cap for the kitchen and bring it to me.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":0.3636363636,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":0.3333333333,
+        "Recall_Enhanced":0.3333333333,
+        "F1_Normal":0.5,
+        "F1_Enhanced":0.5,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Discover",
+        "Enhanced_Transcription_Intent":"Discover",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition3",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"The drive doesn't work at all.",
+        "Enhanced_Transcription":"The drive to the movie is...",
+        "WER_Normal":1.2,
+        "WER_Enhanced":0.8,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"deny",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"work",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"UndefinedRole",
+                "value":"movie",
+                "entity":"NaturalPerson",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition4",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.0,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition4",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get that cup from the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get that cup from the kitchen and bring it to me.",
+        "WER_Normal":0.2727272727,
+        "WER_Enhanced":0.2727272727,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition4",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drives to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition4",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cup on the kitchen and bring it to my knee.",
+        "Enhanced_Transcription":"Get a cup on the kitchen and bring it to me.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":0.2727272727,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition4",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"How I just tried to develop eyeballs in the paper.",
+        "Enhanced_Transcription":"Let's try to be a little alone baby....",
+        "WER_Normal":1.8,
+        "WER_Enhanced":1.4,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.4,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.6666666667,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.5,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Guide",
+        "Enhanced_Transcription_Intent":"Guide",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"eyeballs",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Item",
+                "value":"paper",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"little",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Location",
+                "value":"baby",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition6",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.0,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition6",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cup from the kitchen and join us.",
+        "Enhanced_Transcription":"Get a cup of the kitchen and drink it.",
+        "WER_Normal":0.4545454545,
+        "WER_Enhanced":0.5454545455,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition6",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"There's someVia edge of Linogue for sure!",
+        "Enhanced_Transcription":"but hello. Please register.",
+        "WER_Normal":1.4,
+        "WER_Enhanced":1.0,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"affirm",
+        "Enhanced_Transcription_Intent":"Greet",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+
+        ],
+        "Enhanced_Transcription_Entities":[
+
+        ]
+    },
+    {
+        "Condition":"condition6",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a coat from the kitchen, bring it to me.",
+        "Enhanced_Transcription":"Get a jacket of her to keep your hands on the bread tonight.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":1.0,
+        "Precision_Normal":0.4,
+        "Precision_Enhanced":0.1818181818,
+        "Recall_Normal":0.3333333333,
+        "Recall_Enhanced":0.3333333333,
+        "F1_Normal":0.3636363636,
+        "F1_Enhanced":0.2352941176,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Offer",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"BeneficiaryClothing",
+                "value":"coat",
+                "entity":"Clothing",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"BeneficiaryClothing",
+                "value":"jacket",
+                "entity":"Clothing",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"BeneficiaryRole",
+                "value":"her",
+                "entity":"NaturalPerson",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Item",
+                "value":"hands",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Item",
+                "value":"bread",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition6",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"It drives to the living room.",
+        "Enhanced_Transcription":"It drives to the living room.",
+        "WER_Normal":0.4,
+        "WER_Enhanced":0.4,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition2",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drives to the living room.",
+        "Enhanced_Transcription":"Drives to the devil.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.6,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Person",
+                "value":"devil",
+                "entity":"NaturalPerson",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition2",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cup from the kitchen and bring us to me.",
+        "Enhanced_Transcription":"Get a cup from the kitchen and bring us to me.",
+        "WER_Normal":0.2727272727,
+        "WER_Enhanced":0.2727272727,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition2",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition2",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cap from the kitchen and bring it to my house.",
+        "Enhanced_Transcription":"Get a cup from the kitchen and bring it to my house.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":0.2727272727,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":0.3333333333,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":0.5,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition2",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Dr \u05d4\u05e7 kidney delivery Bogor Music",
+        "Enhanced_Transcription":"Tracy said somebody needs a drink.",
+        "WER_Normal":1.2,
+        "WER_Enhanced":1.2,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":false,
+        "Correct_Intent_Enhanced":false,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Person",
+                "value":"Music",
+                "entity":"NaturalPerson",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"drink",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition1",
+        "Filename":"gpsr1.1.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"Drive to the living room.",
+        "Enhanced_Transcription":"Drive to the living room.",
+        "WER_Normal":0.0,
+        "WER_Enhanced":0.0,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition1",
+        "Filename":"gpsr2.1.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a car from the kitchen and find it to you.",
+        "Enhanced_Transcription":"Get a cup from the kitchen and a cleaners team.",
+        "WER_Normal":0.3636363636,
+        "WER_Enhanced":0.4545454545,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":0.6666666667,
+        "Recall_Normal":0.3333333333,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":0.5,
+        "F1_Enhanced":0.8,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"Item",
+                "value":"cleaners",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition1",
+        "Filename":"gpsr1.3.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"drive to the living room.",
+        "Enhanced_Transcription":"Drifes to the living room.",
+        "WER_Normal":0.2,
+        "WER_Enhanced":0.2,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":1.0,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":1.0,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":true,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition1",
+        "Filename":"gpsr2.2.wav",
+        "Category":"gpsr2",
+        "Ground_Truth":"Get a cup from the kitchen an bring it to me ",
+        "Normal_Transcription":"Get a cap from the kitchen and bring it to me.",
+        "Enhanced_Transcription":"Get a cup from the kitchen and bring it to me.",
+        "WER_Normal":0.2727272727,
+        "WER_Enhanced":0.1818181818,
+        "Precision_Normal":1.0,
+        "Precision_Enhanced":1.0,
+        "Recall_Normal":0.3333333333,
+        "Recall_Enhanced":1.0,
+        "F1_Normal":0.5,
+        "F1_Enhanced":1.0,
+        "Ground_Truth_Intent":"Transporting",
+        "Normal_Transcription_Intent":"Transporting",
+        "Enhanced_Transcription_Intent":"Transporting",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":true,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+            {
+                "role":"Location",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Enhanced_Transcription_Entities":[
+            {
+                "role":"Item",
+                "value":"cup",
+                "entity":"Transportable",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            },
+            {
+                "role":"SourceRoom",
+                "value":"kitchen",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ]
+    },
+    {
+        "Condition":"condition1",
+        "Filename":"gpsr1.2.wav",
+        "Category":"gpsr1",
+        "Ground_Truth":"Drive to the living room.",
+        "Normal_Transcription":"It's right to do the video.",
+        "Enhanced_Transcription":"I shall go and ask your ration.",
+        "WER_Normal":1.0,
+        "WER_Enhanced":1.4,
+        "Precision_Normal":0.0,
+        "Precision_Enhanced":0.0,
+        "Recall_Normal":0.0,
+        "Recall_Enhanced":0.0,
+        "F1_Normal":0.0,
+        "F1_Enhanced":0.0,
+        "Ground_Truth_Intent":"Navigation",
+        "Normal_Transcription_Intent":"Navigation",
+        "Enhanced_Transcription_Intent":"Navigation",
+        "Correct_Intent_Normal":true,
+        "Correct_Intent_Enhanced":true,
+        "Correct_Entities_Normal":false,
+        "Correct_Entities_Enhanced":false,
+        "Ground_Truth_Entities":[
+            {
+                "role":"Location",
+                "value":"living room",
+                "entity":"Room",
+                "propertyAttribute":[
+
+                ],
+                "actionAttribute":[
+
+                ],
+                "numberAttribute":[
+
+                ]
+            }
+        ],
+        "Normal_Transcription_Entities":[
+
+        ],
+        "Enhanced_Transcription_Entities":[
+
+        ]
+    }
+]

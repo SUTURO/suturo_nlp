@@ -1,0 +1,682 @@
+# TODO:
+#       1. Fix: F1-Score
+
+import warnings
+from argparse import ArgumentParser
+from pathlib import Path
+import jiwer
+import spacy
+import whisper
+import yaml
+import pandas as pd
+from rclpy.logging import get_logger
+import requests
+from tabulate import tabulate
+
+# import numpy as np
+
+from activate_language_processing.nlp import semanticLabelling
+import nlp_challenges
+
+
+WHISPER_MODEL = "base"
+AUDIO_FILES_DIRECTORY = "./AudioFiles"
+GROUND_TRUTH_FILE = "./references.yml"
+RESULT_FILE = "./results.json"
+
+# rclpy logger
+logger = get_logger("TEST")
+
+
+def check_rasa(uri):
+    """
+    Check if rasa is available, before we start testing.
+
+    Args:
+        uri: The rasa URI we use if we start rasa.
+
+    Returns:
+        None
+
+    Raises:
+        ConnectionError if rasa is not available.
+    """
+    try:
+        payload = {"text": "Hello World!"}
+        logger.info(f"Checking Rasa URI: {uri}")
+        response = requests.post(uri, json=payload, timeout=5)
+
+        if response.status_code == 200:
+            logger.info("Rasa is available.")
+            return
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError("Rasa is not available. Maybe you forgot to start Rasa!")
+
+
+def load_whisper():
+    """
+    Loads the whisper model.
+
+    Returns:
+        Whisper model
+    """
+    logger.info(f"Loading whisper model ({WHISPER_MODEL})...")
+    model = whisper.load_model(WHISPER_MODEL)
+    logger.info("Done.")
+    return model
+
+
+def load_reference():
+    """
+    Load all references (Ground Truth) from the ``references.yml`` file.
+
+    Returns:
+        Dictionary of ground truth references
+    """
+    try:
+        with open(GROUND_TRUTH_FILE, "r") as file:
+            data = yaml.safe_load(file)
+            # We only want the GT
+            return data["ground_truth"]
+    except FileNotFoundError as e:
+        logger.error(e)
+        return None
+
+
+def load_audio_files():
+    """
+    List all .wav audio files from the given directory.
+
+    Example:
+        {"Condition1": ["Hobby1.1.wav", "Hobby1.2.wav", ..."]}.
+
+    Returns:
+        Dictionary with a list of .wav audio files of every condition.
+    """
+    path = Path(AUDIO_FILES_DIRECTORY)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Audio files directory not found: {AUDIO_FILES_DIRECTORY}"
+        )
+    conditions = {}
+    file_sum = 0
+    for directory in path.glob("*"):
+        if directory.is_dir():
+            # Get a list of all .wav files from every condition
+            audio_files = [
+                str(file) for file in directory.glob("*.wav") if file.is_file()
+            ]
+            if not audio_files:
+                logger.error(f"No wav files found in directory: {directory}.")
+            else:
+                file_sum += len(audio_files)
+                logger.info(f"Found {len(audio_files)} audio files in {directory}.")
+                conditions[directory.name] = audio_files
+    logger.info(f"OVERALL {file_sum} FILES FOUND.")
+    return conditions
+
+
+def get_specific_intent(audio_files, intent):
+    """
+    Filter audio files to only include categories matching a given intent prefix.
+
+    Args:
+        audio_files: Dictionary of condition and list of audio files.
+        intent: The intent prefix to filter or None if not given.
+
+    Example:
+        {"Condition1": ["Hobby1.1.wav", "Hobby1.2.wav", ..."]}.
+
+    Returns:
+        A dictionary containing only the intent and the files whose intent start with the given prefix.
+        If no intent prefix is given, the dictionary with all files will be returned.
+    """
+    if not intent:
+        return audio_files
+
+    matching_files = {}
+
+    for condition, files in audio_files.items():
+        f_list = [file for file in files if get_audio_category(file).startswith(intent)]
+        if f_list:
+            matching_files[condition] = f_list
+    total = sum(len(files) for files in matching_files.values())
+    logger.info(f"OVERALL {total} FILES FOUND WITH MATCHING INTENT.")
+    return matching_files
+
+
+def transcribe_normal(model, path):
+    """
+    Transcribe the given wav audio file.
+
+    Args:
+        model: Whisper model
+        path: Path to .wav file
+
+    Returns:
+        Audio transcription as string
+    """
+    try:
+        result = model.transcribe(path, language="en")
+        return result["text"].strip()
+    except Exception as e:
+        logger.error(f"Could not transcribe audio: {path} [EXCEPTION]: {e}")
+        return None
+
+
+def transcribe_enhanced(model, path, orig_transcription):
+    """
+    Transcribe audio using Whisper. Here we're using a prompt providing context.
+
+    Args:
+        model: Whisper model
+        path: Path to .wav file
+        orig_transcription: Original transcription
+
+    Returns:
+        Enhanced audio transcription as string
+    """
+    try:
+        names, nouns = nlp_challenges.nounDictionary(orig_transcription)
+        if not names:
+            prompt = f"The user wants to order one or several food pr drinks items: {' , '.join(nouns)}."
+        elif not nouns:
+            prompt = f"The user says their name is one of these: {' , '.join(names)}."
+        else:
+            prompt = f"The user says their name is one of these: {' , '.join(names)}. And they likes to drink one of these: {' , '.join(nouns)}."
+        result = model.transcribe(path, initial_prompt=prompt, language="en")
+        return result["text"].strip()
+    except Exception as e:
+        logger.error(f"Could not transcribe audio with prompt: {path} [EXCEPTION]: {e}")
+        return None
+
+
+def get_intent_and_entities(original_transcription, enhanced_transcription, context):
+    """
+    Extract intent and entities from the given transcription.
+
+    Args:
+        original_transcription: Original transcription
+        enhanced_transcription: Enhanced transcription
+        context: Context for semantic labeling
+
+    Returns:
+        Tuple with intent and list of entities
+    """
+    def _handle_parses(parses):
+        for p in parses:
+            if not p["sentence"].strip():
+                continue
+
+            pAdj = {
+                "sentence": p["sentence"],
+                "intent": p["intent"],
+                "entities": [],
+            }
+
+            for _, v in p.get("entities", {}).items():
+                entity_data = v.copy()
+                entity_data["role"] = v["role"]
+                entity_data.pop("group", None)
+                entity_data.pop("idx", None)
+                pAdj["entities"].append(entity_data)
+
+            return pAdj
+
+        logger.error(f"Empty parse: {parses}")
+
+        return {
+            "sentence": "",
+            "intent": "unknown",
+            "entities": [],
+        }
+
+    original_parses = semanticLabelling(original_transcription, context)
+    enhanced_parses = semanticLabelling(enhanced_transcription, context)
+    orig = _handle_parses(original_parses)
+    enh = _handle_parses(enhanced_parses)
+    # Return the result as Tuple
+    return orig["intent"], orig["entities"], enh["intent"], enh["entities"]
+
+
+def get_audio_category(filename):
+    """
+    Extract the category from the audio file.
+
+    Example:
+        Hobby1.1.wav --> Hobby1
+
+    Returns:
+        Category name from an audio file.
+    """
+    # Remove the extension and get the first index integer from the filename
+    return Path(filename).stem.split(".")[0]
+
+
+def compare_intent(ground_truth, transcription):
+    """
+    Compare ground truth and transcription intents.
+
+    Args:
+        ground_truth: Ground Truth intent from ``references.yml``
+        transcription: Recognized intent from transcription
+
+    Returns:
+        Bool: True if matched, else False.
+    """
+    return ground_truth == transcription
+
+
+def extract_entities(items):
+    """
+    Extract entities from a given list.
+
+    Args:
+        items: List of entities
+
+    Returns:
+        Sorted list of tuples with entities (role, value, entity)
+    """
+    entities = []
+    for item in items:
+        entities.append(
+            (item.get("role", ""), item.get("value", ""), item.get("entity", ""))
+        )
+    # Sort for comparison
+    return sorted(entities)
+
+
+def compare_entities(ground_truth, transcription):
+    """
+    Compare ground truth and transcription entities.
+    This function compares entities exactly.
+
+    Args:
+        ground_truth: Ground Truth entities from ``references.yml``
+        transcription: Recognized entities from transcription
+
+    Returns:
+        True if matched, else False.
+    """
+    if len(ground_truth) != len(transcription):
+        return False
+
+    return extract_entities(ground_truth) == extract_entities(transcription)
+
+
+def calculate_wer(reference, hypothesis):
+    """
+    Calculate Word Error Ratio (WER).
+
+    Args:
+        reference: Reference transcription
+        hypothesis: Hypothesis transcription
+
+    Returns:
+        WER
+    """
+    return jiwer.wer(reference, hypothesis)
+
+
+def calculate_f1(reference, hypothesis):
+    """
+    Calculate F1-Score, Precision and Recall for entities.
+
+    Args:
+        reference: The Ground Truth
+        hypothesis: List of entitíes
+
+    Returns:
+        Tuple of Precision, Recall and F1
+    """
+    # Ground Truth set
+    gt = set(extract_entities(reference))
+    # Hypothesis set
+    H = set(extract_entities(hypothesis))
+
+    # Entities that got identified correctly
+    tp = len(gt & H)
+    # Identified entities that are not in GT
+    fp = len(H - gt)
+    # Entities that are in GT but got not identified
+    fn = len(gt - H)
+
+    # Avoid zero float division
+    if (tp + fp) > 0:
+        precision = tp / (tp + fp)
+    else:
+        precision = 0.0
+
+    if (tp + fn) > 0:
+        recall = tp / (tp + fn)
+    else:
+        recall = 0.0
+
+    if (precision + recall) > 0:
+        f1 = 2 * (precision * recall) / (precision + recall)
+    else:
+        f1 = 0.0
+
+    return precision, recall, f1
+
+
+def test_file(model, ground_truth, file, context):
+    """
+    Test an audio file and compare with ground truth.
+
+    Args:
+        model: Whisper model
+        ground_truth: The ground truth from ``references.yml``
+        file: The audio file
+        context: Rasa context
+
+    Returns:
+        Dictionary with all relevant test results.
+    """
+    condition = Path(file).parent.name
+    filename = Path(file).name
+    category = get_audio_category(file)
+
+    if category not in ground_truth:
+        logger.error(f"Category {category} not found!")
+        return None
+
+    # Transcriptions
+    ground_truth_text = ground_truth[category].get("text", "")
+    normal_transcription = transcribe_normal(model, file)
+    enhanced_transcription = transcribe_enhanced(model, file, normal_transcription)
+
+    # Intent & Entities
+    ground_truth_intent = ground_truth[category].get("intent", "")
+    ground_truth_entities = ground_truth[category].get("entities", [])
+    normal_intent, normal_entities, enhanced_intent, enhanced_entities = (
+        get_intent_and_entities(normal_transcription, enhanced_transcription, context)
+    )
+
+    # Precision, Recall and F1-Score
+    normal_precision, normal_recall, normal_f1 = calculate_f1(
+        ground_truth_entities, normal_entities
+    )
+    enhanced_precision, enhanced_recall, enhanced_f1 = calculate_f1(
+        ground_truth_entities, enhanced_entities
+    )
+
+    return {
+        # File data
+        "Condition": condition,
+        "Filename": filename,
+        "Category": category,
+        # Sentences
+        "Ground_Truth": ground_truth_text,
+        "Normal_Transcription": normal_transcription,
+        "Enhanced_Transcription": enhanced_transcription,
+        # Metrics
+        "WER_Normal": calculate_wer(ground_truth_text, normal_transcription),
+        "WER_Enhanced": calculate_wer(ground_truth_text, enhanced_transcription),
+        "Precision_Normal": normal_precision,
+        "Precision_Enhanced": enhanced_precision,
+        "Recall_Normal": normal_recall,
+        "Recall_Enhanced": enhanced_recall,
+        "F1_Normal": normal_f1,
+        "F1_Enhanced": enhanced_f1,
+        # Intents
+        "Ground_Truth_Intent": ground_truth_intent,
+        "Normal_Transcription_Intent": normal_intent,
+        "Enhanced_Transcription_Intent": enhanced_intent,
+        "Correct_Intent_Normal": compare_intent(ground_truth_intent, normal_intent),
+        "Correct_Intent_Enhanced": compare_intent(ground_truth_intent, enhanced_intent),
+       # Entities
+        "Correct_Entities_Normal": compare_entities(
+            ground_truth_entities, normal_entities
+        ),
+        "Correct_Entities_Enhanced": compare_entities(
+            ground_truth_entities, enhanced_entities
+        ),
+        "Ground_Truth_Entities": ground_truth_entities,
+        "Normal_Transcription_Entities": normal_entities,
+        "Enhanced_Transcription_Entities": enhanced_entities,
+    }
+
+
+def _create_summary_table(df):
+    total = len(df)
+    summary = {
+        "Metric": ["Intent Match", "Entities Match", "Entities F1-Score", "WER"],
+        "Normal": [
+            f"{df['Correct_Intent_Normal'].mean():.1%} ({df['Correct_Intent_Normal'].sum()}/{total})",
+            f"{df['Correct_Entities_Normal'].mean():.1%} ({df['Correct_Entities_Normal'].sum()}/{total})",
+            f"{df['F1_Normal'].mean():.2f}",
+            f"{df['WER_Normal'].mean():.2f}",
+        ],
+        "Enhanced": [
+            f"{df['Correct_Intent_Enhanced'].mean():.1%} ({df['Correct_Intent_Enhanced'].sum()}/{total})",
+            f"{df['Correct_Entities_Enhanced'].mean():.1%} ({df['Correct_Entities_Enhanced'].sum()}/{total})",
+            f"{df['F1_Enhanced'].mean():.2f}",
+            f"{df['WER_Enhanced'].mean():.2f}",
+        ],
+    }
+
+    return pd.DataFrame(summary)
+
+
+def _create_intent_table(df):
+    # Give us all stats per intent
+    intents = df.groupby("Ground_Truth_Intent").agg(
+            total=("Ground_Truth_Intent", "count"),
+            correct_normal=("Correct_Intent_Normal", "sum"),
+            correct_enhanced=("Correct_Intent_Enhanced", "sum"),
+        ).reset_index().sort_values(by="total", ascending=False)
+
+
+    # Collect all stats for every intent
+    rows = []
+    for _, row in intents.iterrows():
+        intent = row["Ground_Truth_Intent"]
+        total = row["total"]
+        correct_normal = row["correct_normal"]
+        correct_enhanced = row["correct_enhanced"]
+
+        rows.append(
+            {
+                "Intent": intent,
+                "Normal": f"{correct_normal / total:.1%} ({correct_normal}/{total})",
+                "Enhanced": f"{correct_enhanced / total:.1%} ({correct_enhanced}/{total})",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _create_entities_table(df):
+    # We become a list of dictionary's, but we want tuples
+    entities_rows = []
+    for _, row in df.iterrows():
+        # list of tuples
+        entities_tuples = extract_entities(row["Ground_Truth_Entities"])
+        for ent_tuple in entities_tuples:
+            entities_rows.append(
+                {
+                    "Entity": str(ent_tuple),
+                    "Correct Normal": row["Correct_Entities_Normal"],
+                    "Correct Enhanced": row["Correct_Entities_Enhanced"],
+                    "F1 Normal": row["F1_Normal"],
+                    "F1 Enhanced": row["F1_Enhanced"],
+                }
+            )
+    flat_ent = pd.DataFrame(entities_rows)
+
+    entities_table = flat_ent.groupby("Entity").agg(
+            total=("Entity", "count"),
+            correct_normal=("Correct Normal", "sum"),
+            correct_enhanced=("Correct Enhanced", "sum"),
+            f1_normal=("F1 Normal", "mean"),
+            f1_enhanced=("F1 Enhanced", "mean"),
+        ).reset_index().sort_values(by="total", ascending=False)
+
+    rows = []
+    for _, row in entities_table.iterrows():
+        entity = row["Entity"]
+        total = row["total"]
+        correct_normal = row["correct_normal"]
+        correct_enhanced = row["correct_enhanced"]
+        rows.append(
+            {
+                "Entities": entity,
+                "Normal": f"{correct_normal / total:.1%} ({correct_normal}/{total})",
+                "Enhanced": f"{correct_enhanced / total:.1%} ({correct_enhanced}/{total})",
+                "F1-Normal": f"{row["f1_normal"]:.2f}",
+                "F1-Enhanced": f"{row["f1_enhanced"]:.2f}",
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _create_condition_table(df):
+    conditions = df.groupby("Condition").agg(
+        total = ("Condition", "count"),
+        correct_intent_normal = ("Correct_Intent_Normal", "sum"),
+        correct_intent_enhanced = ("Correct_Intent_Enhanced", "sum"),
+        correct_entities_normal = ("Correct_Entities_Normal", "sum"),
+        correct_entities_enhanced = ("Correct_Entities_Enhanced", "sum"),
+    ).reset_index().sort_values(by="total", ascending=False)
+
+    rows = []
+    for _, row in conditions.iterrows():
+        condition = row["Condition"]
+        total = row["total"]
+        correct_intent_normal = row["correct_intent_normal"]
+        correct_intent_enhanced = row["correct_intent_enhanced"]
+        correct_entities_normal = row["correct_entities_normal"]
+        correct_entities_enhanced = row["correct_entities_enhanced"]
+        rows.append({
+            "Condition": condition,
+            "Intents Normal": f"{correct_intent_normal / total:.1%} ({correct_intent_normal}/{total})",
+            "Intents Enhanced": f"{correct_intent_enhanced / total:.1%} ({correct_intent_enhanced}/{total})",
+            "Entities Normal": f"{correct_entities_normal / total:.1%} ({correct_entities_normal}/{total})",
+            "Entities Enhanced": f"{correct_entities_enhanced / total:.1%} ({correct_entities_enhanced}/{total})",
+        })
+
+    return pd.DataFrame(rows)
+
+def print_results(df, intent):
+    """
+    Print all relevant test results in terminal.
+
+    Args:
+        intent: Intent prefix
+        df: Dataframe with test results.
+
+    Returns:
+        None
+    """
+    # Get result tables
+    summary_table = _create_summary_table(df)
+    intents_table = _create_intent_table(df)
+    entities_table = _create_entities_table(df)
+    condition_table = _create_condition_table(df)
+
+    print("\n" + "=" * 80)
+    print("SUMMARY")
+    print("=" * 80 + "\n")
+    print(f"FILES TESTED: {len(df)}")
+    if not intent:
+        print("INTENT TESTED: All\n")
+    else:
+        print(f"INTENT TESTED: {intent}\n")
+
+    print(tabulate(summary_table, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "-" * 80)
+    print("INTENTS:\n")
+    print(tabulate(intents_table, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "-" * 80)
+    print("ENTITIES:\n")
+    print(tabulate(entities_table, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "-" * 80)
+    print("CONDITIONS:\n")
+    print(tabulate(condition_table, headers="keys", tablefmt="outline", showindex=False))
+
+    print("\n" + "=" * 80)
+    print(f"MORE DETAILS IN: {RESULT_FILE}")
+    print("=" * 80 + "\n")
+
+
+def save_results(dataframe):
+    """
+    Save test results to as json file.
+
+    Args:
+        dataframe: Dataframe with test results.
+
+    Returns:
+        None
+    """
+    dataframe.to_json(RESULT_FILE, indent=4, orient="records")
+
+
+def test_all_files(model, refs, audio_files, context, intent):
+    """
+    Test alle audio files using ``test_file()``.
+
+    Args:
+        model: Whisper model
+        refs: Ground truth from ``references.yml``
+        audio_files: Dictionary of audio files
+        context: Rasa context
+
+    Returns:
+        None
+    """
+    results = []
+
+    for _, files in audio_files.items():
+        for file in files:
+            result = test_file(model, refs, file, context)
+            if result is not None:
+                results.append(result)
+
+    df = pd.DataFrame(results)
+
+    save_results(df)
+    print_results(df, intent)
+
+
+def main():
+    parser = ArgumentParser(prog="activate_language_processing")
+    parser.add_argument(
+        "-nlu",
+        "--nluURI",
+        default="http://localhost:5005/model/parse",
+        help="Link towards the RASA semantic parser. Default: http://localhost:5005/model/parse",
+    )
+    parser.add_argument(
+        "-i",
+        "--intent",
+        default=None,
+        help="Only test a specific intent (e.g. 'Order')",
+    )
+    args = parser.parse_args()
+
+    context = {
+        "rasaURI": args.nluURI,
+        "nlp": spacy.load("en_core_web_sm"),
+        "intent2Roles": {},
+        "role2Roles": {},
+    }
+
+    check_rasa(context["rasaURI"])
+    model = load_whisper()
+    refs = load_reference()
+    audio_files = load_audio_files()
+    audio_files = get_specific_intent(audio_files, args.intent)
+    test_all_files(model, refs, audio_files, context, args.intent)
+
+
+if __name__ == "__main__":
+    warnings.filterwarnings(
+        "ignore", message="FP16 is not supported on CPU; using FP32 instead"
+    )
+    main()
