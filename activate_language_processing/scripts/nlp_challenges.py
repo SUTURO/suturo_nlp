@@ -14,6 +14,8 @@ from Levenshtein import distance as lev_dist
 import re
 import inflect
 
+home = Path.home()
+
 # Load the entities.yml file from our rasa model
 entities_file_path = Path(__file__).resolve().parents[3] / 'suturo_rasa' / 'entities.yml'
 with open(entities_file_path, 'r') as file:
