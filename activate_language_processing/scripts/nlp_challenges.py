@@ -199,20 +199,30 @@ def preprocess_words(text: str) -> List[str]:
     text = text.lower().strip()
     return re.findall(r'[a-z]+', text)
 
-def get_metaphone_codes(word: str) -> tuple[str, str]:
+def get_metaphone_codes(word):
     '''
-
+    Computes the metaphone code for a word.
     Args:
-        word:
+        word:Input word
 
     Returns:
+        codes: Tuple containing primary and secondary metaphone codes.
 
     '''
     primary, secondary = doublemetaphone(word)
     return (primary or "", secondary or "")
 
-def calculate_phonetic_score(words1: List[str], words2: List[str]) -> float:
-    """Calculates the best phonetic similarity between two lists of words."""
+def calculate_phonetic_score(words1, words2):
+    '''
+        Calculates the phonetic  similarity score  between two word lists.
+
+    Args:
+        words1: First list of words.
+        words2: Second list of words.
+
+    Returns:
+        score: Phonetic similarity score.
+    '''
     meta1 = [get_metaphone_codes(w) for w in words1]
     meta2 = [get_metaphone_codes(w) for w in words2]
     best_score = 0.0
@@ -238,16 +248,33 @@ def calculate_phonetic_score(words1: List[str], words2: List[str]) -> float:
     
     return best_score * word_count_penalty
 
-def count_syllables(word: str) -> int:
-    """Counts the syllables in a word."""
+def count_syllables(word):
+    '''
+    Counts the number of syllables in a word.
+    Args:
+        word: Input word.
+
+    Returns:
+        syllable: Number of syllables in a word.
+
+    '''
     word = re.sub(r'[^a-z]', '', word.lower())
     if len(word) > 1 and word.endswith('e'):
         word = word[:-1]
     syllables = len(re.findall(r'[aeiouy]+', word))
     return max(1, syllables)
 
-def calculate_syllable_similarity(words1: List[str], words2: List[str]) -> float:
-    """Calculates the syllable similarity between two lists of words."""
+def calculate_syllable_similarity(words1, words2):
+    '''
+    Calculates the syllable similarity between two lists of words.
+    Args:
+        words1: First list of words.
+        words2: Second list of words.
+
+    Returns:
+        syllable_similarity: Syllable similarity score.
+
+    '''
     if not words1 or not words2:
         return 0.0
     
@@ -257,8 +284,17 @@ def calculate_syllable_similarity(words1: List[str], words2: List[str]) -> float
     max_avg_syl = max(avg_syl1, avg_syl2, 1)
     return 1 - (abs(avg_syl1 - avg_syl2) / max_avg_syl)
 
-def calculate_length_penalty(words1: List[str], words2: List[str]) -> float:
-    """Calculates the length difference penalty between two lists of words."""
+def calculate_length_penalty(words1, words2):
+    '''
+    Calculates the length of each syllable in a word.
+    Args:
+        words1: Friendly list of words.
+        words2: Second list of words.
+
+    Returns:
+        penalty: Length difference penalty value.
+
+    '''
     len1 = sum(len(w) for w in words1)
     len2 = sum(len(w) for w in words2)
     max_len = max(len1, len2)
@@ -278,7 +314,7 @@ def double_metaphone_similarity(word1: str, word2: str) -> float:
         word2: The second word or phrase.
 
     Returns:
-        The composite similarity score.
+        The composite similarity score between 0 and 1.
     """
     words1 = preprocess_words(word1)
     words2 = preprocess_words(word2)
@@ -306,7 +342,7 @@ def double_metaphone_similarity(word1: str, word2: str) -> float:
     return min(1.0, max(0.0, combined_score))
 
 
-def dispatch_intent(case, response, context):
+def switch(case, response, context):
     '''
     Dispatches a case to the correct function based on the intent.
 
@@ -325,7 +361,6 @@ def dispatch_intent(case, response, context):
     try:
         data = extract_entities(response)
     except (json.JSONDecodeError, ValueError) as e:
-        # Optionally, log the error `e`
         context["pub"].publish(f"<ERROR_PARSING_RESPONSE>")
         return
 
@@ -349,7 +384,7 @@ def replace_word_and_next(text, target_word, replacement):
     pattern = rf"\b{target_word}\s+\w+\b"
     return re.sub(pattern, replacement, text)
 
-def extract_entities(response_string: str) -> dict:
+def extract_entities(response_string):
     """
     Parses a JSON response string and extracts relevant entities into a structured dictionary.
     This function has a single responsibility: converting the NLU JSON into a clean Python dict.
