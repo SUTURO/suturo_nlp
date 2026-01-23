@@ -61,11 +61,11 @@ ground_truth:
         numberAttribute: []
 
   # ======================================
-  #             gpsr
+  #             GPSR
   # ======================================
   gpsr1:
     text: "Drive to the living room."
-    intent: "Navigation"
+    intent: "go"
     entities:
       - role: "Location"
         value: "living room"
@@ -73,13 +73,17 @@ ground_truth:
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-  # ======================================
-  #             gpsr
-  # ======================================
+
   gpsr2:
-    text: "Get a cup from the kitchen and bring it to me "
-    intent: "Navigation"
+    text: "Get a cup from the kitchen an bring it to me "
+    intent: "take"
     entities:
+      - role: "Item"
+        value: "cup"
+        entity: "Transportable"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
       - role: "Location"
         value: "kitchen"
         entity: "Room"
@@ -87,34 +91,95 @@ ground_truth:
         actionAttribute: []
         numberAttribute: []
 
+#  gpsr3:
+#    text: "Go to the living room and get the milk. Then, take it to the kitchen and put it on the table."
+#    intent: "Navigation"
+#    entities:
+#      - role: "Location"
+#        value: "living room"
+#        entity: "Room"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "drink"
+#        value: "milk"
+#        entity: "Item"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "Location"
+#        value: "kitchen"
+#        entity: "Room"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+#      - role: "Furniture"
+#        value: "table"
+#        entity: "DesignedFurniture"
+#        propertyAttribute: []
+#        actionAttribute: []
+#        numberAttribute: []
+
   # ======================================
-  #             gpsr3
+  #             Receptionist
   # ======================================
-  gpsr3:
-    text: "Go to the living room and get the milk. Then, take it to the kitchen and put it on the table."
-    intent: "Navigation"
+
+  receptionist1:
+    text: "I like to play basketball."
+    intent: "Receptionist"
     entities:
-      - role: "Location"
-        value: "living room"
-        entity: "Room"
+      - role: "Hobby"
+        value: "basketball"
+        entity: "Interest"
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-      - role: "drink"
-        value: "milk"
-        entity: "Item"
+
+  receptionist2:
+    text: "Hey my name is Ben, I like to watch youtube and my favorite drink is cola"
+    intent: "Receptionist"
+    entities:
+      - role: "Person"
+        value: "Ben"
+        entity: "NaturalPerson"
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-      - role: "Location"
-        value: "kitchen"
-        entity: "Room"
+      - role: "Hobby"
+        value: "youtube"
+        entity: "Interest"
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
-      - role: "Furniture"
-        value: "table"
-        entity: "DesignedFurniture"
+      - role: "Drink"
+        value: "cola"
+        entity: "drink"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+
+  # ======================================
+  #             Restaurant
+  # ======================================
+  restaurant1:
+    text: "I would like to have 2 burger, a bowl of chilli con carne and a wine bottle"
+    intent: "Order"
+    entities:
+      - role: "Food"
+        value: "burger"
+        entity: "food"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "Food"
+        value: "chili con carne"
+        entity: "food"
+        propertyAttribute: []
+        actionAttribute: []
+        numberAttribute: []
+      - role: "Drink"
+        value: "wine bottle"
+        entity: "drink"
         propertyAttribute: []
         actionAttribute: []
         numberAttribute: []
