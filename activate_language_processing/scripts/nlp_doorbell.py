@@ -6,11 +6,12 @@ import numpy as np
 import rclpy
 import scipy as sp
 import scipy.io.wavfile
-from audio_common_msgs.msg import AudioStamped  # Not more in use?
+from audio_common_msgs.msg import AudioStamped
 from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from std_msgs.msg import String, UInt8MultiArray
 
+# UInt8MultiArray for audio_bridge in /audio/audio
 AudioMsg = AudioStamped
 
 
@@ -26,13 +27,12 @@ class DoorbellDetectionNode(Node):
             history=QoSHistoryPolicy.KEEP_LAST,
             depth=10,
         )
-        # Publisher
+
         super().__init__("doorbell_detection")
+
         self.publisher = self.create_publisher(String, args.outputTopic, 1)
 
-        # Subscriber for microphone data (/audio/audio is HSR?)
         self.subscription = self.create_subscription(
-            # topic: "/audio" not yet finalized.
             AudioMsg,
             "/audio",
             self.callback_fft,
@@ -62,8 +62,6 @@ class DoorbellDetectionNode(Node):
         new_data = np.array(audio_data.int16_data, dtype=np.int16)
         # remove the len(new_data) old data and append the new data -> keep the same buffer size
         self.buffer = np.concatenate([self.buffer[len(new_data) :], new_data])
-        # FIXME: for debug; maybe remove later
-        self.get_logger().info(f"New data received: {self.buffer}")
 
         self.divider += 1
         if self.divider >= 100:
@@ -83,7 +81,9 @@ class DoorbellDetectionNode(Node):
             self.publisher.publish(msg)
             self.get_logger().info("Doorbell detected!")
 
-            # TODO: Maybe stop Node if detected?
+            self.destroy_node()
+            rclpy.shutdown()
+            return
 
 
 def main() -> None:
