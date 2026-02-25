@@ -17,13 +17,11 @@ import numpy as np
 import rclpy
 import soundfile as sf
 import spacy
-
 # from audio_common_msgs.msg import AudioData
 import speech_recognition as sr
 import torch
 from activate_language_processing.nlp import semantic_labelling  # type: ignore
 from faster_whisper import WhisperModel
-
 # import whisper
 from rclpy.node import Node
 from rclpy.publisher import Publisher
