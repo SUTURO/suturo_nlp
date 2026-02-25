@@ -14,36 +14,47 @@ from typing import Optional
 import librosa
 import noisereduce as nr
 import numpy as np
+import rclpy
+import soundfile as sf
 import spacy
 
 # from audio_common_msgs.msg import AudioData
 import speech_recognition as sr
-from activate_language_processing.nlp import semanticLabelling  # type: ignore
+import torch
+from activate_language_processing.nlp import semantic_labelling  # type: ignore
+from faster_whisper import WhisperModel
+
+# import whisper
+from rclpy.node import Node
 from rclpy.publisher import Publisher
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from speech_recognition import AudioData, Recognizer
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 
 from nlp_challenges import *
+
+AudioMsg = UInt8MultiArray  # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
 
 warnings.filterwarnings(
     "ignore", message="FP16 is not supported on CPU; using FP32 instead"
 )
 
-import rclpy
-import soundfile as sf
-import whisper
-from rclpy.node import Node
-from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
-from std_msgs.msg import (
-    UInt8MultiArray,
-)  # Import UInt8MultiArray for ROS2 compatibility
+# ===== Loading Models =====
 
-AudioMsg = UInt8MultiArray  # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
+device = "cuda" if torch.cuda.is_available() else "cpu"
+comp_type = "float16" if device == "cuda" else "int8"
+
+# Using faster-whisper
+model = WhisperModel(
+    "small",
+    device=device,
+    compute_type=comp_type,
+)
 
 # Load the Whisper model for transcription
-# base.en english (only) model with 74 M parameters.
-# small.en english (only) model with 244 M parameters.
-model = whisper.load_model("small.en")
+# model = whisper.load_model("small.en")
+
+# ==========================
 
 
 # ----- Constants -----
@@ -123,6 +134,24 @@ def is_transcribing(context: Context) -> bool:
     return (context.transcriber is not None) and (context.transcriber.is_alive())
 
 
+def transcribe_audio(temp_fp: str, prompt: str | None) -> str:
+    """
+    Transcribing audio with (faster-) whisper.
+    """
+    segments, _ = model.transcribe(
+        temp_fp,
+        language="en",
+        initial_prompt=prompt,
+        beam_size=5,
+        condition_on_previous_text=True,
+        without_timestamps=True,
+        vad_filter=True,
+    )
+    text = "".join(s.text.strip() for s in segments)
+
+    return text
+
+
 class NLU:
     """
     Natural Language Understanding (NLU).
@@ -153,11 +182,14 @@ class NLU:
             )
 
             # Transcribe the audio file using Whisper with an initial prompt
-            result = model.transcribe(temp_fp, initial_prompt=prompt)
-            text = result["text"]
+            # result = model.transcribe(temp_fp, initial_prompt=prompt)
+            # text = result["text"]
+
+            # using faster-whisper:
+            text = transcribe_audio(temp_fp, prompt)
 
             # Analyze text and return parses (a structured object like a dictionary)
-            parses = semanticLabelling(
+            parses = semantic_labelling(
                 text,
                 # nlp.py wants a dict
                 {
@@ -291,7 +323,7 @@ class Audio:
         else:
             raise ValueError("Invalid audio source configuration.")
 
-        try_node_logger("[Whisper]: Processing...", self.context)
+        try_node_logger("[WHISPER]: Processing...", self.context)
 
         if isinstance(audio, sr.AudioData):
             waveform, sample_rate = self._audio_data_to_numpy(audio)
@@ -300,7 +332,7 @@ class Audio:
         else:
             temp_fp = str(audio)
 
-        self._transcribe_audio(temp_fp)
+        self.stt_to_nlu(temp_fp)
 
     def listen_hsr(self, r: Recognizer) -> AudioData:
         try_node_logger("Waiting for the beep...", self.context)
@@ -334,10 +366,14 @@ class Audio:
 
         return audio
 
-    def _transcribe_audio(self, temp_fp: Path | str) -> None:
-        result = model.transcribe(temp_fp, language="en")
-        result = result["text"]
-        try_node_logger("[Whisper]: Done", self.context)
+    def stt_to_nlu(self, temp_fp: Path | str) -> None:
+        # result = model.transcribe(temp_fp, language="en")
+        # result = result["text"]
+
+        # using faster-whisper:
+        result = transcribe_audio(temp_fp, None)
+
+        try_node_logger("[WHISPER]: Done", self.context)
         print(f"\nWhisper result: {result}")
         self.context.stt.publish(String(data=result))
         self.nlu.nlu_internal(result, temp_fp)
@@ -576,6 +612,7 @@ class MCRSNode(Node):
         self.listener = Audio(context=self.ctx)
 
         self.get_logger().info("[ALP]: NLP node started")
+        self.get_logger().info(f"[WHISPER]: Using {device} with {comp_type}.")
 
     def _setup_qos(self):
         self.qos = QoSProfile(depth=10)
