@@ -143,7 +143,7 @@ def transcribe_audio(temp_fp: str, prompt: str | None) -> str:
         beam_size=5,
         # condition_on_previous_text=True,
         # without_timestamps=True,
-        # vad_filter=True,
+        vad_filter=True,
     )
     text = "".join(s.text.strip() for s in segments)
 
