@@ -103,7 +103,7 @@ class Context:
     # speaking: bool = False
 
     # Currently not is use. nlp.py maybe needs an update
-    intent2Roles: dict = field(default_factory=dict)
+    intent2roles: dict = field(default_factory=dict)
     role2Roles: dict = field(default_factory=dict)
 
 
@@ -141,9 +141,9 @@ def transcribe_audio(temp_fp: str, prompt: str | None) -> str:
         language="en",
         initial_prompt=prompt,
         beam_size=5,
-        condition_on_previous_text=True,
-        without_timestamps=True,
-        vad_filter=True,
+        # condition_on_previous_text=True,
+        # without_timestamps=True,
+        # vad_filter=True,
     )
     text = "".join(s.text.strip() for s in segments)
 
@@ -195,7 +195,7 @@ class NLU:
                     "rasaURI": self.context.nluURI,
                     # to avoid errors in nlp.py even if they are empty
                     "role2Roles": self.context.role2Roles,
-                    "intent2Roles": self.context.intent2Roles,
+                    "intent2roles": self.context.intent2roles,
                 },
             )
 
