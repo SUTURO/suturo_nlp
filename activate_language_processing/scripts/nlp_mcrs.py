@@ -17,11 +17,13 @@ import numpy as np
 import rclpy
 import soundfile as sf
 import spacy
+
 # from audio_common_msgs.msg import AudioData
 import speech_recognition as sr
 import torch
 from activate_language_processing.nlp import semantic_labelling  # type: ignore
 from faster_whisper import WhisperModel
+
 # import whisper
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -86,6 +88,7 @@ class Context:
     node: Node
     pub: Publisher
     stt: Publisher
+    tts: Publisher
 
     nluURI: str
     useHSR: bool = False
@@ -159,6 +162,7 @@ class NLU:
 
     def __init__(self, context: Context):
         self.context = context
+        self.audio = Audio
 
     def nlu_internal(self, text: str, temp_fp: str | Path) -> None:
         """
@@ -235,6 +239,8 @@ class NLU:
         # Special case intents
         special = {"affirm", "deny", "Callout", "Hobbies", "talk"}
 
+        first = None
+
         for p in parses:
             # skipping if sentence or entities list is empty
             if not p["sentence"].strip() or not p["entities"]:
@@ -248,6 +254,14 @@ class NLU:
             fmt_parse = self._format_parses(p)
             self.context.pub.publish(String(data=json.dumps(fmt_parse)))
             try_node_logger("[ALP]: Done. Waiting for next command.", self.context)
+
+            # publish to tts
+            if first is None:
+                first = fmt_parse
+
+        if first is not None:
+            tts_sentence = self.audio.send_tts(fmt_parse)
+            self.context.tts.publish(String(data=tts_sentence))
 
     @staticmethod
     def _format_parses(p: dict) -> dict:
@@ -375,6 +389,62 @@ class Audio:
         print(f"\nWhisper result: {result}")
         self.context.stt.publish(String(data=result))
         self.nlu.nlu_internal(result, temp_fp)
+
+    @staticmethod
+    def send_tts(result):
+        intent = result["intent"]
+        entities = result["entities"]
+
+        def first_val(role):
+            for e in entities:
+                if e.get("role") == role:
+                    return e.get("value")
+            return None
+
+        item = first_val("Item")
+        furniture = first_val("Furniture")
+        location = first_val("Location")
+        person = first_val("Person")
+
+        if intent == "go":
+            if furniture:
+                return f"OK, I will go to the {furniture}."
+            elif location:
+                return f"OK, I will go to the {location}."
+            else:
+                return "OK, I will go there."
+        elif intent == "guide":
+            if person:
+                return f"I will guide {person}."
+            else:
+                return "Alright, I will guide them."
+        elif intent in ["take", "place", "deliver"]:
+            if item:
+                return f"I will {intent} the {item}."
+            else:
+                return f"I will {intent} it."
+        elif intent == "open":
+            if furniture:
+                return f"I will open the {furniture}."
+            else:
+                return "OK, opening it."
+        elif intent == "lookup":
+            if furniture:
+                return f"OK, I'll check the {furniture}."
+            elif location:
+                return f"OK, I'll check the {location}."
+            else:
+                return "OK, I'll have a look."
+        elif intent == "seating":
+            return "I'll show them a seat."
+        elif intent == "receptionist":
+            return "Hello, nice to meet you."
+        elif intent == "affirm":
+            return "Thank you for the confirmation."
+        elif intent == "deny":
+            return "Okay, I will try again."
+        else:
+            return "OK."
 
     def listen_to_queue(
         self,
@@ -600,6 +670,7 @@ class MCRSNode(Node):
             node=self,
             pub=self.nlp_publisher,
             stt=self.stt_publisher,
+            tts=self.tts_publisher,
             useHSR=args.useHSR,
             useAudio=(args.useAudio != "./"),
             audio=args.useAudio,
@@ -625,6 +696,7 @@ class MCRSNode(Node):
         self.stt_publisher = self.create_publisher(
             String, args.speechToTextTopic, self.qos
         )
+        self.tts_publisher = self.create_publisher(String, "/tts_text", self.qos)
 
     def _setup_subscriber(self, args):
         if args.useHSR:
