@@ -17,11 +17,13 @@ import numpy as np
 import rclpy
 import soundfile as sf
 import spacy
+
 # from audio_common_msgs.msg import AudioData
 import speech_recognition as sr
 import torch
 from activate_language_processing.nlp import semantic_labelling  # type: ignore
 from faster_whisper import WhisperModel
+
 # import whisper
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -59,7 +61,7 @@ model = WhisperModel(
 SAMPLE_RATE = 16000
 CHUNK_SIZE = 32000  # 16kHz = 2 Sec
 SAMPLE_WIDTH = 2  # 2 bytes
-START_SILENCE = 0.2
+START_SILENCE = 0.4
 
 
 @dataclass
