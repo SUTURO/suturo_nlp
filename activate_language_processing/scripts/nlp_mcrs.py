@@ -4,7 +4,6 @@ import json
 import sys
 import threading
 import warnings
-from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Queue
@@ -17,11 +16,13 @@ import numpy as np
 import rclpy
 import soundfile as sf
 import spacy
+
 # from audio_common_msgs.msg import AudioData
 import speech_recognition as sr
 import torch
 from activate_language_processing.nlp import semantic_labelling  # type: ignore
 from faster_whisper import WhisperModel
+
 # import whisper
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -29,6 +30,7 @@ from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from speech_recognition import AudioData, Recognizer
 from std_msgs.msg import String, UInt8MultiArray
 
+from llm.LLMHandler import LLMHandler
 from nlp_challenges import *
 
 AudioMsg = UInt8MultiArray  # Define AudioMsg as UInt8MultiArray for ROS2 compatibility
@@ -59,7 +61,7 @@ model = WhisperModel(
 SAMPLE_RATE = 16000
 CHUNK_SIZE = 32000  # 16kHz = 2 Sec
 SAMPLE_WIDTH = 2  # 2 bytes
-START_SILENCE = 0.2
+START_SILENCE = 0.4
 
 
 @dataclass
@@ -87,6 +89,10 @@ class Context:
     pub: Publisher
     stt: Publisher
 
+    model: str
+    top_p: float
+    top_k: int
+
     nluURI: str
     useHSR: bool = False
     useAudio: bool = False
@@ -105,6 +111,8 @@ class Context:
     # Currently not is use. nlp.py maybe needs an update
     intent2roles: dict = field(default_factory=dict)
     role2Roles: dict = field(default_factory=dict)
+
+    llm: Optional[bool] = False
 
 
 def try_node_logger(msg: str, context: Context):
@@ -373,6 +381,19 @@ class Audio:
 
         try_node_logger("[WHISPER]: Done", self.context)
         print(f"\nWhisper result: {result}")
+
+        # Use LLM if flag is set
+        if self.context.llm is not False:
+            llm = LLMHandler(
+                model_id=self.context.model,
+                user_input=result,
+                top_p=self.context.top_p,
+                top_k=self.context.top_k,
+            )
+            response = llm.start_inference()
+            self.context.pub.publish(String(data=response))
+            # try_node_logger(f"[LLM]: {response}", self.context)
+            return
         self.context.stt.publish(String(data=result))
         self.nlu.nlu_internal(result, temp_fp)
 
@@ -604,6 +625,10 @@ class MCRSNode(Node):
             useAudio=(args.useAudio != "./"),
             audio=args.useAudio,
             nluURI=args.nluURI,
+            llm=args.llm,
+            model=args.model,
+            top_p=args.top_p or LLMHandler.DEFAULT_TOP_P,
+            top_k=args.top_k or LLMHandler.DEFAULT_TOP_K,
         )
 
         self.nlu = NLU(context=self.ctx)
@@ -646,12 +671,10 @@ class MCRSNode(Node):
         self.listener.start_listener(msg)
 
 
-def main():
-    # Initialize ROS2 and create a node
-    rclpy.init(args=sys.argv)
+def parse_args():
+    import argparse
 
-    # Parse command line arguments
-    parser = ArgumentParser(prog="activate_language_processing")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "-hsr",
         "--useHSR",
@@ -694,10 +717,34 @@ def main():
         action="store_true",
         help="Obsolete, this parameter will be ignored: will ALWAYS listen to the input topic.",
     )
+
+    # LLM args
+    parser.add_argument(
+        "--llm", action="store_true", help="Whether to use an LLM with Ollama, or not."
+    )
+    parser.add_argument("-m", "--model", help="Model for the Ollama usage")
+    parser.add_argument(
+        "--top_p",
+        type=float,
+        help="Top p percent of tokens.",
+    )
+    parser.add_argument("--top_k", type=int, help="Consider only top k words")
+
     args, unknown = parser.parse_known_args(sys.argv[1:])
 
-    node = MCRSNode(args)
+    if bool(args.llm) != bool(args.model):
+        parser.error("--llm and --model must be used together.")
 
+    return args, unknown
+
+
+def main():
+    # Initialize ROS2 and create a node
+    rclpy.init(args=sys.argv)
+
+    args, _ = parse_args()
+
+    node = MCRSNode(args)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
