@@ -167,33 +167,36 @@ def main():
     sentences = load_sentences(args.data)
 
     dataset = []
-    for s in tqdm(sentences, desc="Processing sentences"):
-        try:
-            json_label = sentences_to_json(s, args.model)
-            ok, err = json_validation(json_label)
-            if not ok:
-                tqdm.write(f"Invalid sample skipped: {err}")
-                continue
-            variants = [s]
-            # Try to get three variants
-            for _ in range(3):
-                try:
-                    variants.append(paraphrase_sentence(s, args.model))
-                except:
-                    pass
+    try:
+        for s in tqdm(sentences, desc="Processing sentences"):
+            try:
+                json_label = sentences_to_json(s, args.model)
+                ok, err = json_validation(json_label)
+                if not ok:
+                    tqdm.write(f"Invalid sample skipped: {err}")
+                    continue
+                variants = [s]
+                # Try to get three variants
+                for _ in range(3):
+                    try:
+                        variants.append(paraphrase_sentence(s, args.model))
+                    except:
+                        pass
 
-            dataset.append(
-                {
-                    "sentence": s,
-                    "variants": variants,
-                    "label": json_label,
-                }
-            )
-        except Exception as e:
-            tqdm.write(f"Error processing sentence: {s} {e}")
-
-    with open(args.save, "w") as f:
-        json.dump(dataset, f, indent=2)
+                dataset.append(
+                    {
+                        "sentence": s,
+                        "variants": variants,
+                        "label": json_label,
+                    }
+                )
+            except Exception as e:
+                tqdm.write(f"Error processing sentence: {s} {e}")
+    except KeyboardInterrupt:
+        print("Saving data...")
+    finally:
+        with open(args.save, "w") as f:
+            json.dump(dataset, f, indent=2)
 
     print(f"Saved dataset with {len(dataset)} samples to {args.save}")
 
