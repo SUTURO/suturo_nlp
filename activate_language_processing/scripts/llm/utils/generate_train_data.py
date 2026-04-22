@@ -23,35 +23,55 @@ ENTITY = ["NaturalPerson", "Room", "DesignedFurniture", "Clothing", "Transportab
 # JSON schema that we want to keep
 SCHEMA = {
     "type": "object",
-    "required": ["intents", "entities"],
+    "required": ["intents"],
     "properties": {
         "intents": {
-            "type": "string",
-            "enum": INTENTS,
-        },
-        "entities": {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": [
-                    "role",
-                    "value",
-                    "entity",
-                    "propertyAttribute",
-                    "actionsAttribute",
-                    "numberAttribute",
-                ],
+                "required": ["intent", "entities"],
                 "properties": {
-                    "role": {"type": "string", "enum": ROLES},
-                    "value": {"type": "string"},
-                    "entity": {"type": "string", "enum": ENTITY},
-                    "propertyAttribute": {"type": "array", "items": {"type": "string"}},
-                    "actionsAttribute": {"type": "array", "items": {"type": "string"}},
-                    "numberAttribute": {"type": "array", "items": {"type": "string"}},
+                    "intent": {
+                        "type": "string",
+                        "enum": INTENTS,
+                    },
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "role",
+                                "value",
+                                "entity",
+                                "propertyAttribute",
+                                "actionsAttribute",
+                                "numberAttribute",
+                            ],
+                            "properties": {
+                                "role": {"type": "string", "enum": ROLES},
+                                "value": {"type": "string"},
+                                "entity": {"type": "string", "enum": ENTITY},
+                                "propertyAttribute": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "actionsAttribute": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "numberAttribute": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "additionalProperties": False,
+                        },
+                    },
                 },
                 "additionalProperties": False,
             },
-        },
+            "minItems": 1
+        }
     },
 }
 
@@ -72,12 +92,65 @@ Instruction:
 Return ONLY JSON in the following schema:
 {json.dumps(SCHEMA)}
 
+Example: 
+Instruction = 'Get an ice tea from the arm chair and place it on the kitchen counter'
+
+Result = "intents": [
+      {
+        "intent": "pick_up",
+        "entities": [
+          {
+            "role": "Item",
+            "value": "ice tea",
+            "entity": "Transportable",
+            "propertyAttribute": [],
+            "actionsAttribute": [],
+            "numberAttribute": []
+          },
+          {
+            "role": "Furniture",
+            "value": "arm chair",
+            "entity": "DesignedFurniture",
+            "propertyAttribute": [],
+            "actionsAttribute": [],
+            "numberAttribute": []
+          }
+        ]
+      },
+      {
+        "intent": "place",
+        "entities": [
+          {
+            "role": "Item",
+            "value": "ice tea",
+            "entity": "Transportable",
+            "propertyAttribute": [],
+            "actionsAttribute": [],
+            "numberAttribute": []
+          },
+          {
+            "role": "Furniture",
+            "value": "kitchen counter",
+            "entity": "DesignedFurniture",
+            "propertyAttribute": [],
+            "actionsAttribute": [],
+            "numberAttribute": []
+          }
+        ]
+      }
+    ]
+
 Rules:
 - ONLY valid intents: {INTENTS}
 - ONLY valid entities: {ENTITY}
 - numberAttributes must be a list of WORDS ("two" instead of 2)
 - actionAttributes contains a list of actions like "waving", "pointing", "sitting"...
 - propertyAttributes must be a list of attributes like colors
+- "intents" must be a list of objects
+- each intent must have:
+    - "intent": one of {INTENTS}
+    - "entities": list of entities ONLY relevant to that intent
+- do NOT mix entities between intents
 - NO markdown
 - NO explanation
 """
