@@ -75,6 +75,54 @@ SCHEMA = {
     },
 }
 
+EXAMPLE = json.dumps({
+    "intents": [
+        {
+            "intent": "pick_up",
+            "entities": [
+                {
+                    "role": "Item",
+                    "value": "ice tea",
+                    "entity": "Transportable",
+                    "propertyAttribute": [],
+                    "actionsAttribute": [],
+                    "numberAttribute": []
+                },
+                {
+                    "role": "Furniture",
+                    "value": "arm chair",
+                    "entity": "DesignedFurniture",
+                    "propertyAttribute": [],
+                    "actionsAttribute": [],
+                    "numberAttribute": []
+                }
+            ]
+        },
+        {
+            "intent": "place",
+            "entities": [
+                {
+                    "role": "Item",
+                    "value": "ice tea",
+                    "entity": "Transportable",
+                    "propertyAttribute": [],
+                    "actionsAttribute": [],
+                    "numberAttribute": []
+                },
+                {
+                    "role": "Furniture",
+                    "value": "kitchen counter",
+                    "entity": "DesignedFurniture",
+                    "propertyAttribute": [],
+                    "actionsAttribute": [],
+                    "numberAttribute": []
+                }
+            ]
+        }
+    ]
+}, indent=2)
+
+
 
 # Load generated sentences from the official RoboCup@Home command generator
 def load_sentences(path):
@@ -94,51 +142,7 @@ Return ONLY JSON in the following schema:
 
 Example: 
 Instruction = 'Get an ice tea from the arm chair and place it on the kitchen counter'
-
-Result = "intents": [
-      {
-        "intent": "pick_up",
-        "entities": [
-          {
-            "role": "Item",
-            "value": "ice tea",
-            "entity": "Transportable",
-            "propertyAttribute": [],
-            "actionsAttribute": [],
-            "numberAttribute": []
-          },
-          {
-            "role": "Furniture",
-            "value": "arm chair",
-            "entity": "DesignedFurniture",
-            "propertyAttribute": [],
-            "actionsAttribute": [],
-            "numberAttribute": []
-          }
-        ]
-      },
-      {
-        "intent": "place",
-        "entities": [
-          {
-            "role": "Item",
-            "value": "ice tea",
-            "entity": "Transportable",
-            "propertyAttribute": [],
-            "actionsAttribute": [],
-            "numberAttribute": []
-          },
-          {
-            "role": "Furniture",
-            "value": "kitchen counter",
-            "entity": "DesignedFurniture",
-            "propertyAttribute": [],
-            "actionsAttribute": [],
-            "numberAttribute": []
-          }
-        ]
-      }
-    ]
+Result = {EXAMPLE}
 
 Rules:
 - ONLY valid intents: {INTENTS}
