@@ -1,7 +1,7 @@
 import json
 import timeit
 
-from ollama import chat, ChatResponse
+from ollama import chat
 
 
 class LLMHandler:
@@ -51,7 +51,7 @@ class LLMHandler:
         # 2. insert whisper text as user prompt
         # 3. check output as JSON string
         # 4. prepare JSON if necessary
-        # 5. Return output ot mcrs
+        # 5. Return output to mcrs
 
         t1 = timeit.default_timer()
         response = chat(
