@@ -13,11 +13,11 @@ INTENTS = [
     "place",
     "affirm",
     "deny",
-    "affirm",
     "lookup",
     "clarify",
+    "talk_with_human",
 ]
-ROLES = ["Person", "srcRoom", "destRoom", "Furniture", "Clothes", "Item"]
+ROLES = ["Person", "SourceRoom", "DestinationRoom", "Furniture", "Clothes", "Item"]
 ENTITY = ["NaturalPerson", "Room", "DesignedFurniture", "Clothing", "Transportable"]
 
 # JSON schema that we want to keep
@@ -70,58 +70,60 @@ SCHEMA = {
                 },
                 "additionalProperties": False,
             },
-            "minItems": 1
+            "minItems": 1,
         }
     },
 }
 
-EXAMPLE = json.dumps({
-    "intents": [
-        {
-            "intent": "pick_up",
-            "entities": [
-                {
-                    "role": "Item",
-                    "value": "ice tea",
-                    "entity": "Transportable",
-                    "propertyAttribute": [],
-                    "actionsAttribute": [],
-                    "numberAttribute": []
-                },
-                {
-                    "role": "Furniture",
-                    "value": "arm chair",
-                    "entity": "DesignedFurniture",
-                    "propertyAttribute": [],
-                    "actionsAttribute": [],
-                    "numberAttribute": []
-                }
-            ]
-        },
-        {
-            "intent": "place",
-            "entities": [
-                {
-                    "role": "Item",
-                    "value": "ice tea",
-                    "entity": "Transportable",
-                    "propertyAttribute": [],
-                    "actionsAttribute": [],
-                    "numberAttribute": []
-                },
-                {
-                    "role": "Furniture",
-                    "value": "kitchen counter",
-                    "entity": "DesignedFurniture",
-                    "propertyAttribute": [],
-                    "actionsAttribute": [],
-                    "numberAttribute": []
-                }
-            ]
-        }
-    ]
-}, indent=2)
-
+EXAMPLE = json.dumps(
+    {
+        "intents": [
+            {
+                "intent": "pick_up",
+                "entities": [
+                    {
+                        "role": "Item",
+                        "value": "ice tea",
+                        "entity": "Transportable",
+                        "propertyAttribute": [],
+                        "actionsAttribute": [],
+                        "numberAttribute": [],
+                    },
+                    {
+                        "role": "Furniture",
+                        "value": "arm chair",
+                        "entity": "DesignedFurniture",
+                        "propertyAttribute": [],
+                        "actionsAttribute": [],
+                        "numberAttribute": [],
+                    },
+                ],
+            },
+            {
+                "intent": "place",
+                "entities": [
+                    {
+                        "role": "Item",
+                        "value": "ice tea",
+                        "entity": "Transportable",
+                        "propertyAttribute": [],
+                        "actionsAttribute": [],
+                        "numberAttribute": [],
+                    },
+                    {
+                        "role": "Furniture",
+                        "value": "kitchen counter",
+                        "entity": "DesignedFurniture",
+                        "propertyAttribute": [],
+                        "actionsAttribute": [],
+                        "numberAttribute": [],
+                    },
+                ],
+            },
+        ]
+    },
+    indent=2,
+)
 
 
 # Load generated sentences from the official RoboCup@Home command generator
@@ -147,6 +149,7 @@ Result = {EXAMPLE}
 Rules:
 - ONLY valid intents: {INTENTS}
 - ONLY valid entities: {ENTITY}
+- ONLY valid roles: {ROLES}
 - numberAttributes must be a list of WORDS ("two" instead of 2)
 - actionAttributes contains a list of actions like "waving", "pointing", "sitting"...
 - propertyAttributes must be a list of attributes like colors
@@ -217,6 +220,8 @@ Given command:
                 "content": PROMPT,
             },
         ],
+        # reduce time
+        think=False,
         stream=False,
         options={"temperature": 0.9},
     )
@@ -232,7 +237,11 @@ def args_parser():
         "-d", "--data", type=Path, required=True, help="List of the sentences"
     ),
     parser.add_argument(
-        "-s", "--save", type=Path, required=True, help="Where to save the results (.json or .jsonl)"
+        "-s",
+        "--save",
+        type=Path,
+        required=True,
+        help="Where to save the results (.json or .jsonl)",
     ),
 
     args = parser.parse_args()
