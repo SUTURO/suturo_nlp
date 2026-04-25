@@ -1,6 +1,9 @@
 import argparse
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from threading import Lock
 
 from ollama import chat
 from jsonschema import validate, ValidationError
@@ -14,8 +17,10 @@ INTENTS = [
     "affirm",
     "deny",
     "lookup",
-    "clarify",
+    # "clarify",
     "talk_with_human",
+    "follow",
+    "count",
 ]
 ROLES = ["Person", "SourceRoom", "DestinationRoom", "Furniture", "Clothes", "Item"]
 ENTITY = ["NaturalPerson", "Room", "DesignedFurniture", "Clothing", "Transportable"]
@@ -129,7 +134,7 @@ EXAMPLE = json.dumps(
 # Load generated sentences from the official RoboCup@Home command generator
 def load_sentences(path):
     with open(path, "r") as f:
-        return [line.strip() for line in f]
+        return [line.strip() for line in f if line.strip()]
 
 
 def sentences_to_json(sentence, model):
@@ -187,9 +192,9 @@ def json_validation(data):
         return False, e
 
 
-def paraphrase_sentence(sentence, model):
+def paraphrase_sentence(sentence, model, n=3):
     PROMPT = f"""
-You are tasked with generating **one paraphrased versions** of a given task command.
+You are tasked with generating **{n}** task commands.
 
 Your input will be a **single task command**.
 Your output must be **a single command** containing **the alternative phrasing** of that command **and nothing else**.
@@ -201,6 +206,11 @@ Given command:
 
 ### **Guidelines**
 
+* **Complexity gradient:**
+
+  * The **first paraphrase** should use the **most complex or formal** sentence structure.
+  * Each subsequent paraphrase should become **progressively simpler and more natural**.
+
 * **Content preservation:**
 
   * Keep all **entities, objects, and locations exactly the same** (e.g., “coke” must remain “coke”).
@@ -209,7 +219,10 @@ Given command:
 * **Tone and style:**
 
   * Maintain a **natural, conversational tone** write as if real people might say it.
-  * Avoid robotic or overly formal phrasing unless required for the most complex version.    
+  * Avoid robotic or overly formal phrasing unless required for the most complex version.
+  
+Return ONLY valid JSON, e.g.: {{"variants": ["phrasing one", "phrasing two", "phrasing three"]}}
+NO markdown. NO explanation.
 """
 
     response = chat(
@@ -223,16 +236,96 @@ Given command:
         # reduce time
         think=False,
         stream=False,
+        format="json",
         options={"temperature": 0.9},
     )
 
-    response = response.message.content.strip()
-    return response
+    response = json.loads(response.message.content.strip())
+    return [str(v) for v in response.get("variants", [])]
+
+
+def post_process_samples(sample):
+    system_prompt = """You are an NLU system for a human service robot. Given a user utterance, respond ONLY with a valid JSON object containing the detected intents and entities. Never respond with natural language or markdown. Output only JSON."""
+
+    seen = set()
+    results = []
+
+    for sentence in sample["variants"]:
+        if sentence not in seen:
+            seen.add(sentence)
+
+            results.append(
+                {
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": sentence},
+                        {"role": "assistant", "content": json.dumps(sample["label"])},
+                    ]
+                }
+            )
+
+    return results
+
+
+def check_correctness_of_data(model, sentence, label):
+    prompt = f"""
+Does the JSON correctly represent the instruction?
+
+Instruction:
+{sentence}
+
+JSON:
+{json.dumps(label)}
+
+Correct schema:
+{json.dumps(SCHEMA)}
+
+Rules to check:
+- All intents match the actions described in the instruction.
+- All entities (objects, rooms, furniture, people) from the instruction are present in the JSON.
+- Roles and entity types are appropriate for the values.
+- No extra intents or entities are fabricated that aren't in the instruction.
+- All attributes are appropriate for the values (color, actions, numbers).
+- Numbers in 'numberAttribute' are always written numbers (one, two, three, etc.). Leave it EMPTY [] if no explicit number is stated (e.g. "how many X" has no numberAttribute - it queries a count, it does not state one)
+
+Answer only YES or NO.
+If NO, explain why the sample is not correct. YES or NO should be in the very first position in your answer. 
+"""
+
+    response = chat(
+        model=model,
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+        think=False,
+        stream=False,
+        options={"temperature": 0.0},
+    )
+
+    raw = response.message.content.strip()
+    return raw.upper().startswith("YES"), raw
+
+
+def process_sentences(model, sentence, num_variants):
+    json_label = sentences_to_json(sentence, model)
+    ok, err = json_validation(json_label)
+    if not ok:
+        tqdm.write(f"Invalid sample skipped: {err}")
+        return None
+
+    variants = [sentence]
+    try:
+        variants.extend(paraphrase_sentence(sentence, model, n=num_variants))
+    except Exception:
+        # proceed with original
+        pass
+
+    return {"sentence": sentence, "variants": variants, "label": json_label}
 
 
 def args_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, required=False, help="The model to use"),
+    parser.add_argument("--model", type=str, required=True, help="The model to use"),
     parser.add_argument(
         "-d", "--data", type=Path, required=True, help="List of the sentences"
     ),
@@ -240,8 +333,37 @@ def args_parser():
         "-s",
         "--save",
         type=Path,
-        required=True,
-        help="Where to save the results (.json or .jsonl)",
+        required=False,
+        default="../fine_tuning/llm_results.json",
+        help="Where to save the results (.json)",
+    ),
+    parser.add_argument(
+        "-t",
+        "--tuning_data",
+        type=Path,
+        help="Where to save the fine-tune data (.jsonl)",
+        default="../fine_tuning/llm_training_data.jsonl",
+    ),
+    parser.add_argument(
+        "-check",
+        "--check_data",
+        help="Whether to check the data with an LLM afterwards. This will remove potentially bad data from the dataset and the correctness is NOT guaranteed.",
+        action="store_true",
+        default=False,
+    ),
+    parser.add_argument(
+        "-w",
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of worker threads (Default: 4)",
+    ),
+    parser.add_argument(
+        "-n",
+        "--num_variants",
+        type=int,
+        default=3,
+        help="Number of sentence variants to use (Default: 3)",
     ),
 
     args = parser.parse_args()
@@ -253,38 +375,76 @@ def main():
     sentences = load_sentences(args.data)
 
     dataset = []
+    lock = Lock()
     try:
-        for s in tqdm(sentences, desc="Processing sentences"):
-            try:
-                json_label = sentences_to_json(s, args.model)
-                ok, err = json_validation(json_label)
-                if not ok:
-                    tqdm.write(f"Invalid sample skipped: {err}")
-                    continue
-                variants = [s]
-                # Try to get three variants
-                for _ in range(3):
-                    try:
-                        variants.append(paraphrase_sentence(s, args.model))
-                    except:
-                        pass
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {
+                executor.submit(process_sentences, args.model, s, args.num_variants): s
+                for s in sentences
+            }
+            for future in tqdm(
+                as_completed(futures), total=len(sentences), desc="Processing sentences"
+            ):
+                s = futures[future]
+                try:
+                    entry = future.result()
+                    if entry is not None:
+                        with lock:
+                            dataset.append(entry)
+                except Exception as e:
+                    tqdm.write(f"Error processing sentence: {s} {e}")
 
-                dataset.append(
-                    {
-                        "sentence": s,
-                        "variants": variants,
-                        "label": json_label,
-                    }
-                )
-            except Exception as e:
-                tqdm.write(f"Error processing sentence: {s} {e}")
+            # Check correctness of data with LLM if flagged
+            if args.check_data:
+                verified = []
+                rejected = []
+                for sample in tqdm(dataset, desc="Verifying data"):
+                    is_correct, explanation = check_correctness_of_data(
+                        args.model, sample["sentence"], sample["label"]
+                    )
+                    if is_correct:
+                        verified.append(sample)
+                    else:
+                        tqdm.write(f"Incorrect sample found: {sample['sentence']}")
+                        rejected.append(
+                            {
+                                "sentence": sample["sentence"],
+                                "label": sample["label"],
+                                "reason": explanation,
+                            }
+                        )
+                removed = len(dataset) - len(verified)
+                print(f"Removed {removed} out of {len(dataset)}")
+                dataset = verified
+
+                report_path = args.save.with_stem(args.save.stem + "_rejected")
+                with open(report_path, "w") as f:
+                    json.dump(rejected, f, indent=2)
+                print(f"Saved rejected samples to {report_path}.")
     except KeyboardInterrupt:
         print("Saving data...")
     finally:
+        # Save raw dataset
         with open(args.save, "w") as f:
             json.dump(dataset, f, indent=2)
+        print(f"Saved dataset with {len(dataset)} samples to {args.save}")
 
-    print(f"Saved dataset with {len(dataset)} samples to {args.save}")
+    # Convert to chatML and save
+    final_dataset = []
+    for sample in tqdm(dataset, desc="Processing samples"):
+        final_dataset.extend(post_process_samples(sample))
+
+    output_dir = os.path.dirname(args.tuning_data)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    with open(args.tuning_data, "w") as f:
+        # save train_data as JSONL.
+        for s in final_dataset:
+            f.write(json.dumps(s) + "\n")
+    print(
+        f"Saved chatML dataset with {len(final_dataset)} samples to {Path(args.tuning_data)}"
+    )
 
 
 if __name__ == "__main__":
