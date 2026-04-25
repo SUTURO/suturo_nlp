@@ -425,6 +425,7 @@ def main():
         print("Saving data...")
     finally:
         # Save raw dataset
+        os.makedirs(os.path.dirname(args.save), exist_ok=True)
         with open(args.save, "w") as f:
             json.dump(dataset, f, indent=2)
         print(f"Saved dataset with {len(dataset)} samples to {args.save}")
