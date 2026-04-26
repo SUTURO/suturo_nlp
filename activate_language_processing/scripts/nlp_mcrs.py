@@ -23,6 +23,7 @@ import speech_recognition as sr
 import torch
 from activate_language_processing.nlp import semantic_labelling  # type: ignore
 from faster_whisper import WhisperModel
+# from silero_vad import load_silero_vad
 
 # import whisper
 from rclpy.node import Node
@@ -62,6 +63,11 @@ SAMPLE_RATE = 16000
 CHUNK_SIZE = 32000  # 16kHz = 2 Sec
 SAMPLE_WIDTH = 2  # 2 bytes
 START_SILENCE = 0.4
+
+# ----- VAD -----
+VAD_THRESHOLD = 0.5
+VAD_FRAME_SIZE = 512
+VAD_AUDIO_PATH = "/tmp/vad_audio.wav"
 
 
 @dataclass
@@ -108,6 +114,8 @@ class Context:
     intent2roles: dict = field(default_factory=dict)
     role2Roles: dict = field(default_factory=dict)
 
+    vad_audio_path: Optional[str] = None
+
 
 def try_node_logger(msg: str, context: Context):
     """
@@ -145,7 +153,7 @@ def transcribe_audio(temp_fp: str, prompt: str | None) -> str:
         beam_size=5,
         # condition_on_previous_text=True,
         # without_timestamps=True,
-        vad_filter=True,
+        # vad_filter=True,
     )
     text = "".join(s.text.strip() for s in segments)
 
@@ -290,6 +298,13 @@ class Audio:
     def __init__(self, context: Context):
         self.context = context
         self.nlu = NLU(context)
+        vad_model, _ = torch.hub.load(
+            repo_or_dir='snakers4/silero-vad',
+            model='silero_vad',
+            force_reload=False
+        )
+        vad_model.eval()
+        self.vad = vad_model
 
     def start_listener(self, _msg) -> None:
         """
@@ -316,6 +331,12 @@ class Audio:
 
         if self.context.useHSR:
             audio = self.listen_hsr(r)
+        elif self.context.vad_audio_path is not None:
+            with self.context.lock:
+                temp_fp = self.context.vad_audio_path
+                self.context.vad_audio_path = None
+            self.stt_to_nlu(temp_fp)
+            return
         elif self.context.audio == "./":
             audio = self.listen_microphone(r)
         elif self.context.useAudio:
@@ -365,6 +386,54 @@ class Audio:
         audio = audio_path
 
         return audio
+
+    def vad_loop(self) -> None:
+        r = sr.Recognizer()
+        r.energy_threshold = 300
+        r.pause_threshold = 1.0
+
+        with sr.Microphone(sample_rate=SAMPLE_RATE) as source:
+            r.adjust_for_ambient_noise(source, duration=1)
+            try_node_logger("Please talk...", self.context)
+
+            while True:
+                audio = r.listen(source)
+                raw = audio.get_wav_data()
+                int16 = np.frombuffer(raw, dtype=np.int16)
+                float32 = int16.astype(np.float32) / 32768.0
+
+                probs = []
+                for i in range(0, len(float32) - VAD_FRAME_SIZE, VAD_FRAME_SIZE):
+                    frame = float32[i:i + VAD_FRAME_SIZE]
+                    tensor = torch.from_numpy(frame).unsqueeze(0)
+                    with torch.no_grad():
+                        prob = self.vad(tensor, SAMPLE_RATE).item()
+                    probs.append(prob)
+
+                if not probs:
+                    try_node_logger("[VAD] Audio too short to analyse, skipping.", self.context)
+                    continue
+
+                avg_prob = np.sum(probs) / len(probs)
+                print(f"VAD avg prob: {avg_prob:.2f}")
+
+                if avg_prob >= VAD_THRESHOLD:
+                    # Wait for any ongoing transcription to finish before starting a new one
+                    if is_transcribing(self.context):
+                        try_node_logger("[VAD] Waiting for Whisper to finish...", self.context)
+                        self.context.transcriber.join()
+
+                    try_node_logger("[VAD] Speech detected -> sending to Whisper", self.context)
+                    waveform, sr_rate = self._audio_data_to_numpy(audio)
+                    sf.write(VAD_AUDIO_PATH, waveform, sr_rate)
+
+                    with self.context.lock:
+                        self.context.vad_audio_path = VAD_AUDIO_PATH
+                        if not is_transcribing(self.context):
+                            self.context.transcriber = Thread(target=self.transcriber_fn)
+                            self.context.transcriber.start()
+                else:
+                    try_node_logger("[VAD] Not real speech -> ignore ", self.context)
 
     def stt_to_nlu(self, temp_fp: Path | str) -> None:
         # result = model.transcribe(temp_fp, language="en")
@@ -613,6 +682,10 @@ class MCRSNode(Node):
 
         self.get_logger().info("[ALP]: NLP node started")
         self.get_logger().info(f"[WHISPER]: Using {device} with {comp_type}.")
+
+        self.vad_thread = threading.Thread(target=self.listener.vad_loop, daemon=True)
+        self.vad_thread.start()
+        self.get_logger().info("[ALP]: VAD thread started")
 
     def _setup_qos(self):
         self.qos = QoSProfile(depth=10)
