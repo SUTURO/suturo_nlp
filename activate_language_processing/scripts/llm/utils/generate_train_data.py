@@ -1,6 +1,5 @@
 import argparse
 import json
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from threading import Lock
@@ -169,19 +168,13 @@ Rules:
 
     response = chat(
         model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": PROMPT,
-            },
-        ],
+        messages=[{"role": "user", "content": PROMPT}],
         think=False,
         stream=False,
         format="json",
         options={"temperature": 0.7},
     )
-    response = response.message.content.strip()
-    return json.loads(response)
+    return json.loads(response.message.content.strip())
 
 
 def json_validation(data):
@@ -213,27 +206,21 @@ Given command:
 
 * **Content preservation:**
 
-  * Keep all **entities, objects, and locations exactly the same** (e.g., “coke” must remain “coke”).
+  * Keep all **entities, objects, and locations exactly the same** (e.g., "coke" must remain "coke").
   * You may **restructure the sentence** as long as meaning and entities are preserved.
 
 * **Tone and style:**
 
   * Maintain a **natural, conversational tone** write as if real people might say it.
   * Avoid robotic or overly formal phrasing unless required for the most complex version.
-  
+
 Return ONLY valid JSON, e.g.: {{"variants": ["phrasing one", "phrasing two", "phrasing three"]}}
 NO markdown. NO explanation.
 """
 
     response = chat(
         model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": PROMPT,
-            },
-        ],
-        # reduce time
+        messages=[{"role": "user", "content": PROMPT}],
         think=False,
         stream=False,
         format="json",
@@ -245,15 +232,17 @@ NO markdown. NO explanation.
 
 
 def post_process_samples(sample):
-    system_prompt = """You are an NLU system for a human service robot. Given a user utterance, respond ONLY with a valid JSON object containing the detected intents and entities. Never respond with natural language or markdown. Output only JSON."""
+    system_prompt = (
+        "You are an NLU system for a human service robot. Given a user utterance, "
+        "respond ONLY with a valid JSON object containing the detected intents and entities. "
+        "Never respond with natural language or markdown. Output only JSON."
+    )
 
     seen = set()
     results = []
-
     for sentence in sample["variants"]:
         if sentence not in seen:
             seen.add(sentence)
-
             results.append(
                 {
                     "messages": [
@@ -263,7 +252,6 @@ def post_process_samples(sample):
                     ]
                 }
             )
-
     return results
 
 
@@ -294,9 +282,7 @@ If NO, explain why the sample is not correct. YES or NO should be in the very fi
 
     response = chat(
         model=model,
-        messages=[
-            {"role": "user", "content": prompt},
-        ],
+        messages=[{"role": "user", "content": prompt}],
         think=False,
         stream=False,
         options={"temperature": 0.0},
@@ -323,129 +309,187 @@ def process_sentences(model, sentence, num_variants):
     return {"sentence": sentence, "variants": variants, "label": json_label}
 
 
+def collect_dataset(sentences, model, num_variants, workers):
+    dataset = []
+    lock = Lock()
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(process_sentences, model, s, num_variants): s
+            for s in sentences
+        }
+        for future in tqdm(
+            as_completed(futures), total=len(futures), desc="Processing sentences"
+        ):
+            s = futures[future]
+            try:
+                entry = future.result()
+                if entry is not None:
+                    with lock:
+                        dataset.append(entry)
+            except Exception as e:
+                tqdm.write(f"Error processing '{s}': {e}")
+
+    return dataset
+
+
+def verify_dataset(dataset, check_model, workers):
+    verified, rejected = [], []
+    lock = Lock()
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                check_correctness_of_data, check_model, s["sentence"], s["label"]
+            ): s
+            for s in dataset
+        }
+        for future in tqdm(
+            as_completed(futures), total=len(futures), desc="Verifying data"
+        ):
+            sample = futures[future]
+            try:
+                is_correct, explanation = future.result()
+            except Exception as e:
+                tqdm.write(f"Verification error for '{sample['sentence']}': {e}")
+                is_correct, explanation = False, ""  # reject on error
+
+            with lock:
+                if is_correct:
+                    verified.append(sample)
+                else:
+                    tqdm.write(f"Rejected: {sample['sentence']}")
+                    rejected.append(
+                        {
+                            "sentence": sample["sentence"],
+                            "label": sample["label"],
+                            "reason": explanation,
+                        }
+                    )
+
+    return verified, rejected
+
+
+def save_dataset(dataset, save_path, tuning_path):
+    with open(save_path, "w") as f:
+        json.dump(dataset, f, indent=2)
+    print(f"Saved {len(dataset)} samples to {save_path}")
+
+    chatml_samples = []
+    for sample in tqdm(dataset, desc="Converting to ChatML"):
+        chatml_samples.extend(post_process_samples(sample))
+
+    with open(tuning_path, "w") as f:
+        for s in chatml_samples:
+            f.write(json.dumps(s) + "\n")
+    print(f"Saved {len(chatml_samples)} ChatML samples to {tuning_path}")
+
+
 def args_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, required=True, help="The model to use"),
     parser.add_argument(
-        "-d", "--data", type=Path, required=True, help="List of the sentences"
-    ),
+        "--model",
+        type=str,
+        required=True,
+        help="Model used for labelling and paraphrasing.",
+    )
+    parser.add_argument(
+        "-d",
+        "--data",
+        type=Path,
+        required=True,
+        help="Path to the file with one sentence per line.",
+    )
     parser.add_argument(
         "-s",
         "--save",
         type=Path,
-        required=False,
         default="../fine_tuning/llm_results.json",
-        help="Where to save the results (.json)",
-    ),
+        help="Where to save the raw labelled dataset (.json).",
+    )
     parser.add_argument(
         "-t",
         "--tuning_data",
         type=Path,
-        help="Where to save the fine-tune data (.jsonl)",
         default="../fine_tuning/llm_training_data.jsonl",
-    ),
+        help="Where to save the ChatML fine-tune dataset (.jsonl).",
+    )
     parser.add_argument(
         "-check",
         "--check_data",
-        help="Whether to check the data with an LLM afterwards. This will remove potentially bad data from the dataset and the correctness is NOT guaranteed.",
         action="store_true",
         default=False,
-    ),
+        help="Verify each sample with an LLM and remove likely incorrect ones.",
+    )
+    parser.add_argument(
+        "--check_model",
+        type=str,
+        default=None,
+        help=(
+            "Model used for correctness verification. "
+            "Can be a smaller/faster model than --model. "
+            "Defaults to --model when not set."
+        ),
+    )
     parser.add_argument(
         "-w",
         "--workers",
         type=int,
         default=4,
-        help="Number of worker threads (Default: 4)",
-    ),
+        help="Number of parallel worker threads (default: 4).",
+    )
+    parser.add_argument(
+        "--check_workers",
+        type=int,
+        default=None,
+        help=(
+            "Number of parallel workers for verification. "
+            "Defaults to --workers when not set. "
+            "Useful when --check_model is a smaller model that can handle more concurrency."
+        ),
+    )
     parser.add_argument(
         "-n",
         "--num_variants",
         type=int,
         default=3,
-        help="Number of sentence variants to use (Default: 3)",
-    ),
-
-    args = parser.parse_args()
-    return args
+        help="Number of paraphrase variants per sentence (default: 3).",
+    )
+    return parser.parse_args()
 
 
 def main():
     args = args_parser()
+
+    args.save.parent.mkdir(parents=True, exist_ok=True)
+    args.tuning_data.parent.mkdir(parents=True, exist_ok=True)
+
     sentences = load_sentences(args.data)
-
     dataset = []
-    lock = Lock()
+
     try:
-        with ThreadPoolExecutor(max_workers=args.workers) as executor:
-            futures = {
-                executor.submit(process_sentences, args.model, s, args.num_variants): s
-                for s in sentences
-            }
-            for future in tqdm(
-                as_completed(futures), total=len(sentences), desc="Processing sentences"
-            ):
-                s = futures[future]
-                try:
-                    entry = future.result()
-                    if entry is not None:
-                        with lock:
-                            dataset.append(entry)
-                except Exception as e:
-                    tqdm.write(f"Error processing sentence: {s} {e}")
+        dataset = collect_dataset(
+            sentences, args.model, args.num_variants, args.workers
+        )
 
-            # Check correctness of data with LLM if flagged
-            if args.check_data:
-                verified = []
-                rejected = []
-                for sample in tqdm(dataset, desc="Verifying data"):
-                    is_correct, explanation = check_correctness_of_data(
-                        args.model, sample["sentence"], sample["label"]
-                    )
-                    if is_correct:
-                        verified.append(sample)
-                    else:
-                        tqdm.write(f"Incorrect sample found: {sample['sentence']}")
-                        rejected.append(
-                            {
-                                "sentence": sample["sentence"],
-                                "label": sample["label"],
-                                "reason": explanation,
-                            }
-                        )
-                removed = len(dataset) - len(verified)
-                print(f"Removed {removed} out of {len(dataset)}")
-                dataset = verified
+        if args.check_data:
+            check_model = args.check_model or args.model
+            check_workers = args.check_workers or args.workers
+            dataset, rejected = verify_dataset(dataset, check_model, check_workers)
+            print(
+                f"Verification complete. Kept {len(dataset)}, removed {len(rejected)}"
+            )
 
-                report_path = args.save.with_stem(args.save.stem + "_rejected")
-                with open(report_path, "w") as f:
-                    json.dump(rejected, f, indent=2)
-                print(f"Saved rejected samples to {report_path}.")
+            report_path = args.save.with_stem(args.save.stem + "_rejected")
+            with open(report_path, "w") as f:
+                json.dump(rejected, f, indent=2)
+            print(f"Saved rejected samples to {report_path}")
+
     except KeyboardInterrupt:
-        print("Saving data...")
+        print("\nSaving data...")
+
     finally:
-        # Save raw dataset
-        os.makedirs(os.path.dirname(args.save), exist_ok=True)
-        with open(args.save, "w") as f:
-            json.dump(dataset, f, indent=2)
-        print(f"Saved dataset with {len(dataset)} samples to {args.save}")
-
-    # Convert to chatML and save
-    final_dataset = []
-    for sample in tqdm(dataset, desc="Processing samples"):
-        final_dataset.extend(post_process_samples(sample))
-
-    output_dir = os.path.dirname(args.tuning_data)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-
-    with open(args.tuning_data, "w") as f:
-        # save train_data as JSONL.
-        for s in final_dataset:
-            f.write(json.dumps(s) + "\n")
-    print(
-        f"Saved chatML dataset with {len(final_dataset)} samples to {Path(args.tuning_data)}"
-    )
+        save_dataset(dataset, args.save, args.tuning_data)
 
 
 if __name__ == "__main__":
