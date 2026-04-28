@@ -568,7 +568,8 @@ def args_parser():
         help=(
             "Model used for correctness verification. "
             "Can be a smaller/faster model than --model. "
-            "Defaults to --model when not set."
+            "Defaults to --model when not set. "
+            "(It can produce false-positives and should be used with caution!)"
         ),
     )
     parser.add_argument(
