@@ -85,7 +85,10 @@ class Context:
     audio: str = "./"
     lock: threading.Lock = field(default_factory=threading.Lock)
 
-    nlp: spacy.language.Language = spacy.load("en_core_web_sm")
+    # Load spaCy lazily per node instance (avoids heavy import-time side effects)
+    nlp: spacy.language.Language = field(
+        default_factory=lambda: spacy.load("en_core_web_sm")
+    )
 
     data: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int16))
     queue: Queue = field(default_factory=Queue)
@@ -97,7 +100,9 @@ class Context:
     # Currently not is use. nlp.py maybe needs an update
     intent2Roles: dict = field(default_factory=dict)
     role2Roles: dict = field(default_factory=dict)
-    vad_audio_path: str = "./"
+    # When set, the transcriber will process this file next.
+    # Empty string means "no pending VAD audio".
+    vad_audio_path: str = ""
 
 
 def try_node_logger(msg: str, context: Context):
@@ -135,7 +140,7 @@ class NLU:
     def __init__(self, context: Context):
         self.context = context
 
-    def nlu_internal(self, text: str, temp_fp: str | Path) -> None:
+    def nlu_internal(self, text: str, temp_fp: str | Path | None) -> None:
         """
         Process a text input to extract semantic information like intent and entities,
         formats the extracted data, and publishes it as JSON to a ROS topic.
@@ -154,9 +159,17 @@ class NLU:
                 self.context,
             )
 
-            # Transcribe the audio file using Whisper with an initial prompt
-            result = model.transcribe(temp_fp, initial_prompt=prompt)
-            text = result["text"]
+            # If we have an audio file, re-transcribe with an initial prompt for better accuracy.
+            # If this is a text-only debug call, skip Whisper entirely.
+            if temp_fp is not None:
+                try:
+                    audio_path = Path(temp_fp)
+                except TypeError:
+                    audio_path = None
+
+                if audio_path is not None and audio_path.is_file():
+                    result = model.transcribe(str(audio_path), initial_prompt=prompt)
+                    text = result["text"]
 
             # Analyze text and return parses (a structured object like a dictionary)
             parses = semanticLabelling(
@@ -242,8 +255,8 @@ class NLU:
 
         for k, v in p["entities"].items():
             entity_data = v.copy()  # Copy entity’s data dictionary
-            entity_data.pop("group")  # Remove metadata that is not needed
-            entity_data.pop("idx")  # Remove metadata that is not needed
+            entity_data.pop("group", None)  # Remove metadata that is not needed
+            entity_data.pop("idx", None)  # Remove metadata that is not needed
             pAdj["entities"].append(entity_data)
 
         return pAdj
@@ -260,13 +273,20 @@ class Audio:
     def __init__(self, context: Context):
         self.context = context
         self.nlu = NLU(context)
-        vad_model, _ = torch.hub.load(
-            repo_or_dir='snakers4/silero-vad',
-            model='silero_vad',
-            force_reload=False
-        )
-        vad_model.eval()
-        self.vad= vad_model
+        self.vad = None
+        try:
+            vad_model, _ = torch.hub.load(
+                repo_or_dir="snakers4/silero-vad",
+                model="silero_vad",
+                force_reload=False,
+            )
+            vad_model.eval()
+            self.vad = vad_model
+        except Exception as e:
+            try_node_logger(
+                f"[VAD] Failed to load Silero VAD model: {e}. VAD disabled.",
+                self.context,
+            )
 
     def start_listener(self, _msg) -> None:
         """
@@ -294,9 +314,9 @@ class Audio:
 
         if self.context.useHSR:
             audio = self.listen_hsr(r)
-        elif self.context.vad_audio_path != "":
+        elif self.context.vad_audio_path:
             audio = self.context.vad_audio_path
-            self.context.vad_audio_path = "./"
+            self.context.vad_audio_path = ""
         elif self.context.audio == "./":
             audio = self.listen_microphone(r)
         elif self.context.useAudio:
@@ -314,6 +334,12 @@ class Audio:
             temp_fp = str(audio)
 
         self._transcribe_audio(temp_fp)
+
+    def listen_audio(self) -> str:
+        audio_path = Path(self.context.audio)
+        if not audio_path.exists():
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        return str(audio_path)
 
     def listen_hsr(self, r: Recognizer) -> AudioData:
         try_node_logger("Waiting for the beep...", self.context)
@@ -341,22 +367,23 @@ class Audio:
 
     def vad_loop(self) -> None:
 
-        try_node_logger("[VAD]  Listening.. ", self.context)
+        if self.vad is None:
+            return
 
-        with sr.Microphone() as source:
-            sr.Recognizer().adjust_for_ambient_noise(source, duration=1)
+        try_node_logger("[VAD] Listening..", self.context)
+
+        r = sr.Recognizer()
+        r.pause_threshold = 1.0
+        r.energy_threshold = 300
+
+        mic = sr.Microphone(sample_rate=SAMPLE_RATE)
+        with mic as source:
+            r.adjust_for_ambient_noise(source, duration=1)
             try_node_logger("[VAD] ready!", self.context)
 
-            while True:
-                r = sr.Recognizer()
-                r.pause_threshold = 1.0
-                r.energy_threshold = 300
-
-                with sr.Microphone(sample_rate=16000) as source:
-                    r.adjust_for_ambient_noise(source, duration=1)
-                    try_node_logger("[VAD] please talk.", self.context)
-
-                    audio = r.listen(source)
+            while rclpy.ok():
+                try_node_logger("[VAD] please talk.", self.context)
+                audio = r.listen(source)
 
                 # Audio -> numpy
                 raw = audio.get_raw_data()
@@ -505,8 +532,9 @@ class Audio:
         frame_data_array = np.frombuffer(frame_data, dtype=np.int16)
         # Use the noisereduce to apply noise reduction on the audio data stored in frame_data_array.
         noise_reduced_data = nr.reduce_noise(y=frame_data_array, sr=SAMPLE_RATE)
-        # Convert the cleaned audio data in noise_reduced_data back into a byte string format, frame_data_clean.
-        frame_data_clean = noise_reduced_data.tobytes()
+        # Convert back to int16 PCM bytes (speech_recognition expects bytes-like raw PCM data).
+        noise_reduced_int16 = np.clip(noise_reduced_data, -32768, 32767).astype(np.int16)
+        frame_data_clean = noise_reduced_int16.tobytes()
         # Wrap frame_data_clean in an AudioData object from the speech_recognition library.
         return sr.AudioData(frame_data_clean, SAMPLE_RATE, SAMPLE_WIDTH)
 
@@ -547,11 +575,16 @@ class Audio:
                     noise_sample = self.context.data[:SAMPLE_RATE]
                     # Uses the noise sample to remove backround noise from the entire data.
                     reduced_noise_data = nr.reduce_noise(
-                        y=self.context.data, sr=SAMPLE_RATE, y_noise=noise_sample
+                        y=self.context.data.astype(np.float32),
+                        sr=SAMPLE_RATE,
+                        y_noise=noise_sample.astype(np.float32),
                     )
 
-                    # Adds the reduced_noise_data in the context["queue"].
-                    self.context.queue.put(reduced_noise_data)
+                    # Queue expects raw PCM bytes (int16 little-endian) for downstream audioop + concatenation.
+                    reduced_noise_int16 = np.clip(
+                        reduced_noise_data, -32768, 32767
+                    ).astype(np.int16)
+                    self.context.queue.put(reduced_noise_int16.tobytes())
                     # Reset the array to be empty.
                     self.context.data = np.array([], dtype=np.int16)
 
@@ -590,8 +623,8 @@ class Audio:
     def _get_next_buffer(self) -> tuple[bytes, float, int]:
         buffer = self.context.queue.get()
         self.context.queue.task_done()
-        # Duration of audio buffer in sec
-        sound_duration = float(len(buffer) / SAMPLE_RATE)
+        # Duration of audio buffer in sec (buffer is bytes; 2 bytes per sample)
+        sound_duration = float(len(buffer) / (SAMPLE_RATE * SAMPLE_WIDTH))
         energy = audioop.rms(buffer, SAMPLE_WIDTH)
 
         return buffer, sound_duration, energy
@@ -660,7 +693,9 @@ class MCRSNode(Node):
             self.create_subscription(
                 AudioMsg, "/audio/audio", self.callback_record_hsr, self.audio_qos
             )
-        self.create_subscription(String, "/nlp_test", self.callback_nlp_test, self.qos)
+        self.create_subscription(
+            String, args.inputTopic, self.callback_nlp_test, self.qos
+        )
         self.create_subscription(
             String, "/startListener", self.callback_start_listener, self.qos
         )
@@ -669,7 +704,7 @@ class MCRSNode(Node):
         self.listener.record_hsr(msg)
 
     def callback_nlp_test(self, msg):
-        self.nlu.nlu_internal(msg.data, "./")
+        self.nlu.nlu_internal(msg.data, None)
 
     def callback_start_listener(self, msg):
         self.listener.start_listener(msg)
