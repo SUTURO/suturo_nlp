@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-DEFAULT_MODEL_NAME = "google/gemma-4-E2B-it"
+DEFAULT_MODEL_NAME = "google/gemma-4-E4B-it"
 DEFAULT_SYSTEM_PROMPT = (
     "You are an NLU system for a human service robot. Given a user utterance, "
     "respond ONLY with a valid JSON object containing the detected intents and "
@@ -38,7 +38,7 @@ LORA_CONFIG = dict(
 
 TRAIN_CONFIG = dict(
     max_length=512,
-    num_train_epochs=3,
+    num_train_epochs=4,
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     max_grad_norm=0.3,
@@ -58,9 +58,9 @@ TRAIN_CONFIG = dict(
 
 
 def build_output_paths(model_name):
-    model_dir = model_name.replace("/", "__")
-    output = os.path.join("fine_tune", model_dir)
-    output_merged = os.path.join("fine_tune_merged", model_dir)
+    model_dir = model_name.replace("/", "_")
+    output = os.path.join("output", model_dir)
+    output_merged = os.path.join("output_merged", model_dir)
     return output, output_merged
 
 
