@@ -6,14 +6,13 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datasets import load_dataset
 from unsloth import (
-    FastLanguageModel,
+    FastModel,
     get_chat_template,
     train_on_responses_only,
 )
 from trl import SFTTrainer, SFTConfig
 from transformers import DataCollatorForSeq2Seq, TextStreamer
 
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -22,25 +21,38 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 MODEL_CONFIGS = {
+    # vision_processor=True  → content must be [{"type":"text","text":"..."}]
+    # vision_processor=False → content must be a plain string
     "llama-3": {
         "template": "llama-3.1",
         "instruction_part": "<|start_header_id|>user<|end_header_id|>\n\n",
         "response_part": "<|start_header_id|>assistant<|end_header_id|>\n\n",
-    },
-    "mistral": {
-        "template": "mistral",
-        "instruction_part": "[INST] ",
-        "response_part": "[/INST]",
+        "vision_processor": False,
     },
     "ministral": {
         "template": "mistral",
         "instruction_part": "[INST] ",
         "response_part": "[/INST]",
+        "vision_processor": True,
+    },
+    "mistral": {
+        "template": "mistral",
+        "instruction_part": "[INST] ",
+        "response_part": "[/INST]",
+        "vision_processor": False,
     },
     "qwen": {
         "template": "qwen25",
         "instruction_part": "<|im_start|>user\n",
         "response_part": "<|im_start|>assistant\n",
+        # Qwen3.5 is multimodal but its Jinja template expects plain strings
+        "vision_processor": False,
+    },
+    "gemma": {
+        "template": "gemma3",
+        "instruction_part": "<start_of_turn>user\n",
+        "response_part": "<start_of_turn>model\n",
+        "vision_processor": False,
     },
 }
 
@@ -104,11 +116,39 @@ def plot_training_loss(log_history, save_path):
     log.info(f"Train Loss Plot saved in {save_path}")
 
 
-def run_inference_tests(model, tokenizer, chat_template):
+def run_inference_tests(model, tokenizer, config):
     """Run a few inference tests after training."""
-    # Re-apply the chat template
-    tokenizer = get_chat_template(tokenizer, chat_template=chat_template)
-    FastLanguageModel.for_inference(model)
+    tokenizer = get_chat_template(tokenizer, chat_template=config["template"])
+    FastModel.for_inference(model)
+
+    def make_content(text):
+        # Ministral use a vision processor that requires
+        # structured content dicts. All other models expect a plain string.
+        if config.get("vision_processor", False):
+            return [{"type": "text", "text": text}]
+        return text
+
+    def generate(messages, max_new_tokens=2048, stream=False):
+        input_ids = tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt",
+        ).to("cuda")
+        kwargs = dict(
+            input_ids=input_ids,
+            attention_mask=torch.ones_like(input_ids),
+            max_new_tokens=max_new_tokens,
+            use_cache=True,
+            temperature=1.0,
+            min_p=0.1,
+        )
+        if stream:
+            kwargs["streamer"] = TextStreamer(tokenizer, skip_prompt=True)
+        return model.generate(**kwargs)
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     # --- Test 1: Robot command interpretation (main use case) ---
     print("\n" + "=" * 70)
@@ -123,32 +163,16 @@ def run_inference_tests(model, tokenizer, chat_template):
     )
 
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": make_content(system_prompt)},
         {
             "role": "user",
-            "content": "Please bring me a cola from the kitchen and place it on the table.",
+            "content": make_content(
+                "Please bring me a cola from the kitchen and place it on the table."
+            ),
         },
     ]
 
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    inputs = tokenizer.apply_chat_template(
-        messages,
-        tokenize=True,
-        add_generation_prompt=True,
-        return_tensors="pt",
-        return_attention_mask=True,
-    ).to("cuda")
-
-    outputs = model.generate(
-        input_ids=inputs["input_ids"],
-        attention_mask=inputs["attention_mask"],
-        max_new_tokens=512,
-        use_cache=True,
-        temperature=1.0,
-        min_p=0.1,
-    )
+    outputs = generate(messages, max_new_tokens=512)
     response = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     print("Command output:")
     print(response[0])
@@ -161,26 +185,12 @@ def run_inference_tests(model, tokenizer, chat_template):
     messages = [
         {
             "role": "user",
-            "content": "Continue the fibonnaci sequence: 1, 1, 2, 3, 5, 8,",
+            "content": make_content(
+                "Continue the fibonacci sequence: 1, 1, 2, 3, 5, 8,"
+            ),
         },
     ]
-
-    inputs = tokenizer.apply_chat_template(
-        messages,
-        tokenize=True,
-        add_generation_prompt=True,
-        return_tensors="pt",
-    ).to("cuda")
-
-    text_streamer = TextStreamer(tokenizer, skip_prompt=True)
-    _ = model.generate(
-        input_ids=inputs,
-        streamer=text_streamer,
-        max_new_tokens=128,
-        use_cache=True,
-        temperature=1.0,
-        min_p=0.1,
-    )
+    generate(messages, max_new_tokens=128, stream=True)
     print("\n")
 
 
@@ -199,7 +209,7 @@ def main():
         help="Path to JSONL training data",
     )
     parser.add_argument(
-        "--epochs", type=int, default=3, help="Number of training epochs"
+        "--epochs", type=int, default=4, help="Number of training epochs"
     )
     parser.add_argument(
         "--batch-size", type=int, default=4, help="Batch size per device"
@@ -223,17 +233,17 @@ def main():
 
     # 2. Load Model & Tokenizer
     log.info(f"Loading model: {args.model}")
-    model, tokenizer = FastLanguageModel.from_pretrained(
+    model, tokenizer = FastModel.from_pretrained(
         model_name=args.model,
         max_seq_length=args.max_seq_length,
         load_in_4bit=True,
         device_map="auto",
     )
 
-    model = FastLanguageModel.get_peft_model(
+    model = FastModel.get_peft_model(
         model,
-        # finetune_vision_layers=False, # turn off vision tuning
-        # finetune_language_layers=True,
+        finetune_vision_layers=False,  # skip vision encoder - text-only fine-tuning
+        finetune_language_layers=True,
         r=16,
         lora_alpha=32,
         target_modules=[
@@ -309,16 +319,63 @@ def main():
 
     log.info(f"Exporting to GGUF format in {gguf_path}")
     try:
-        model.save_pretrained_gguf(
-            gguf_path, tokenizer, quantization_method="q4_k_m"
-        )
+        import shutil, tempfile
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_gguf_src = tmp_dir + "_gguf"
+            model.save_pretrained_gguf(tmp_dir, tokenizer, quantization_method="q4_k_m")
+            os.makedirs(gguf_path, exist_ok=True)
+            if os.path.isdir(tmp_gguf_src):
+                modelfile_created = False
+                gguf_filename = None
+                for fname in os.listdir(tmp_gguf_src):
+                    # Skip vision projection weights — text-only inference
+                    if "mmproj" in fname.lower():
+                        log.info(f"Skipping vision projection file: {fname}")
+                        continue
+                    shutil.move(
+                        os.path.join(tmp_gguf_src, fname),
+                        os.path.join(gguf_path, fname),
+                    )
+                    if fname.endswith(".gguf"):
+                        gguf_filename = fname
+                    if fname == "Modelfile":
+                        modelfile_created = True
+
+                # unsloth skips the Modelfile for some models (e.g. Qwen3.5)
+                # generate a minimal one so Ollama can load the model directly
+                if not modelfile_created and gguf_filename:
+                    modelfile_path = os.path.join(gguf_path, "Modelfile")
+                    with open(modelfile_path, "w") as mf:
+                        mf.write(f"FROM ./{gguf_filename}\n")
+                    log.info(f"Generated fallback Modelfile -> {modelfile_path}")
+
+                shutil.rmtree(tmp_gguf_src, ignore_errors=True)
+            else:
+                log.warning(f"Expected GGUF dir not found: {tmp_gguf_src}")
+        log.info(f"GGUF saved to {gguf_path}")
+
     except Exception as e:
-        log.error(f"GGUF export failed: {e}")
+        # Fallback: save merged safetensors and convert manually with:
+        #   python llama.cpp/convert_hf_to_gguf.py <gguf_path> --outtype q4_k_m
+        log.warning(
+            f"GGUF export failed ({e}). "
+            f"Falling back to merged safetensors in {gguf_path}"
+        )
+        try:
+            import shutil
+
+            model.save_pretrained_merged(
+                gguf_path, tokenizer, save_method="merged_16bit"
+            )
+            log.info(f"Merged safetensors saved to {gguf_path}")
+        except Exception as e2:
+            log.error(f"Merged safetensors export also failed: {e2}")
 
     log.info("Process finished successfully.")
 
     # 6. Run inference tests
-    run_inference_tests(model, tokenizer, config["template"])
+    run_inference_tests(model, tokenizer, config)
 
 
 if __name__ == "__main__":
