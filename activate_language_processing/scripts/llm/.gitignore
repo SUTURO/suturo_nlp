@@ -1,0 +1,67 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Python virtual environments and local env files
+.venv/
+venv/
+env/
+ENV/
+*.env
+.env
+.env.*
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ROS / catkin / colcon generated output
+devel/
+install/
+log/
+.catkin_tools/
+
+# IDE and editor metadata
+../.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Local runtime/debug artifacts
+.attach_pid*
+core
+core.*
+*.log
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Benchmark and experiment outputs
+benchmark_results*.json
+benchmark_results*.csv
+*_benchmark_results*.json
+*_benchmark_results*.csv
+results.json
+results.ipynb
+plot_*.png
+plot_*.pdf
+
+# Generated fine-tuning / dataset artifacts
+fine_tuning/
+*_rejected.json
+*_results.json
+*_training_data.jsonl
