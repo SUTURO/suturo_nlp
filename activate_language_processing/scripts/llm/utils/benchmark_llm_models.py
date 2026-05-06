@@ -9,8 +9,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from ollama import chat
+from tqdm import tqdm
 
-DEFAULT_MODELS = ["nlp-gemma4", "nlp-gemma4-e4b", "nlp-qwen"]
+DEFAULT_MODELS = ["NLP-gemma3", "NLP-llama31", "NLP-qwen25", "NLP-qwen35", "NLP-ministral"]
 
 
 @dataclass
@@ -125,8 +126,11 @@ def run(
     test_cases: list, models: list, measure_vram: bool, vram_interval: float
 ) -> list:
     results = []
+    total = len(models) * len(test_cases)
+    progress = tqdm(total=total, desc="Benchmarking", unit="case")
+
     for model in models:
-        print(f"\n-- {model} {'-' * 45}")
+        tqdm.write(f"\n-- {model} {'-' * 45}")
         for idx, tc in enumerate(test_cases, start=1):
             case_id = tc.get("id", idx)
             inp = tc["input"]
@@ -188,7 +192,17 @@ def run(
                 else None
             )
 
-            print(
+            progress.update(1)
+            progress.set_postfix(
+                model=model,
+                id=case_id,
+                json=valid_json,
+                f1=f"{overall_f1:.2f}",
+                time=f"{elapsed}s",
+                refresh=False,
+            )
+
+            tqdm.write(
                 f"  [id={case_id} {category}] json={valid_json} "
                 f"intent={intent_f1:.2f} entity={entity_f1:.2f} "
                 f"time={elapsed}s vram_delta={vram_delta if vram_delta is not None else 'n/a'}"
@@ -207,6 +221,7 @@ def run(
                     metrics=Metrics(intent_f1, entity_f1, overall_f1),
                 )
             )
+    progress.close()
     return results
 
 

@@ -18,6 +18,9 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+LLM_DIR = Path(__file__).resolve().parents[1]
+FINE_TUNING_DIR = LLM_DIR / "fine_tuning"
+
 DEFAULT_MODEL_NAME = "google/gemma-4-E4B-it"
 DEFAULT_SYSTEM_PROMPT = (
     "You are an NLU system for a human service robot. Given a user utterance, "
@@ -59,8 +62,8 @@ TRAIN_CONFIG = dict(
 
 def build_output_paths(model_name):
     model_dir = model_name.replace("/", "_")
-    output = os.path.join("output", model_dir)
-    output_merged = os.path.join("output_merged", model_dir)
+    output = FINE_TUNING_DIR / "output" / model_dir
+    output_merged = FINE_TUNING_DIR / "output_merged" / model_dir
     return output, output_merged
 
 
