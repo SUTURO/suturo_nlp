@@ -10,7 +10,7 @@ Determine the quantity of each distinct snack type present.
 Determine the total number of people who have their left arms elevated.
 Find out how many individuals in the room with you are currently wearing a blue shirt
 Do you mind checking the bathroom for me and grabbing the Pringles if you see it?
-Please retrieve an item from the storage rack and transport it promptly to the designated area, namely Paris in the bedroom.2. Pick up the box of cornflakes that's currently resting on the desk and move it over to the sofa for temporary placement.
+Please retrieve an item from the storage rack and transport it promptly to the designated area, namely Paris in the bedroom.
 Pick up the box of cornflakes that's currently resting on the desk and move it over to the sofa for temporary placement.
 Head to the bathroom and locate some fresh fruit. Grab it and move it over to the kitchen so that it's near the pantry.
 Greet Jules, who is present in the living room, while sharing with them your team's identity.
