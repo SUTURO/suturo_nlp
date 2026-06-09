@@ -388,50 +388,91 @@ class Audio:
         return audio
 
     def vad_loop(self) -> None:
-        r = sr.Recognizer()
-        r.energy_threshold = 300
-        r.pause_threshold = 1.0
+        """
+        Continuously listen to the microphone, run voice activity detection
+        on the recorded audio, and forward speech-like segments to Whisper.
+        """
+        recognizer = sr.Recognizer()
+        recognizer.energy_threshold = 300
+        recognizer.pause_threshold = 1.0
+        # Store these values once so we can reuse them while listening.
+        vad_model = self.vad
+        int16_max = np.iinfo(np.int16).max
+
+        def audio_to_waveform(audio_data: AudioData) -> np.ndarray:
+            """
+            Convert microphone audio into a normalized float32 waveform.
+            Silero VAD expects raw audio samples, not WAV container bytes.
+            """
+            raw_audio = audio_data.get_raw_data(
+                convert_rate=SAMPLE_RATE,
+                convert_width=SAMPLE_WIDTH,
+            )
+            # Convert the raw audio bytes into numbers and scale them to values between -1.0 and 1.0.
+            samples = np.frombuffer(raw_audio, dtype=np.int16)
+            return samples.astype(np.float32) / int16_max
+
+        def average_speech_probability(waveform: np.ndarray) -> Optional[float]:
+            """
+            Split the waveform into fixed-size VAD frames and calculate
+            the average probability that the audio contains speech.
+            """
+            # Ignore the small leftover part at the end if it is too short for one full VAD frame.
+            usable_sample_count = len(waveform) - (len(waveform) % VAD_FRAME_SIZE)
+            if usable_sample_count == 0:
+                return None
+
+            frame_count = usable_sample_count // VAD_FRAME_SIZE
+            speech_probability_sum = 0.0
+
+            # We only want a prediction here, so PyTorch can skip training-related work.
+            with torch.inference_mode():
+                for start in range(0, usable_sample_count, VAD_FRAME_SIZE):
+                    frame = waveform[start:start + VAD_FRAME_SIZE]
+                    # Add one extra dimension because the VAD model expects a list of audio frames.
+                    tensor = torch.from_numpy(frame).unsqueeze(0)
+                    speech_probability_sum += vad_model(tensor, SAMPLE_RATE).item()
+
+            return speech_probability_sum / frame_count
+
+        def send_to_transcriber(audio_data: AudioData) -> None:
+            """
+            Store detected speech audio and start the existing Whisper
+            transcription pipeline once no other transcription is running.
+            """
+            if is_transcribing(self.context):
+                try_node_logger("[VAD] Waiting for Whisper to finish...", self.context)
+                self.context.transcriber.join()
+
+            try_node_logger("[VAD] Speech detected -> sending to Whisper", self.context)
+            # Save the detected speech so the existing Whisper code can read it.
+            waveform, sr_rate = self._audio_data_to_numpy(audio_data)
+            sf.write(VAD_AUDIO_PATH, waveform, sr_rate)
+
+            # Use the lock because another thread could read or change this shared data at the same time.
+            with self.context.lock:
+                self.context.vad_audio_path = VAD_AUDIO_PATH
+                if not is_transcribing(self.context):
+                    self.context.transcriber = Thread(target=self.transcriber_fn)
+                    self.context.transcriber.start()
 
         with sr.Microphone(sample_rate=SAMPLE_RATE) as source:
-            r.adjust_for_ambient_noise(source, duration=1)
+            recognizer.adjust_for_ambient_noise(source, duration=1)
             try_node_logger("Please talk...", self.context)
 
             while True:
-                audio = r.listen(source)
-                raw = audio.get_wav_data()
-                int16 = np.frombuffer(raw, dtype=np.int16)
-                float32 = int16.astype(np.float32) / 32768.0
+                audio = recognizer.listen(source)
+                # Convert the recorded audio and ask the VAD model how likely it contains speech.
+                avg_prob = average_speech_probability(audio_to_waveform(audio))
 
-                probs = []
-                for i in range(0, len(float32) - VAD_FRAME_SIZE, VAD_FRAME_SIZE):
-                    frame = float32[i:i + VAD_FRAME_SIZE]
-                    tensor = torch.from_numpy(frame).unsqueeze(0)
-                    with torch.no_grad():
-                        prob = self.vad(tensor, SAMPLE_RATE).item()
-                    probs.append(prob)
-
-                if not probs:
+                if avg_prob is None:
                     try_node_logger("[VAD] Audio too short to analyse, skipping.", self.context)
                     continue
 
-                avg_prob = np.sum(probs) / len(probs)
-                print(f"VAD avg prob: {avg_prob:.2f}")
+                try_node_logger(f"[VAD] Average speech probability: {avg_prob:.2f}", self.context)
 
                 if avg_prob >= VAD_THRESHOLD:
-                    # Wait for any ongoing transcription to finish before starting a new one
-                    if is_transcribing(self.context):
-                        try_node_logger("[VAD] Waiting for Whisper to finish...", self.context)
-                        self.context.transcriber.join()
-
-                    try_node_logger("[VAD] Speech detected -> sending to Whisper", self.context)
-                    waveform, sr_rate = self._audio_data_to_numpy(audio)
-                    sf.write(VAD_AUDIO_PATH, waveform, sr_rate)
-
-                    with self.context.lock:
-                        self.context.vad_audio_path = VAD_AUDIO_PATH
-                        if not is_transcribing(self.context):
-                            self.context.transcriber = Thread(target=self.transcriber_fn)
-                            self.context.transcriber.start()
+                    send_to_transcriber(audio)
                 else:
                     try_node_logger("[VAD] Not real speech -> ignore ", self.context)
 
